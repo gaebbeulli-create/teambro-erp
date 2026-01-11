@@ -202,7 +202,7 @@
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v1.1.0</p>
+                <p class="text-gray-500 text-xs mt-1">v1.2.0</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -1448,6 +1448,7 @@
         <div class="modal-content" style="max-width:650px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-lime-400">🔧 작업 등록</h2><button onclick="closeModal('workModal')" class="text-gray-400 text-2xl">&times;</button></div>
             <form onsubmit="submitBroWork(event)" class="space-y-4">
+                <input type="hidden" id="work-customer-id" value="">
                 <!-- 고객 검색 -->
                 <div class="p-3 rounded-lg bg-white/5 border border-white/10">
                     <div class="text-xs text-cyan-400 mb-3">👤 고객 정보</div>
@@ -2547,7 +2548,7 @@ async function deleteFromDB(table, id) {
 }
 
 // ======================= 전역 변수 =======================
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.2.0';
 let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
 let currentTab = 'overview'; // 현재 탭
@@ -4458,6 +4459,7 @@ function loadBroWork() {
 async function submitBroWork(e) {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(e.target));
+    const customerId = document.getElementById('work-customer-id').value;
     
     const now = new Date();
     const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
@@ -4474,19 +4476,32 @@ async function submitBroWork(e) {
         parts_cost: parseInt(d.parts_cost) || 0,
         status: 'waiting',
         memo: d.memo || '',
-        date: today
+        date: today,
+        customer_id: customerId ? parseInt(customerId) : null
     };
     
     const result = await insertToDB('bro_works', workData);
     if (result && result[0]) broWorkList.unshift(result[0]);
     
     // 고객 정보 자동 저장/업데이트
-    const existingCust = broCustList.find(c => c.name === d.customer || c.phone === d.phone);
-    if (existingCust) {
-        existingCust.visits = (existingCust.visits || 0) + 1;
-        existingCust.last_visit = today;
-        await updateInDB('bro_customers', existingCust.id, { visits: existingCust.visits, last_visit: today });
+    if (customerId) {
+        // 기존 고객 - 방문수 증가
+        const existingCust = broCustList.find(c => c.id === parseInt(customerId));
+        if (existingCust) {
+            existingCust.visits = (existingCust.visits || 0) + 1;
+            existingCust.last_visit = today;
+            // 차량 정보 업데이트 (새로 입력된 경우)
+            if (d.vehicle && !existingCust.vehicle) existingCust.vehicle = d.vehicle;
+            if (d.plate && !existingCust.plate) existingCust.plate = d.plate;
+            await updateInDB('bro_customers', existingCust.id, { 
+                visits: existingCust.visits, 
+                last_visit: today,
+                vehicle: existingCust.vehicle,
+                plate: existingCust.plate
+            });
+        }
     } else {
+        // 신규 고객 등록
         const custData = {
             name: d.customer,
             phone: d.phone,
@@ -4496,13 +4511,23 @@ async function submitBroWork(e) {
             last_visit: today
         };
         const custResult = await insertToDB('bro_customers', custData);
-        if (custResult && custResult[0]) broCustList.unshift(custResult[0]);
+        if (custResult && custResult[0]) {
+            broCustList.unshift(custResult[0]);
+            // 작업에 customer_id 업데이트
+            if (result && result[0]) {
+                await updateInDB('bro_works', result[0].id, { customer_id: custResult[0].id });
+                result[0].customer_id = custResult[0].id;
+            }
+        }
         showToast('👤 신규 고객이 자동 등록되었습니다');
     }
     
     showToast('✅ 작업이 등록되었습니다');
     closeModal('workModal');
     e.target.reset();
+    document.getElementById('work-customer-id').value = '';
+    document.getElementById('customer-info-box').classList.add('hidden');
+    document.getElementById('new-customer-box').classList.add('hidden');
     loadBroWork();
     loadBroDashboard();
 }
@@ -4922,6 +4947,7 @@ function selectBroCustomer(id) {
     const c = broCustList.find(x => x.id === id);
     if (!c) return;
     
+    document.getElementById('work-customer-id').value = c.id;
     document.getElementById('work-customer').value = c.name;
     document.getElementById('work-phone').value = c.phone || '';
     document.getElementById('work-vehicle').value = c.vehicle || '';
@@ -4949,6 +4975,7 @@ function checkPhoneDuplicate() {
     if (existing) {
         resultDiv.innerHTML = `<span class="text-yellow-400">⚠️ 기존 고객: ${existing.name}</span>`;
         // 기존 고객 정보 자동 채우기
+        document.getElementById('work-customer-id').value = existing.id;
         document.getElementById('work-customer').value = existing.name;
         document.getElementById('work-vehicle').value = existing.vehicle || '';
         document.getElementById('work-plate').value = existing.plate || '';
@@ -4956,6 +4983,7 @@ function checkPhoneDuplicate() {
         document.getElementById('customer-info-detail').innerHTML = `${existing.name} | 방문 ${existing.visits || 0}회`;
     } else {
         resultDiv.innerHTML = `<span class="text-lime-400">✅ 신규 연락처</span>`;
+        document.getElementById('work-customer-id').value = '';
     }
 }
 
@@ -5675,21 +5703,31 @@ function viewBroCustDetail(custId) {
     const phoneClean = c.phone.replace(/-/g, '');
     const vipBadge = c.visits >= 3 ? '<span class="badge badge-vip">⭐ 단골 고객</span>' : '';
     
-    // 해당 고객의 작업 내역
-    const custWorks = broWorkList.filter(w => w.customer === c.name).slice(0, 5);
+    // 해당 고객의 작업 내역 (customer_id로 먼저 찾고, 없으면 이름/연락처로)
+    const custWorks = broWorkList.filter(w => 
+        w.customer_id === c.id || 
+        w.customer === c.name || 
+        w.phone === c.phone
+    ).slice(0, 5);
     let workRows = '';
     custWorks.forEach(w => {
         const statusBadge = { waiting: ['badge-pending', '대기'], progress: ['badge-progress', '진행중'], complete: ['badge-complete', '완료'] }[w.status] || ['', ''];
-        workRows += `<tr>
+        const total = (w.labor || 0) + (w.parts_cost || 0);
+        workRows += `<tr onclick="closeModal('broCustDetailModal'); viewWorkDetail(${w.id})" class="cursor-pointer hover:bg-white/5">
             <td class="text-gray-400">${w.date}</td>
-            <td>${w.work}</td>
-            <td class="text-blue-400">${fmt(w.total)}</td>
+            <td>${w.content}</td>
+            <td class="text-blue-400">${fmt(total)}</td>
             <td><span class="badge ${statusBadge[0]}">${statusBadge[1]}</span></td>
         </tr>`;
     });
     
     // 총 이용 금액
-    const totalSpent = broWorkList.filter(w => w.customer === c.name).reduce((s, w) => s + w.total, 0);
+    const allCustWorks = broWorkList.filter(w => 
+        w.customer_id === c.id || 
+        w.customer === c.name || 
+        w.phone === c.phone
+    );
+    const totalSpent = allCustWorks.reduce((s, w) => s + (w.labor || 0) + (w.parts_cost || 0), 0);
     
     document.getElementById('bro-cust-detail-content').innerHTML = `
         <div class="p-4 rounded-lg bg-white/5 border border-white/10 mb-4">
