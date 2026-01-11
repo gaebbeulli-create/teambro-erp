@@ -2,8 +2,24 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>TEAM BRO - 통합 ERP</title>
+    
+    <!-- PWA 메타태그 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TEAM BRO">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="TEAM BRO 통합 ERP - 정산관리 & 브로모터스">
+    
+    <!-- 앱 아이콘 -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23000' width='100' height='100' rx='20'/><text x='50' y='65' font-size='40' text-anchor='middle' fill='%2339FF14'>TB</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23000' width='100' height='100' rx='20'/><text x='50' y='65' font-size='40' text-anchor='middle' fill='%2339FF14'>TB</text></svg>">
+    
+    <!-- manifest -->
+    <link rel="manifest" href="data:application/json,{%22name%22:%22TEAM%20BRO%20ERP%22,%22short_name%22:%22TEAM%20BRO%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23000000%22,%22theme_color%22:%22%23000000%22,%22icons%22:[{%22src%22:%22data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23000' width='100' height='100' rx='20'/><text x='50' y='65' font-size='40' text-anchor='middle' fill='%2339FF14'>TB</text></svg>%22,%22sizes%22:%22192x192%22,%22type%22:%22image/svg+xml%22}]}">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -200,26 +216,35 @@
                     
                     <!-- 시스템 선택 -->
                     <div>
-                        <label class="block text-sm font-bold text-lime-400 mb-3">시스템 선택</label>
+                        <label class="block text-sm font-bold text-lime-400 mb-3">시스템 선택 <span class="text-red-400">*</span></label>
                         <div class="grid grid-cols-2 gap-4">
-                            <div class="system-card glass-card rounded-xl p-4 text-center selected" onclick="selectSystem('settlement')">
+                            <div id="card-settlement" class="system-card glass-card rounded-xl p-4 text-center" onclick="selectSystem('settlement')">
                                 <div class="text-3xl mb-2">💰</div>
                                 <div class="font-bold">정산관리</div>
                                 <div class="text-xs text-gray-400 mt-1">렌트·리스 정산</div>
-                                <input type="radio" name="system" value="settlement" checked class="hidden">
                             </div>
-                            <div class="system-card glass-card rounded-xl p-4 text-center" onclick="selectSystem('bromotors')">
+                            <div id="card-bromotors" class="system-card glass-card rounded-xl p-4 text-center" onclick="selectSystem('bromotors')">
                                 <div class="text-3xl mb-2">🔧</div>
                                 <div class="font-bold">브로모터스</div>
                                 <div class="text-xs text-gray-400 mt-1">직영수리점</div>
-                                <input type="radio" name="system" value="bromotors" class="hidden">
                             </div>
                         </div>
+                        <div id="systemError" class="hidden mt-2 text-xs text-red-400 text-center">⚠️ 시스템을 선택해주세요</div>
                     </div>
                     
                     <div id="loginError" class="hidden p-3 rounded-lg bg-red-400/10 text-red-400 text-sm"></div>
                     <button type="submit" class="w-full btn-primary text-lg py-3">⚡ 로그인</button>
                 </form>
+                
+                <!-- 앱 설치 버튼 -->
+                <div id="installBtnContainer" class="mt-4 space-y-2">
+                    <button id="installBtn" onclick="installApp()" class="hidden w-full p-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold text-sm hover:opacity-90 transition">
+                        📲 앱 설치하기
+                    </button>
+                    <div id="installGuide" class="hidden p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                        <div class="text-xs text-gray-400 mb-2" id="installGuideText"></div>
+                    </div>
+                </div>
             </div>
             <p class="text-center text-gray-500 text-xs mt-4">꿈이 있는 거북이는 지치지 않습니다.</p>
         </div>
@@ -332,12 +357,14 @@
                             <option value="">전체</option>
                             <option value="active">진행중</option>
                             <option value="delinquent">연체</option>
+                            <option value="completed">종료</option>
+                            <option value="cancelled">해지</option>
                         </select>
                         <button onclick="loadContracts()" class="btn-secondary btn-sm">검색</button>
                     </div>
                     <div class="flex gap-2">
                         <button onclick="downloadExcel('contracts')" class="btn-secondary btn-sm">📥 엑셀</button>
-                        <button onclick="openModal('contractModal')" class="btn-primary btn-sm">+ 계약 등록</button>
+                        <button onclick="openContractModal()" class="btn-primary btn-sm">+ 계약 등록</button>
                     </div>
                 </div>
                 <div class="glass-card rounded-xl overflow-hidden">
@@ -2091,12 +2118,28 @@
                 <!-- 계약 조건 -->
                 <div class="p-3 rounded-lg bg-white/5 border border-white/10">
                     <div class="text-xs text-orange-400 mb-3">📅 계약 조건</div>
-                    <div class="grid grid-cols-3 gap-3">
+                    <div class="grid grid-cols-5 gap-3">
+                        <div><label class="block text-xs text-gray-400 mb-1">보증금</label><input type="number" name="deposit" id="con-deposit" class="input-field" value="0"></div>
                         <div><label class="block text-xs text-gray-400 mb-1">월 납입금*</label><input type="number" name="monthly" id="con-monthly" class="input-field" required></div>
                         <div><label class="block text-xs text-gray-400 mb-1">계약 시작일*</label><input type="date" name="start_date" id="con-start" class="input-field" required></div>
                         <div><label class="block text-xs text-gray-400 mb-1">계약 종료일*</label><input type="date" name="end_date" id="con-end" class="input-field" required></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">계약 상태*</label>
+                            <select name="status" id="con-status" class="input-field" required>
+                                <option value="active">진행중</option>
+                                <option value="completed">종료</option>
+                                <option value="cancelled">해지</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="mt-3"><label class="block text-xs text-gray-400 mb-1">메모</label><textarea name="memo" id="con-memo" class="input-field" rows="2" placeholder="계약 관련 메모..."></textarea></div>
+                </div>
+                
+                <!-- 첨부자료 안내 -->
+                <div id="doc-upload-notice" class="hidden p-3 rounded-lg bg-blue-400/10 border border-blue-400/30">
+                    <div class="text-xs text-blue-400 font-bold mb-1">📌 첨부자료 안내</div>
+                    <div class="text-xs text-gray-400">• 새 파일을 선택하면 기존 파일이 <span class="text-yellow-400">교체</span>됩니다</div>
+                    <div class="text-xs text-gray-400">• 파일을 선택하지 않으면 기존 파일이 <span class="text-lime-400">유지</span>됩니다</div>
+                    <div id="existing-docs-list" class="mt-2 pt-2 border-t border-white/10"></div>
                 </div>
                 
                 <!-- 계약자 서류 -->
@@ -2502,7 +2545,7 @@ async function deleteFromDB(table, id) {
 }
 
 // ======================= 전역 변수 =======================
-let currentSystem = 'settlement'; // 'settlement' or 'bromotors'
+let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
 
 // 데이터 배열 (DB에서 로드)
@@ -2541,12 +2584,21 @@ function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 // ======================= 로그인 =======================
 function selectSystem(system) {
     document.querySelectorAll('.system-card').forEach(c => c.classList.remove('selected'));
-    event.currentTarget.classList.add('selected');
+    document.getElementById('card-' + system).classList.add('selected');
     currentSystem = system;
+    // 에러 메시지 숨김
+    document.getElementById('systemError').classList.add('hidden');
 }
 
 async function handleLogin(e) {
     e.preventDefault();
+    
+    // 시스템 선택 확인
+    if (!currentSystem) {
+        document.getElementById('systemError').classList.remove('hidden');
+        return;
+    }
+    
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
     
@@ -3086,9 +3138,11 @@ function loadContracts() {
     // 렌트/리스 타입 필터
     list = list.filter(c => (c.type || 'rent') === currentContractType);
     
+    // 상태 필터
     if (status === 'delinquent') list = list.filter(c => c.arrears > 0);
     else if (status === 'active') list = list.filter(c => c.status === 'active' && c.arrears === 0);
-    else if (status) list = list.filter(c => c.status === status);
+    else if (status === 'completed') list = list.filter(c => c.status === 'completed');
+    else if (status === 'cancelled') list = list.filter(c => c.status === 'cancelled');
     if (search) list = list.filter(c => c.customer_name.toLowerCase().includes(search) || c.plate.toLowerCase().includes(search));
     
     // 요약 (현재 타입 기준)
@@ -3107,7 +3161,12 @@ function loadContracts() {
     let h = '';
     list.forEach(c => {
         const hasArrears = c.arrears > 0;
-        const statusBadge = hasArrears ? ['badge-delinquent', '연체'] : c.status === 'active' ? ['badge-active', '진행중'] : ['badge-pending', '대기'];
+        let statusBadge;
+        if (hasArrears) statusBadge = ['badge-delinquent', '연체'];
+        else if (c.status === 'completed') statusBadge = ['badge-complete', '종료'];
+        else if (c.status === 'cancelled') statusBadge = ['badge-failed', '해지'];
+        else statusBadge = ['badge-active', '진행중'];
+        
         const period = c.start_date && c.end_date ? `${c.start_date.substring(5)} ~ ${c.end_date.substring(5)}` : c.start_date ? c.start_date.substring(5) + ' ~' : '-';
         const hasDoc = c.contractor_id_url || c.vehicle_reg_url;
         
@@ -3225,7 +3284,14 @@ function viewContractDetail(id) {
     const c = contractList.find(x => x.id === id);
     if (!c) return;
     
-    const statusBadge = c.status === 'active' ? ['badge-active', '진행중'] : ['badge-delinquent', '연체'];
+    // 상태 배지 (진행중/종료/해지/연체)
+    const getStatusBadge = (contract) => {
+        if (contract.arrears > 0) return ['badge-delinquent', '연체'];
+        if (contract.status === 'completed') return ['badge-complete', '종료'];
+        if (contract.status === 'cancelled') return ['badge-failed', '해지'];
+        return ['badge-active', '진행중'];
+    };
+    const statusBadge = getStatusBadge(c);
     const typeBadge = (c.type || 'rent') === 'rent' ? ['badge-rent', '렌트'] : ['badge-lease', '리스'];
     
     // 서류 링크 생성
@@ -3238,6 +3304,10 @@ function viewContractDetail(id) {
     if (c.vehicle_disposal_url) docLinks.push(`<a href="${c.vehicle_disposal_url}" target="_blank" class="text-purple-400 hover:underline text-xs">📎 폐지서류</a>`);
     if (c.vehicle_doc_url) docLinks.push(`<a href="${c.vehicle_doc_url}" target="_blank" class="text-purple-400 hover:underline text-xs">📎 차량 기타서류</a>`);
     
+    // 전화번호 정리 (하이픈 제거)
+    const phoneClean = (c.phone || '').replace(/-/g, '');
+    const guarantorPhoneClean = (c.guarantor_phone || '').replace(/-/g, '');
+    
     document.getElementById('contract-detail-content').innerHTML = `
         <div class="p-4 rounded-lg bg-white/5 border border-white/10 mb-4">
             <div class="grid grid-cols-2 gap-4">
@@ -3245,10 +3315,18 @@ function viewContractDetail(id) {
                 <div class="info-row"><span class="info-label">계약유형</span><span class="badge ${typeBadge[0]}">${typeBadge[1]}</span></div>
                 <div class="info-row"><span class="info-label">상태</span><span class="badge ${statusBadge[0]}">${statusBadge[1]}</span></div>
                 <div class="info-row"><span class="info-label">고객명</span><span class="font-bold">${c.customer_name}</span></div>
-                <div class="info-row"><span class="info-label">연락처</span><span>${c.phone}</span></div>
+                <div class="info-row col-span-2">
+                    <span class="info-label">연락처</span>
+                    <div class="flex items-center gap-2">
+                        <span>${c.phone}</span>
+                        <a href="tel:${phoneClean}" class="px-2 py-1 rounded bg-green-500/20 text-green-400 text-xs font-bold hover:bg-green-500/30">📞 전화</a>
+                        <a href="sms:${phoneClean}" class="px-2 py-1 rounded bg-blue-500/20 text-blue-400 text-xs font-bold hover:bg-blue-500/30">💬 문자</a>
+                    </div>
+                </div>
                 <div class="info-row"><span class="info-label">차량</span><span>${c.vehicle}</span></div>
                 <div class="info-row"><span class="info-label">번호판</span><span>${c.plate}</span></div>
                 <div class="info-row"><span class="info-label">연료</span><span>${c.fuel_type || '-'}</span></div>
+                <div class="info-row"><span class="info-label">보증금</span><span class="text-yellow-400 font-bold">${fmt(c.deposit || 0)}</span></div>
                 <div class="info-row"><span class="info-label">월 납입금</span><span class="text-blue-400 font-bold">${fmt(c.monthly)}</span></div>
                 <div class="info-row"><span class="info-label">계약 시작일</span><span>${c.start_date || '-'}</span></div>
                 <div class="info-row"><span class="info-label">계약 종료일</span><span>${c.end_date || '-'}</span></div>
@@ -3259,9 +3337,16 @@ function viewContractDetail(id) {
         ${c.guarantor_name ? `
         <div class="p-4 rounded-lg bg-yellow-400/10 border border-yellow-400/30 mb-4">
             <div class="text-xs text-yellow-400 mb-2">👥 연대보증인</div>
-            <div class="grid grid-cols-2 gap-2">
+            <div class="grid grid-cols-1 gap-2">
                 <div><span class="text-gray-400 text-xs">이름:</span> <span class="font-bold">${c.guarantor_name}</span></div>
-                <div><span class="text-gray-400 text-xs">연락처:</span> <span>${c.guarantor_phone || '-'}</span></div>
+                <div class="flex items-center gap-2">
+                    <span class="text-gray-400 text-xs">연락처:</span> 
+                    <span>${c.guarantor_phone || '-'}</span>
+                    ${c.guarantor_phone ? `
+                    <a href="tel:${guarantorPhoneClean}" class="px-2 py-1 rounded bg-green-500/20 text-green-400 text-xs font-bold hover:bg-green-500/30">📞 전화</a>
+                    <a href="sms:${guarantorPhoneClean}" class="px-2 py-1 rounded bg-blue-500/20 text-blue-400 text-xs font-bold hover:bg-blue-500/30">💬 문자</a>
+                    ` : ''}
+                </div>
             </div>
         </div>` : ''}
         
@@ -3299,11 +3384,13 @@ function editContract(id) {
     document.getElementById('con-phone').value = c.phone;
     document.getElementById('con-vehicle').value = c.vehicle;
     document.getElementById('con-plate').value = c.plate;
+    document.getElementById('con-deposit').value = c.deposit || 0;
     document.getElementById('con-monthly').value = c.monthly;
     document.getElementById('con-start').value = c.start_date;
     document.getElementById('con-end').value = c.end_date || '';
     document.getElementById('con-fuel').value = c.fuel_type || '휘발유';
     document.getElementById('con-memo').value = c.memo || '';
+    document.getElementById('con-status').value = c.status || 'active';
     
     // 계약 유형 선택
     const typeRadio = document.querySelector(`input[name="contract_type"][value="${c.type || 'rent'}"]`);
@@ -3317,6 +3404,34 @@ function editContract(id) {
         document.getElementById('con-guarantor-phone').value = c.guarantor_phone || '';
     }
     
+    // 기존 첨부파일 목록 표시
+    const existingDocs = [];
+    if (c.contractor_id_url) existingDocs.push('✅ 계약자 신분증');
+    if (c.contractor_doc_url) existingDocs.push('✅ 계약자 기타서류');
+    if (c.guarantor_id_url) existingDocs.push('✅ 보증인 신분증');
+    if (c.guarantor_doc_url) existingDocs.push('✅ 보증인 기타서류');
+    if (c.vehicle_reg_url) existingDocs.push('✅ 차량등록증');
+    if (c.vehicle_disposal_url) existingDocs.push('✅ 폐지서류');
+    if (c.vehicle_doc_url) existingDocs.push('✅ 차량 기타서류');
+    
+    const noticeEl = document.getElementById('doc-upload-notice');
+    const docsListEl = document.getElementById('existing-docs-list');
+    
+    if (existingDocs.length > 0) {
+        noticeEl.classList.remove('hidden');
+        docsListEl.innerHTML = `<div class="text-xs text-lime-400 mb-1">📁 기존 첨부파일:</div><div class="text-xs text-gray-300">${existingDocs.join(' · ')}</div>`;
+    } else {
+        noticeEl.classList.remove('hidden');
+        docsListEl.innerHTML = `<div class="text-xs text-gray-500">📁 기존 첨부파일 없음</div>`;
+    }
+    
+    openModal('contractModal');
+}
+
+// 계약 등록 모달 열 때 안내 숨김
+function openContractModal() {
+    document.getElementById('doc-upload-notice').classList.add('hidden');
+    document.getElementById('existing-docs-list').innerHTML = '';
     openModal('contractModal');
 }
 
@@ -3378,6 +3493,9 @@ async function submitContract(e) {
     const editId = document.getElementById('contract-edit-id').value;
     const d = Object.fromEntries(new FormData(e.target));
     
+    // 기존 계약 정보 (수정 시)
+    const existingContract = editId ? contractList.find(x => x.id === parseInt(editId)) : null;
+    
     // 파일 업로드
     const contractorIdFile = document.getElementById('con-contractor-id').files[0];
     const contractorDocFile = document.getElementById('con-contractor-doc').files[0];
@@ -3402,33 +3520,54 @@ async function submitContract(e) {
         phone: d.phone,
         vehicle: d.vehicle,
         plate: d.plate,
+        deposit: parseInt(d.deposit) || 0,
         monthly: parseInt(d.monthly) || 0,
         start_date: d.start_date,
         end_date: d.end_date || null,
         fuel_type: d.fuel_type || '휘발유',
         memo: d.memo || null,
         type: d.contract_type || 'rent',
+        status: d.status || 'active',
         guarantor_name: d.guarantor_name || null,
-        guarantor_phone: d.guarantor_phone || null
+        guarantor_phone: d.guarantor_phone || null,
+        // 기존 URL 유지 (새 파일 없으면 기존 값 사용)
+        contractor_id_url: contractorIdUrl || (existingContract ? existingContract.contractor_id_url : null),
+        contractor_doc_url: contractorDocUrl || (existingContract ? existingContract.contractor_doc_url : null),
+        guarantor_id_url: guarantorIdUrl || (existingContract ? existingContract.guarantor_id_url : null),
+        guarantor_doc_url: guarantorDocUrl || (existingContract ? existingContract.guarantor_doc_url : null),
+        vehicle_reg_url: vehicleRegUrl || (existingContract ? existingContract.vehicle_reg_url : null),
+        vehicle_disposal_url: vehicleDisposalUrl || (existingContract ? existingContract.vehicle_disposal_url : null),
+        vehicle_doc_url: vehicleDocUrl || (existingContract ? existingContract.vehicle_doc_url : null)
     };
     
-    // 새 파일이 업로드된 경우에만 URL 업데이트
-    if (contractorIdUrl) contractData.contractor_id_url = contractorIdUrl;
-    if (contractorDocUrl) contractData.contractor_doc_url = contractorDocUrl;
-    if (guarantorIdUrl) contractData.guarantor_id_url = guarantorIdUrl;
-    if (guarantorDocUrl) contractData.guarantor_doc_url = guarantorDocUrl;
-    if (vehicleRegUrl) contractData.vehicle_reg_url = vehicleRegUrl;
-    if (vehicleDisposalUrl) contractData.vehicle_disposal_url = vehicleDisposalUrl;
-    if (vehicleDocUrl) contractData.vehicle_doc_url = vehicleDocUrl;
+    // 계약 상태 변경 시 차량 상태도 연동
+    const oldContract = existingContract;
+    const newStatus = d.status;
     
     if (editId) {
         await updateInDB('contracts', editId, contractData);
         const c = contractList.find(x => x.id === parseInt(editId));
         if (c) Object.assign(c, contractData);
+        
+        // 차량 상태 연동
+        if (oldContract && oldContract.plate) {
+            const linkedVehicle = vehicleList.find(v => v.plate === oldContract.plate);
+            if (linkedVehicle) {
+                if (newStatus === 'active' && linkedVehicle.status !== '출고') {
+                    await updateInDB('vehicles', linkedVehicle.id, { status: '출고', contract_id: parseInt(editId) });
+                    linkedVehicle.status = '출고';
+                    linkedVehicle.contract_id = parseInt(editId);
+                } else if ((newStatus === 'completed' || newStatus === 'cancelled') && linkedVehicle.status === '출고') {
+                    await updateInDB('vehicles', linkedVehicle.id, { status: '반납', contract_id: null });
+                    linkedVehicle.status = '반납';
+                    linkedVehicle.contract_id = null;
+                }
+            }
+        }
+        
         showToast('✅ 계약이 수정되었습니다');
     } else {
         contractData.arrears = 0;
-        contractData.status = 'active';
         const result = await insertToDB('contracts', contractData);
         if (result && result[0]) contractList.unshift(result[0]);
         showToast('✅ 계약이 등록되었습니다');
@@ -7001,6 +7140,74 @@ function openDelAction(contractId) {
 function exportDelinquent() {
     downloadExcel('delinquent');
 }
+
+// ======================= PWA 설치 기능 =======================
+let deferredPrompt = null;
+
+// 설치 프롬프트 저장
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('installBtn').classList.remove('hidden');
+});
+
+// 앱 설치 함수
+function installApp() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choice) => {
+            if (choice.outcome === 'accepted') {
+                showToast('✅ 앱이 설치되었습니다!');
+            }
+            deferredPrompt = null;
+            document.getElementById('installBtn').classList.add('hidden');
+        });
+    }
+}
+
+// iOS/Android 설치 가이드 표시
+function showInstallGuide() {
+    const ua = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(ua);
+    const isAndroid = /Android/.test(ua);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    
+    // 이미 앱으로 실행 중이면 숨김
+    if (isStandalone) {
+        document.getElementById('installBtnContainer').classList.add('hidden');
+        return;
+    }
+    
+    const guideEl = document.getElementById('installGuide');
+    const guideText = document.getElementById('installGuideText');
+    
+    if (isIOS && !deferredPrompt) {
+        guideEl.classList.remove('hidden');
+        guideText.innerHTML = `
+            <div class="text-lime-400 font-bold mb-1">📱 iPhone 앱 설치</div>
+            <div>1. 하단 <span class="text-blue-400">공유 버튼</span> (□↑) 터치</div>
+            <div>2. <span class="text-lime-400">"홈 화면에 추가"</span> 선택</div>
+        `;
+    } else if (isAndroid && !deferredPrompt) {
+        guideEl.classList.remove('hidden');
+        guideText.innerHTML = `
+            <div class="text-lime-400 font-bold mb-1">📱 Android 앱 설치</div>
+            <div>1. 우측 상단 <span class="text-blue-400">⋮ 메뉴</span> 터치</div>
+            <div>2. <span class="text-lime-400">"홈 화면에 추가"</span> 선택</div>
+        `;
+    }
+}
+
+// 페이지 로드 시 가이드 표시
+window.addEventListener('load', () => {
+    setTimeout(showInstallGuide, 500);
+});
+
+// 앱으로 설치되면 이벤트
+window.addEventListener('appinstalled', () => {
+    showToast('✅ TEAM BRO ERP가 설치되었습니다!');
+    document.getElementById('installBtnContainer').classList.add('hidden');
+});
 </script>
 </body>
 </html>
