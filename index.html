@@ -202,6 +202,11 @@
                     <div class="glass-card rounded-xl p-4 text-center cursor-pointer hover:border-orange-400/50" onclick="filterContracts('delinquent')"><div class="text-2xl mb-1">⚠️</div><div class="text-gray-400 text-xs">연체</div><div class="text-xl font-black text-orange-400" id="contract-delinquent">-</div></div>
                     <div class="glass-card rounded-xl p-4 text-center cursor-pointer hover:border-emerald-400/50" onclick="openMonthlyRevenueModal()"><div class="text-2xl mb-1">💰</div><div class="text-gray-400 text-xs">월 정산금액</div><div class="text-xl font-black text-emerald-400" id="contract-revenue">-</div><div class="text-xs text-gray-500 mt-1" id="contract-revenue-count">- 건</div></div>
                 </div>
+                <!-- 렌트/리스 탭 -->
+                <div class="flex gap-2 mb-4">
+                    <button onclick="switchContractType('rent')" id="contract-tab-rent" class="px-6 py-2 rounded-lg font-bold text-sm bg-purple-500/20 text-purple-400 border border-purple-500/30">🏍️ 렌트</button>
+                    <button onclick="switchContractType('lease')" id="contract-tab-lease" class="px-6 py-2 rounded-lg font-bold text-sm text-gray-500 border border-white/10">📄 리스</button>
+                </div>
                 <div class="glass-card rounded-xl p-4 mb-4 flex flex-wrap items-center justify-between gap-3">
                     <div class="flex flex-wrap items-center gap-2">
                         <input type="text" id="contract-search" class="input-field" style="width:180px" placeholder="고객명, 번호판 검색...">
@@ -219,7 +224,7 @@
                 </div>
                 <div class="glass-card rounded-xl overflow-hidden">
                     <table class="data-table">
-                        <thead><tr><th>번호</th><th>고객</th><th>연락처</th><th>차량</th><th>번호판</th><th>월납입</th><th>미납</th><th>상태</th></tr></thead>
+                        <thead><tr><th>번호</th><th>고객</th><th>연락처</th><th>차량</th><th>번호판</th><th>연료</th><th>계약기간</th><th>월납입</th><th>미납</th><th>상태</th><th>서류</th></tr></thead>
                         <tbody id="contract-tbody"></tbody>
                     </table>
                 </div>
@@ -1440,22 +1445,124 @@
 
     <!-- ======================= 정산관리 모달: 계약 등록 ======================= -->
     <div id="contractModal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width:600px">
+        <div class="modal-content" style="max-width:800px; max-height:90vh; overflow-y:auto;">
             <div class="flex justify-between mb-4"><h2 id="contractModalTitle" class="text-xl font-bold text-lime-400">📋 계약 등록</h2><button onclick="closeModal('contractModal')" class="text-gray-400 text-2xl">&times;</button></div>
             <form onsubmit="submitContract(event)" id="contractForm" class="space-y-4">
                 <input type="hidden" id="contract-edit-id">
-                <div class="grid grid-cols-2 gap-3">
-                    <div><label class="block text-xs text-lime-400 mb-1">고객명*</label><input name="customer_name" id="con-customer" class="input-field" required></div>
-                    <div><label class="block text-xs text-lime-400 mb-1">연락처*</label><input name="phone" id="con-phone" class="input-field" required></div>
+                
+                <!-- 계약 유형 -->
+                <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <label class="block text-xs text-lime-400 mb-2">계약 유형*</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="contract_type" value="rent" checked class="accent-purple-500">
+                            <span class="text-purple-400 font-bold">🏍️ 렌트</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="contract_type" value="lease" class="accent-pink-500">
+                            <span class="text-pink-400 font-bold">📄 리스</span>
+                        </label>
+                    </div>
                 </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div><label class="block text-xs text-lime-400 mb-1">차량*</label><input name="vehicle" id="con-vehicle" class="input-field" required></div>
-                    <div><label class="block text-xs text-lime-400 mb-1">번호판*</label><input name="plate" id="con-plate" class="input-field" required></div>
+                
+                <!-- 기본 정보 -->
+                <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div class="text-xs text-blue-400 mb-3">👤 계약자 정보</div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="block text-xs text-gray-400 mb-1">고객명*</label><input name="customer_name" id="con-customer" class="input-field" required></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">연락처*</label><input name="phone" id="con-phone" class="input-field" required></div>
+                    </div>
                 </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div><label class="block text-xs text-lime-400 mb-1">월 납입금*</label><input type="number" name="monthly" id="con-monthly" class="input-field" required></div>
-                    <div><label class="block text-xs text-lime-400 mb-1">계약 시작일*</label><input type="date" name="start_date" id="con-start" class="input-field" required></div>
+                
+                <!-- 차량 정보 -->
+                <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div class="text-xs text-emerald-400 mb-3">🚗 차량 정보</div>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div><label class="block text-xs text-gray-400 mb-1">차량*</label><input name="vehicle" id="con-vehicle" class="input-field" required></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">번호판*</label><input name="plate" id="con-plate" class="input-field" required></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">연료*</label>
+                            <select name="fuel_type" id="con-fuel" class="input-field" required>
+                                <option value="휘발유">휘발유</option>
+                                <option value="경유">경유</option>
+                                <option value="LPG">LPG</option>
+                                <option value="전기">전기</option>
+                                <option value="하이브리드">하이브리드</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
+                
+                <!-- 계약 조건 -->
+                <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div class="text-xs text-orange-400 mb-3">📅 계약 조건</div>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div><label class="block text-xs text-gray-400 mb-1">월 납입금*</label><input type="number" name="monthly" id="con-monthly" class="input-field" required></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">계약 시작일*</label><input type="date" name="start_date" id="con-start" class="input-field" required></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">계약 종료일*</label><input type="date" name="end_date" id="con-end" class="input-field" required></div>
+                    </div>
+                    <div class="mt-3"><label class="block text-xs text-gray-400 mb-1">메모</label><textarea name="memo" id="con-memo" class="input-field" rows="2" placeholder="계약 관련 메모..."></textarea></div>
+                </div>
+                
+                <!-- 계약자 서류 -->
+                <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div class="text-xs text-cyan-400 mb-3">📎 계약자 서류</div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">신분증</label>
+                            <input type="file" name="contractor_id" id="con-contractor-id" class="input-field text-xs" accept=".pdf,.jpg,.jpeg,.png">
+                            <div id="con-contractor-id-preview" class="mt-1 text-xs text-gray-500"></div>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">기타서류</label>
+                            <input type="file" name="contractor_doc" id="con-contractor-doc" class="input-field text-xs" accept=".pdf,.jpg,.jpeg,.png">
+                            <div id="con-contractor-doc-preview" class="mt-1 text-xs text-gray-500"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 연대보증인 (선택) -->
+                <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div class="flex items-center gap-2 mb-3">
+                        <input type="checkbox" id="con-has-guarantor" onchange="toggleGuarantor()" class="accent-lime-500">
+                        <label class="text-xs text-yellow-400 cursor-pointer" for="con-has-guarantor">👥 연대보증인 추가</label>
+                    </div>
+                    <div id="guarantor-section" class="hidden space-y-3">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="block text-xs text-gray-400 mb-1">보증인 이름</label><input name="guarantor_name" id="con-guarantor-name" class="input-field"></div>
+                            <div><label class="block text-xs text-gray-400 mb-1">보증인 연락처</label><input name="guarantor_phone" id="con-guarantor-phone" class="input-field"></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">보증인 신분증</label>
+                                <input type="file" name="guarantor_id" id="con-guarantor-id" class="input-field text-xs" accept=".pdf,.jpg,.jpeg,.png">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">보증인 기타서류</label>
+                                <input type="file" name="guarantor_doc" id="con-guarantor-doc" class="input-field text-xs" accept=".pdf,.jpg,.jpeg,.png">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 차량 서류 -->
+                <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div class="text-xs text-purple-400 mb-3">🚗 차량 서류</div>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">차량등록증</label>
+                            <input type="file" name="vehicle_reg" id="con-vehicle-reg" class="input-field text-xs" accept=".pdf,.jpg,.jpeg,.png">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">폐지서류</label>
+                            <input type="file" name="vehicle_disposal" id="con-vehicle-disposal" class="input-field text-xs" accept=".pdf,.jpg,.jpeg,.png">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">기타서류</label>
+                            <input type="file" name="vehicle_doc" id="con-vehicle-doc" class="input-field text-xs" accept=".pdf,.jpg,.jpeg,.png">
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="flex gap-3 pt-2">
                     <button type="button" onclick="closeModal('contractModal')" class="btn-secondary flex-1">취소</button>
                     <button type="submit" class="btn-primary flex-1" id="contractSubmitBtn">등록</button>
@@ -1750,142 +1857,72 @@
     </div>
 
 <script>
+// ======================= Supabase 설정 =======================
+const SUPABASE_URL = 'https://jizaefuhiikpkcxolibc.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_GmXxpaZB2wffSDKJn5P1kg_22B7VGpD';
+
+// Supabase API 호출 함수
+async function supabaseCall(table, method = 'GET', data = null, query = '') {
+    const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
+    const options = {
+        method,
+        headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': method === 'POST' ? 'return=representation' : 'return=minimal'
+        }
+    };
+    if (data && (method === 'POST' || method === 'PATCH')) {
+        options.body = JSON.stringify(data);
+    }
+    try {
+        const res = await fetch(url, options);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (method === 'DELETE') return true;
+        const text = await res.text();
+        return text ? JSON.parse(text) : [];
+    } catch (e) {
+        console.error('Supabase error:', e);
+        return null;
+    }
+}
+
+// 데이터 로드 함수들
+async function loadFromDB(table) {
+    return await supabaseCall(table, 'GET', null, '?order=id.desc');
+}
+
+async function insertToDB(table, data) {
+    return await supabaseCall(table, 'POST', data);
+}
+
+async function updateInDB(table, id, data) {
+    return await supabaseCall(table, 'PATCH', data, `?id=eq.${id}`);
+}
+
+async function deleteFromDB(table, id) {
+    return await supabaseCall(table, 'DELETE', null, `?id=eq.${id}`);
+}
+
 // ======================= 전역 변수 =======================
 let currentSystem = 'settlement'; // 'settlement' or 'bromotors'
 let currentUser = null;
 
-// 직원 목록 (통합)
-let staffList = [
-    { id: 1, name: '김관리', username: 'admin', password: 'admin123', phone: '010-1234-5678', email: 'admin@teambro.kr', department: '정산팀', role: 'admin', level: 4, status: 'active', created_at: '2025-01-01' },
-    { id: 2, name: '이매니저', username: 'manager1', password: '1234', phone: '010-2345-6789', email: 'manager1@teambro.kr', department: '정산팀', role: 'manager', level: 3, status: 'active', created_at: '2025-01-05' },
-    { id: 3, name: '박정비', username: 'mechanic1', password: '1234', phone: '010-3456-7890', email: 'mechanic1@teambro.kr', department: '정비팀', role: 'staff', level: 2, status: 'active', created_at: '2025-01-10' },
-    { id: 4, name: '최영업', username: 'staff1', password: '1234', phone: '010-4567-8901', email: 'staff1@teambro.kr', department: '영업팀', role: 'staff', level: 1, status: 'active', created_at: '2025-01-12' },
-];
-
-// 고객 목록 (정산관리용)
-let customerList = [
-    { id: 1, name: '홍길동', ssn: '901215-1234567', phone: '010-1111-2222', email: 'hong@email.com', address: '서울시 강남구 역삼동', grade: '상', memo: 'VIP 고객', created_at: '2025-01-15' },
-    { id: 2, name: '김철수', ssn: '880520-1234567', phone: '010-2222-3333', email: 'kim@email.com', address: '서울시 서초구 서초동', grade: '중', memo: '', created_at: '2025-02-01' },
-    { id: 3, name: '이영희', ssn: '950310-2234567', phone: '010-3333-4444', email: 'lee@email.com', address: '경기도 성남시 분당구', grade: '하', memo: '연체 이력 있음', created_at: '2024-10-20' },
-    { id: 4, name: '박민수', ssn: '920815-1234567', phone: '010-4444-5555', email: 'park@email.com', address: '인천시 연수구', grade: '중', memo: '', created_at: '2025-03-01' },
-    { id: 5, name: '정수진', ssn: '870225-2234567', phone: '010-5555-6666', email: 'jung@email.com', address: '서울시 송파구 잠실동', grade: '상', memo: '장기 고객', created_at: '2024-09-15' },
-    { id: 6, name: '최동욱', ssn: '991130-1234567', phone: '010-6666-7777', email: 'choi@email.com', address: '부산시 해운대구', grade: '하', memo: '', created_at: '2025-01-20' },
-];
-
-// 정산관리 계약 목록
-let contractList = [
-    { id: 1, customer_name: '홍길동', phone: '010-1111-2222', vehicle: 'PCX 125', plate: '서울12가3456', monthly: 550000, arrears: 0, status: 'active', type: 'lease', start_date: '2025-01-15' },
-    { id: 2, customer_name: '김철수', phone: '010-2222-3333', vehicle: 'NMAX 155', plate: '서울34나5678', monthly: 650000, arrears: 450000, status: 'active', type: 'rent', start_date: '2025-02-01', delinquent_days: 45 },
-    { id: 3, customer_name: '이영희', phone: '010-3333-4444', vehicle: '포르자 350', plate: '경기56다7890', monthly: 850000, arrears: 1700000, status: 'active', type: 'lease', start_date: '2024-10-20', delinquent_days: 62 },
-    { id: 4, customer_name: '박민수', phone: '010-4444-5555', vehicle: 'PCX 160', plate: '인천78라1234', monthly: 600000, arrears: 0, status: 'active', type: 'rent', start_date: '2025-03-01' },
-    { id: 5, customer_name: '정수진', phone: '010-5555-6666', vehicle: 'X-MAX 300', plate: '서울90마5678', monthly: 750000, arrears: 0, status: 'active', type: 'lease', start_date: '2024-09-15' },
-    { id: 6, customer_name: '최동욱', phone: '010-6666-7777', vehicle: 'Address 110', plate: '부산12바6789', monthly: 350000, arrears: 350000, status: 'active', type: 'rent', start_date: '2025-01-20', delinquent_days: 30 },
-];
-
-// 미수금 상세 내역
-let arrearsDetailList = [
-    { contract_id: 2, date: '2025-11-25', type: '월 렌트료', amount: 650000, status: 'unpaid' },
-    { contract_id: 2, date: '2025-12-25', type: '월 렌트료', amount: 650000, status: 'partial', paid: 450000 },
-    { contract_id: 2, date: '2026-01-10', type: '연체료', amount: 50000, status: 'unpaid' },
-    { contract_id: 3, date: '2025-10-20', type: '월 렌트료', amount: 850000, status: 'unpaid' },
-    { contract_id: 3, date: '2025-11-20', type: '월 렌트료', amount: 850000, status: 'unpaid' },
-    { contract_id: 6, date: '2025-12-20', type: '월 렌트료', amount: 350000, status: 'unpaid' },
-];
-
-// 최근 결제 내역
-let recentPayments = [
-    { id: 1, customer_name: '박민수', amount: 600000, date: '2026-01-10', time: '09:30' },
-    { id: 2, customer_name: '정수진', amount: 750000, date: '2026-01-06', time: '14:20' },
-    { id: 3, customer_name: '홍길동', amount: 550000, date: '2026-01-11', time: '11:00' },
-];
-
-// PG 자동결제 목록 (카드 관리)
-let pgPaymentsList = [
-    { id: 1, contract_id: 1, customer_name: '홍길동', card_no: '****-****-****-1234', expiry: '12/27', pay_type: 'monthly', pay_day: 15, amount: 550000, last_pay: '2026-01-11', last_status: 'success', card_status: 'active', created_at: '2025-06-15' },
-    { id: 2, contract_id: 4, customer_name: '박민수', card_no: '****-****-****-5678', expiry: '08/28', pay_type: 'daily', pay_hour: 9, amount: 20000, last_pay: '2026-01-10', last_status: 'success', card_status: 'active', created_at: '2025-08-20' },
-    { id: 3, contract_id: 5, customer_name: '정수진', card_no: '****-****-****-9012', expiry: '03/27', pay_type: 'weekly', pay_weekday: 1, amount: 180000, last_pay: '2026-01-06', last_status: 'scheduled', card_status: 'active', created_at: '2025-09-10' },
-    { id: 4, contract_id: 2, customer_name: '김철수', card_no: '****-****-****-3456', expiry: '01/26', pay_type: 'monthly', pay_day: 25, amount: 650000, last_pay: '2025-11-25', last_status: 'failed', card_status: 'inactive', created_at: '2025-03-01' },
-    { id: 5, contract_id: 3, customer_name: '이영희', card_no: '****-****-****-7890', expiry: '06/28', pay_type: 'monthly', pay_day: 20, amount: 850000, last_pay: '2025-10-20', last_status: 'failed', card_status: 'active', created_at: '2025-02-15' },
-    { id: 6, contract_id: 6, customer_name: '최동욱', card_no: '****-****-****-4567', expiry: '09/27', pay_type: 'monthly', pay_day: 10, amount: 350000, last_pay: '2026-01-08', last_status: 'success', card_status: 'active', created_at: '2025-11-01' },
-];
-
-// 결제 이력
-let paymentHistory = [
-    { id: 1, pg_id: 1, contract_id: 1, amount: 550000, date: '2026-01-11', time: '09:00', status: 'success', method: '카드' },
-    { id: 2, pg_id: 2, contract_id: 4, amount: 20000, date: '2026-01-10', time: '09:00', status: 'success', method: '이체' },
-    { id: 3, pg_id: 4, contract_id: 2, amount: 650000, date: '2025-11-25', time: '09:00', status: 'failed', method: '카드', fail_reason: '잔액부족' },
-    { id: 4, pg_id: 5, contract_id: 3, amount: 850000, date: '2025-10-20', time: '09:00', status: 'failed', method: '카드', fail_reason: '카드정지' },
-];
-
-// 원장 내역
-let ledgerList = [
-    { id: 1, date: '2026-01-11', contract_id: 1, customer_name: '홍길동', type: 'accrual', desc: '1월 렌트료 청구', accrual: 550000, receipt: 0, method: '-' },
-    { id: 2, date: '2026-01-11', contract_id: 1, customer_name: '홍길동', type: 'receipt', desc: '1월 렌트료 수납', accrual: 0, receipt: 550000, method: '카드' },
-    { id: 3, date: '2026-01-10', contract_id: 4, customer_name: '박민수', type: 'accrual', desc: '1월 렌트료 청구', accrual: 600000, receipt: 0, method: '-' },
-    { id: 4, date: '2026-01-10', contract_id: 4, customer_name: '박민수', type: 'receipt', desc: '1월 렌트료 수납', accrual: 0, receipt: 600000, method: '이체' },
-    { id: 5, date: '2026-01-08', contract_id: 6, customer_name: '최동욱', type: 'accrual', desc: '1월 렌트료 청구', accrual: 350000, receipt: 0, method: '-' },
-    { id: 6, date: '2026-01-08', contract_id: 6, customer_name: '최동욱', type: 'receipt', desc: '1월 렌트료 수납', accrual: 0, receipt: 350000, method: '현금' },
-    { id: 7, date: '2026-01-05', contract_id: 2, customer_name: '김철수', type: 'accrual', desc: '1월 렌트료 청구', accrual: 650000, receipt: 0, method: '-' },
-    { id: 8, date: '2026-01-05', contract_id: 3, customer_name: '이영희', type: 'accrual', desc: '1월 렌트료 청구', accrual: 850000, receipt: 0, method: '-' },
-    { id: 9, date: '2026-01-03', contract_id: 5, customer_name: '정수진', type: 'accrual', desc: '1월 렌트료 청구', accrual: 750000, receipt: 0, method: '-' },
-    { id: 10, date: '2026-01-06', contract_id: 5, customer_name: '정수진', type: 'receipt', desc: '1월 렌트료 수납', accrual: 0, receipt: 750000, method: '카드' },
-    { id: 11, date: '2026-01-07', contract_id: 2, customer_name: '김철수', type: 'receipt', desc: '1월 일부 수납', accrual: 0, receipt: 200000, method: '현금' },
-    { id: 12, date: '2025-12-20', contract_id: 3, customer_name: '이영희', type: 'accrual', desc: '12월 렌트료 청구', accrual: 850000, receipt: 0, method: '-' },
-];
-
-// 차량 목록
-let vehicleList = [
-    { id: 1, plate: '서울11가1111', model: 'PCX 125', year: 2024, color: '화이트', mileage: 500, status: '입고', contract_id: null, memo: '신차' },
-    { id: 2, plate: '서울12가3456', model: 'PCX 125', year: 2023, color: '화이트', mileage: 12500, status: '출고', contract_id: 1, memo: '' },
-    { id: 3, plate: '서울34나5678', model: 'NMAX 155', year: 2023, color: '블랙', mileage: 18000, status: '출고', contract_id: 2, memo: '' },
-    { id: 4, plate: '경기56다7890', model: '포르자 350', year: 2022, color: '그레이', mileage: 25000, status: '출고', contract_id: 3, memo: '' },
-    { id: 5, plate: '인천78라1234', model: 'PCX 160', year: 2024, color: '레드', mileage: 3500, status: '출고', contract_id: 4, memo: '' },
-    { id: 6, plate: '서울90마5678', model: 'X-MAX 300', year: 2023, color: '블루', mileage: 15000, status: '출고', contract_id: 5, memo: '' },
-    { id: 7, plate: '부산12바6789', model: 'Address 110', year: 2022, color: '화이트', mileage: 22000, status: '출고', contract_id: 6, memo: '' },
-    { id: 8, plate: '서울22가2222', model: 'NMAX 155', year: 2024, color: '화이트', mileage: 800, status: '입고', contract_id: null, memo: '' },
-    { id: 9, plate: '경기33나3333', model: 'PCX 125', year: 2023, color: '블랙', mileage: 9500, status: '반납', contract_id: null, memo: '점검 필요' },
-    { id: 10, plate: '서울44다4444', model: 'Address 110', year: 2021, color: '그레이', mileage: 45000, status: '정비', contract_id: null, memo: '엔진 점검중' },
-    { id: 11, plate: '인천55라5555', model: 'PCX 125', year: 2020, color: '화이트', mileage: 68000, status: '폐차', contract_id: null, memo: '사고 폐차' },
-];
-
-// ======================= 브로모터스 데이터 =======================
-// 작업 목록
-let broWorkList = [
-    { id: 1, customer: '김철수', phone: '010-2222-3333', vehicle: 'PCX 125', plate: '12가3456', content: '엔진오일 교환', labor: 30000, parts_cost: 25000, status: 'complete', memo: '', date: '2026-01-11' },
-    { id: 2, customer: '이영희', phone: '010-3333-4444', vehicle: 'NMAX 155', plate: '34나5678', content: '타이어 교체', labor: 40000, parts_cost: 120000, status: 'progress', memo: '뒤 타이어만', date: '2026-01-11' },
-    { id: 3, customer: '박민수', phone: '010-4444-5555', vehicle: 'PCX 160', plate: '56다7890', content: '브레이크 패드 교환', labor: 35000, parts_cost: 45000, status: 'waiting', memo: '', date: '2026-01-11' },
-    { id: 4, customer: '정수진', phone: '010-5555-6666', vehicle: 'X-MAX 300', plate: '78라1234', content: '정기점검', labor: 50000, parts_cost: 15000, status: 'complete', memo: '', date: '2026-01-10' },
-];
-
-// 금전출납부
-let broCashbookList = [
-    { id: 1, date: '2026-01-11', type: 'income', category: '정비수입', description: '김철수 엔진오일 교환', amount: 55000 },
-    { id: 2, date: '2026-01-10', type: 'income', category: '정비수입', description: '정수진 정기점검', amount: 65000 },
-    { id: 3, date: '2026-01-09', type: 'expense', category: '부품구매', description: '엔진오일 10W-40 10개', amount: 150000 },
-    { id: 4, date: '2026-01-08', type: 'expense', category: '임대료', description: '1월 임대료', amount: 800000 },
-    { id: 5, date: '2026-01-05', type: 'income', category: '정비수입', description: '타이어 교체 외 3건', amount: 480000 },
-];
-
-// 부품 목록
-let broPartsList = [
-    { id: 1, name: '엔진오일 10W-40', category: '오일류', stock: 3, price: 15000, min_stock: 5 },
-    { id: 2, name: '엔진오일 5W-30', category: '오일류', stock: 8, price: 18000, min_stock: 5 },
-    { id: 3, name: '타이어 100/90-10', category: '타이어', stock: 4, price: 45000, min_stock: 3 },
-    { id: 4, name: '타이어 120/70-12', category: '타이어', stock: 6, price: 55000, min_stock: 3 },
-    { id: 5, name: '브레이크 패드 (앞)', category: '브레이크', stock: 2, price: 25000, min_stock: 4 },
-    { id: 6, name: '브레이크 패드 (뒤)', category: '브레이크', stock: 3, price: 22000, min_stock: 4 },
-    { id: 7, name: '에어필터', category: '필터', stock: 10, price: 12000, min_stock: 5 },
-    { id: 8, name: '배터리 12V', category: '배터리', stock: 2, price: 85000, min_stock: 2 },
-];
-
-// 브로모터스 고객 목록
-let broCustList = [
-    { id: 1, name: '김철수', phone: '010-2222-3333', vehicle: 'PCX 125', plate: '12가3456', visits: 5, last_visit: '2026-01-11' },
-    { id: 2, name: '이영희', phone: '010-3333-4444', vehicle: 'NMAX 155', plate: '34나5678', visits: 3, last_visit: '2026-01-11' },
-    { id: 3, name: '박민수', phone: '010-4444-5555', vehicle: 'PCX 160', plate: '56다7890', visits: 2, last_visit: '2026-01-11' },
-    { id: 4, name: '정수진', phone: '010-5555-6666', vehicle: 'X-MAX 300', plate: '78라1234', visits: 8, last_visit: '2026-01-10' },
-    { id: 5, name: '최동욱', phone: '010-6666-7777', vehicle: 'Address 110', plate: '90마5678', visits: 1, last_visit: '2026-01-05' },
-];
+// 데이터 배열 (DB에서 로드)
+let staffList = [];
+let customerList = [];
+let contractList = [];
+let arrearsDetailList = [];
+let recentPayments = [];
+let pgPaymentsList = [];
+let paymentHistory = [];
+let ledgerList = [];
+let vehicleList = [];
+let broWorkList = [];
+let broCashbookList = [];
+let broPartsList = [];
+let broCustList = [];
 
 // ======================= 유틸리티 =======================
 const fmt = n => '₩' + (n||0).toLocaleString();
@@ -1912,16 +1949,21 @@ function selectSystem(system) {
     currentSystem = system;
 }
 
-function handleLogin(e) {
+async function handleLogin(e) {
     e.preventDefault();
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
     
-    // 직원 목록에서 확인
-    const user = staffList.find(s => s.username === username && s.password === password);
+    // DB에서 직원 정보 확인
+    const users = await supabaseCall('staff', 'GET', null, `?username=eq.${username}&password=eq.${password}`);
     
-    if (user) {
+    if (users && users.length > 0) {
+        const user = users[0];
         currentUser = user;
+        
+        // 모든 데이터 로드
+        await loadAllData();
+        
         document.getElementById('loginPage').classList.add('hidden');
         
         // 선택한 시스템으로 이동
@@ -1944,6 +1986,44 @@ function handleLogin(e) {
         document.getElementById('loginError').textContent = '아이디 또는 비밀번호가 올바르지 않습니다.';
         document.getElementById('loginError').classList.remove('hidden');
     }
+}
+
+// 모든 데이터 로드
+async function loadAllData() {
+    showToast('데이터 로딩 중...', 'info');
+    
+    const [staff, customers, contracts, vehicles, ledger, pgPayments, works, cashbook, parts, broCustomers] = await Promise.all([
+        loadFromDB('staff'),
+        loadFromDB('customers'),
+        loadFromDB('contracts'),
+        loadFromDB('vehicles'),
+        loadFromDB('ledger'),
+        loadFromDB('pg_payments'),
+        loadFromDB('bro_works'),
+        loadFromDB('bro_cashbook'),
+        loadFromDB('bro_parts'),
+        loadFromDB('bro_customers')
+    ]);
+    
+    staffList = staff || [];
+    customerList = customers || [];
+    contractList = contracts || [];
+    vehicleList = vehicles || [];
+    ledgerList = (ledger || []).map(l => ({...l, desc: l.description}));
+    pgPaymentsList = pgPayments || [];
+    broWorkList = works || [];
+    broCashbookList = cashbook || [];
+    broPartsList = parts || [];
+    broCustList = broCustomers || [];
+    
+    // recentPayments는 ledger에서 추출
+    recentPayments = ledgerList.filter(l => l.type === 'receipt').slice(0, 5).map((l, i) => ({
+        id: i + 1,
+        customer_name: l.customer_name,
+        amount: l.receipt,
+        date: l.date,
+        time: '09:00'
+    }));
 }
 
 // 날짜 초기화 함수
@@ -2293,7 +2373,7 @@ function openStaffModal(editId = null) {
     openModal('staffModal');
 }
 
-function submitStaff(e) {
+async function submitStaff(e) {
     e.preventDefault();
     const editId = document.getElementById('staff-edit-id').value;
     const d = Object.fromEntries(new FormData(e.target));
@@ -2324,6 +2404,12 @@ function submitStaff(e) {
             s.department = d.department;
             s.level = parseInt(d.level) || 1;
             s.status = d.status;
+            
+            await updateInDB('staff', editId, {
+                name: s.name, username: s.username, password: s.password,
+                phone: s.phone, email: s.email, department: s.department,
+                level: s.level, status: s.status
+            });
         }
         showToast('✅ 직원 정보가 수정되었습니다');
     } else {
@@ -2339,8 +2425,7 @@ function submitStaff(e) {
             return;
         }
         
-        staffList.push({
-            id: Math.max(...staffList.map(s => s.id), 0) + 1,
+        const staffData = {
             name: d.name,
             username: d.username,
             password: d.password,
@@ -2349,9 +2434,11 @@ function submitStaff(e) {
             department: d.department,
             level: parseInt(d.level) || 1,
             role: d.level >= 3 ? 'manager' : 'staff',
-            status: d.status || 'active',
-            created_at: new Date().toISOString().split('T')[0]
-        });
+            status: d.status || 'active'
+        };
+        
+        const result = await insertToDB('staff', staffData);
+        if (result && result[0]) staffList.unshift(result[0]);
         showToast('✅ 직원이 등록되었습니다');
     }
     
@@ -2363,7 +2450,7 @@ function editStaff(id) {
     openStaffModal(id);
 }
 
-function deleteStaff(id) {
+async function deleteStaff(id) {
     const s = staffList.find(x => x.id === id);
     if (!s) return;
     
@@ -2374,6 +2461,7 @@ function deleteStaff(id) {
     
     if (!confirm(`${s.name} 직원을 삭제하시겠습니까?`)) return;
     
+    await deleteFromDB('staff', id);
     staffList = staffList.filter(x => x.id !== id);
     showToast('✅ 직원이 삭제되었습니다');
     renderStaffList();
@@ -2390,17 +2478,22 @@ function loadContracts() {
     const status = document.getElementById('contract-status').value;
     
     let list = contractList;
+    
+    // 렌트/리스 타입 필터
+    list = list.filter(c => (c.type || 'rent') === currentContractType);
+    
     if (status === 'delinquent') list = list.filter(c => c.arrears > 0);
     else if (status === 'active') list = list.filter(c => c.status === 'active' && c.arrears === 0);
     else if (status) list = list.filter(c => c.status === status);
     if (search) list = list.filter(c => c.customer_name.toLowerCase().includes(search) || c.plate.toLowerCase().includes(search));
     
-    // 요약
-    const activeContracts = contractList.filter(c => c.status === 'active');
-    const delinquentContracts = contractList.filter(c => c.arrears > 0);
+    // 요약 (현재 타입 기준)
+    const typeContracts = contractList.filter(c => (c.type || 'rent') === currentContractType);
+    const activeContracts = typeContracts.filter(c => c.status === 'active');
+    const delinquentContracts = typeContracts.filter(c => c.arrears > 0);
     const monthlyRevenue = activeContracts.reduce((s, c) => s + c.monthly, 0);
     
-    document.getElementById('contract-total').textContent = contractList.length + '건';
+    document.getElementById('contract-total').textContent = typeContracts.length + '건';
     document.getElementById('contract-active').textContent = activeContracts.length + '건';
     document.getElementById('contract-delinquent').textContent = delinquentContracts.length + '건';
     document.getElementById('contract-revenue').textContent = fmt(monthlyRevenue);
@@ -2411,18 +2504,24 @@ function loadContracts() {
     list.forEach(c => {
         const hasArrears = c.arrears > 0;
         const statusBadge = hasArrears ? ['badge-delinquent', '연체'] : c.status === 'active' ? ['badge-active', '진행중'] : ['badge-pending', '대기'];
+        const period = c.start_date && c.end_date ? `${c.start_date.substring(5)} ~ ${c.end_date.substring(5)}` : c.start_date ? c.start_date.substring(5) + ' ~' : '-';
+        const hasDoc = c.contractor_id_url || c.vehicle_reg_url;
+        
         h += `<tr onclick="viewContractDetail(${c.id})" class="cursor-pointer hover:bg-white/5">
             <td class="text-lime-400">#${String(c.id).padStart(3,'0')}</td>
             <td class="font-bold">${c.customer_name}</td>
             <td class="text-gray-400">${c.phone}</td>
             <td>${c.vehicle}</td>
             <td class="font-mono">${c.plate}</td>
+            <td class="text-xs">${c.fuel_type || '-'}</td>
+            <td class="text-xs text-gray-400">${period}</td>
             <td class="font-bold">${fmt(c.monthly)}</td>
             <td class="${hasArrears ? 'text-orange-400 font-bold' : 'text-gray-500'}">${hasArrears ? fmt(c.arrears) : '-'}</td>
             <td><span class="badge ${statusBadge[0]}">${statusBadge[1]}</span></td>
+            <td>${hasDoc ? '<span class="text-cyan-400">📎</span>' : '<span class="text-gray-600">-</span>'}</td>
         </tr>`;
     });
-    document.getElementById('contract-tbody').innerHTML = h || '<tr><td colspan="8" class="text-center text-gray-500 py-6">계약 없음</td></tr>';
+    document.getElementById('contract-tbody').innerHTML = h || '<tr><td colspan="11" class="text-center text-gray-500 py-6">계약 없음</td></tr>';
 }
 
 // 월 정산금액 상세 모달
@@ -2523,20 +2622,51 @@ function viewContractDetail(id) {
     if (!c) return;
     
     const statusBadge = c.status === 'active' ? ['badge-active', '진행중'] : ['badge-delinquent', '연체'];
+    const typeBadge = (c.type || 'rent') === 'rent' ? ['badge-rent', '렌트'] : ['badge-lease', '리스'];
+    
+    // 서류 링크 생성
+    const docLinks = [];
+    if (c.contractor_id_url) docLinks.push(`<a href="${c.contractor_id_url}" target="_blank" class="text-cyan-400 hover:underline text-xs">📎 계약자 신분증</a>`);
+    if (c.contractor_doc_url) docLinks.push(`<a href="${c.contractor_doc_url}" target="_blank" class="text-cyan-400 hover:underline text-xs">📎 계약자 기타서류</a>`);
+    if (c.guarantor_id_url) docLinks.push(`<a href="${c.guarantor_id_url}" target="_blank" class="text-yellow-400 hover:underline text-xs">📎 보증인 신분증</a>`);
+    if (c.guarantor_doc_url) docLinks.push(`<a href="${c.guarantor_doc_url}" target="_blank" class="text-yellow-400 hover:underline text-xs">📎 보증인 기타서류</a>`);
+    if (c.vehicle_reg_url) docLinks.push(`<a href="${c.vehicle_reg_url}" target="_blank" class="text-purple-400 hover:underline text-xs">📎 차량등록증</a>`);
+    if (c.vehicle_disposal_url) docLinks.push(`<a href="${c.vehicle_disposal_url}" target="_blank" class="text-purple-400 hover:underline text-xs">📎 폐지서류</a>`);
+    if (c.vehicle_doc_url) docLinks.push(`<a href="${c.vehicle_doc_url}" target="_blank" class="text-purple-400 hover:underline text-xs">📎 차량 기타서류</a>`);
     
     document.getElementById('contract-detail-content').innerHTML = `
         <div class="p-4 rounded-lg bg-white/5 border border-white/10 mb-4">
             <div class="grid grid-cols-2 gap-4">
                 <div class="info-row"><span class="info-label">계약번호</span><span class="text-lime-400 font-bold">#${String(c.id).padStart(3,'0')}</span></div>
+                <div class="info-row"><span class="info-label">계약유형</span><span class="badge ${typeBadge[0]}">${typeBadge[1]}</span></div>
                 <div class="info-row"><span class="info-label">상태</span><span class="badge ${statusBadge[0]}">${statusBadge[1]}</span></div>
                 <div class="info-row"><span class="info-label">고객명</span><span class="font-bold">${c.customer_name}</span></div>
                 <div class="info-row"><span class="info-label">연락처</span><span>${c.phone}</span></div>
                 <div class="info-row"><span class="info-label">차량</span><span>${c.vehicle}</span></div>
                 <div class="info-row"><span class="info-label">번호판</span><span>${c.plate}</span></div>
+                <div class="info-row"><span class="info-label">연료</span><span>${c.fuel_type || '-'}</span></div>
                 <div class="info-row"><span class="info-label">월 납입금</span><span class="text-blue-400 font-bold">${fmt(c.monthly)}</span></div>
-                <div class="info-row"><span class="info-label">계약 시작일</span><span>${c.start_date}</span></div>
+                <div class="info-row"><span class="info-label">계약 시작일</span><span>${c.start_date || '-'}</span></div>
+                <div class="info-row"><span class="info-label">계약 종료일</span><span>${c.end_date || '-'}</span></div>
             </div>
+            ${c.memo ? `<div class="mt-3 p-2 rounded bg-white/5 text-sm text-gray-400">📝 ${c.memo}</div>` : ''}
         </div>
+        
+        ${c.guarantor_name ? `
+        <div class="p-4 rounded-lg bg-yellow-400/10 border border-yellow-400/30 mb-4">
+            <div class="text-xs text-yellow-400 mb-2">👥 연대보증인</div>
+            <div class="grid grid-cols-2 gap-2">
+                <div><span class="text-gray-400 text-xs">이름:</span> <span class="font-bold">${c.guarantor_name}</span></div>
+                <div><span class="text-gray-400 text-xs">연락처:</span> <span>${c.guarantor_phone || '-'}</span></div>
+            </div>
+        </div>` : ''}
+        
+        ${docLinks.length > 0 ? `
+        <div class="p-4 rounded-lg bg-cyan-400/10 border border-cyan-400/30 mb-4">
+            <div class="text-xs text-cyan-400 mb-2">📎 첨부 서류</div>
+            <div class="flex flex-wrap gap-3">${docLinks.join('')}</div>
+        </div>` : ''}
+        
         ${c.arrears > 0 ? `
         <div class="p-4 rounded-lg bg-orange-400/10 border border-orange-400/30 mb-4">
             <div class="flex justify-between items-center">
@@ -2567,50 +2697,152 @@ function editContract(id) {
     document.getElementById('con-plate').value = c.plate;
     document.getElementById('con-monthly').value = c.monthly;
     document.getElementById('con-start').value = c.start_date;
+    document.getElementById('con-end').value = c.end_date || '';
+    document.getElementById('con-fuel').value = c.fuel_type || '휘발유';
+    document.getElementById('con-memo').value = c.memo || '';
+    
+    // 계약 유형 선택
+    const typeRadio = document.querySelector(`input[name="contract_type"][value="${c.type || 'rent'}"]`);
+    if (typeRadio) typeRadio.checked = true;
+    
+    // 연대보증인
+    if (c.guarantor_name) {
+        document.getElementById('con-has-guarantor').checked = true;
+        toggleGuarantor();
+        document.getElementById('con-guarantor-name').value = c.guarantor_name || '';
+        document.getElementById('con-guarantor-phone').value = c.guarantor_phone || '';
+    }
+    
     openModal('contractModal');
 }
 
-function submitContract(e) {
+// 연대보증인 토글
+function toggleGuarantor() {
+    const checked = document.getElementById('con-has-guarantor').checked;
+    document.getElementById('guarantor-section').classList.toggle('hidden', !checked);
+}
+
+// 렌트/리스 탭 전환
+let currentContractType = 'rent';
+function switchContractType(type) {
+    currentContractType = type;
+    document.getElementById('contract-tab-rent').className = type === 'rent' 
+        ? 'px-6 py-2 rounded-lg font-bold text-sm bg-purple-500/20 text-purple-400 border border-purple-500/30'
+        : 'px-6 py-2 rounded-lg font-bold text-sm text-gray-500 border border-white/10';
+    document.getElementById('contract-tab-lease').className = type === 'lease'
+        ? 'px-6 py-2 rounded-lg font-bold text-sm bg-pink-500/20 text-pink-400 border border-pink-500/30'
+        : 'px-6 py-2 rounded-lg font-bold text-sm text-gray-500 border border-white/10';
+    loadContracts();
+}
+
+// 파일 업로드 함수
+async function uploadFile(file, folder) {
+    if (!file) return null;
+    const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const filePath = `${folder}/${fileName}`;
+    
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const res = await fetch(`${SUPABASE_URL}/storage/v1/object/documents/${filePath}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'apikey': SUPABASE_KEY,
+                'Content-Type': file.type || 'application/octet-stream',
+                'x-upsert': 'true'
+            },
+            body: arrayBuffer
+        });
+        
+        if (res.ok) {
+            console.log('Upload success:', filePath);
+            return `${SUPABASE_URL}/storage/v1/object/public/documents/${filePath}`;
+        } else {
+            const err = await res.text();
+            console.error('Upload failed:', res.status, err);
+        }
+    } catch (e) {
+        console.error('Upload error:', e);
+    }
+    return null;
+}
+
+async function submitContract(e) {
     e.preventDefault();
+    showToast('저장 중...', 'info');
+    
     const editId = document.getElementById('contract-edit-id').value;
     const d = Object.fromEntries(new FormData(e.target));
     
+    // 파일 업로드
+    const contractorIdFile = document.getElementById('con-contractor-id').files[0];
+    const contractorDocFile = document.getElementById('con-contractor-doc').files[0];
+    const guarantorIdFile = document.getElementById('con-guarantor-id').files[0];
+    const guarantorDocFile = document.getElementById('con-guarantor-doc').files[0];
+    const vehicleRegFile = document.getElementById('con-vehicle-reg').files[0];
+    const vehicleDisposalFile = document.getElementById('con-vehicle-disposal').files[0];
+    const vehicleDocFile = document.getElementById('con-vehicle-doc').files[0];
+    
+    const [contractorIdUrl, contractorDocUrl, guarantorIdUrl, guarantorDocUrl, vehicleRegUrl, vehicleDisposalUrl, vehicleDocUrl] = await Promise.all([
+        uploadFile(contractorIdFile, 'contractor'),
+        uploadFile(contractorDocFile, 'contractor'),
+        uploadFile(guarantorIdFile, 'guarantor'),
+        uploadFile(guarantorDocFile, 'guarantor'),
+        uploadFile(vehicleRegFile, 'vehicle'),
+        uploadFile(vehicleDisposalFile, 'vehicle'),
+        uploadFile(vehicleDocFile, 'vehicle')
+    ]);
+    
+    const contractData = {
+        customer_name: d.customer_name,
+        phone: d.phone,
+        vehicle: d.vehicle,
+        plate: d.plate,
+        monthly: parseInt(d.monthly) || 0,
+        start_date: d.start_date,
+        end_date: d.end_date || null,
+        fuel_type: d.fuel_type || '휘발유',
+        memo: d.memo || null,
+        type: d.contract_type || 'rent',
+        guarantor_name: d.guarantor_name || null,
+        guarantor_phone: d.guarantor_phone || null
+    };
+    
+    // 새 파일이 업로드된 경우에만 URL 업데이트
+    if (contractorIdUrl) contractData.contractor_id_url = contractorIdUrl;
+    if (contractorDocUrl) contractData.contractor_doc_url = contractorDocUrl;
+    if (guarantorIdUrl) contractData.guarantor_id_url = guarantorIdUrl;
+    if (guarantorDocUrl) contractData.guarantor_doc_url = guarantorDocUrl;
+    if (vehicleRegUrl) contractData.vehicle_reg_url = vehicleRegUrl;
+    if (vehicleDisposalUrl) contractData.vehicle_disposal_url = vehicleDisposalUrl;
+    if (vehicleDocUrl) contractData.vehicle_doc_url = vehicleDocUrl;
+    
     if (editId) {
+        await updateInDB('contracts', editId, contractData);
         const c = contractList.find(x => x.id === parseInt(editId));
-        if (c) {
-            c.customer_name = d.customer_name;
-            c.phone = d.phone;
-            c.vehicle = d.vehicle;
-            c.plate = d.plate;
-            c.monthly = parseInt(d.monthly) || 0;
-            c.start_date = d.start_date;
-        }
+        if (c) Object.assign(c, contractData);
         showToast('✅ 계약이 수정되었습니다');
     } else {
-        contractList.push({
-            id: Math.max(...contractList.map(c => c.id), 0) + 1,
-            customer_name: d.customer_name,
-            phone: d.phone,
-            vehicle: d.vehicle,
-            plate: d.plate,
-            monthly: parseInt(d.monthly) || 0,
-            arrears: 0,
-            status: 'active',
-            start_date: d.start_date
-        });
+        contractData.arrears = 0;
+        contractData.status = 'active';
+        const result = await insertToDB('contracts', contractData);
+        if (result && result[0]) contractList.unshift(result[0]);
         showToast('✅ 계약이 등록되었습니다');
     }
     
     closeModal('contractModal');
     document.getElementById('contractForm').reset();
     document.getElementById('contract-edit-id').value = '';
+    document.getElementById('guarantor-section').classList.add('hidden');
+    document.getElementById('con-has-guarantor').checked = false;
     document.getElementById('contractModalTitle').textContent = '📋 계약 등록';
     document.getElementById('contractSubmitBtn').textContent = '등록';
     loadContracts();
 }
 
-function deleteContract(id) {
+async function deleteContract(id) {
     if (!confirm('정말 이 계약을 삭제하시겠습니까?')) return;
+    await deleteFromDB('contracts', id);
     contractList = contractList.filter(c => c.id !== id);
     showToast('✅ 계약이 삭제되었습니다');
     closeModal('contractDetailModal');
@@ -3387,7 +3619,7 @@ function loadBroWork() {
     document.getElementById('b-work-tbody').innerHTML = h || '<tr><td colspan="10" class="text-center text-gray-500 py-6">작업 없음</td></tr>';
 }
 
-function submitBroWork(e) {
+async function submitBroWork(e) {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(e.target));
     
@@ -3396,8 +3628,7 @@ function submitBroWork(e) {
     const today = koreaTime.toISOString().split('T')[0];
     
     // 작업 등록
-    broWorkList.push({
-        id: Math.max(...broWorkList.map(w => w.id), 0) + 1,
+    const workData = {
         customer: d.customer,
         phone: d.phone,
         vehicle: d.vehicle,
@@ -3407,30 +3638,29 @@ function submitBroWork(e) {
         parts_cost: parseInt(d.parts_cost) || 0,
         status: 'waiting',
         memo: d.memo || '',
-        date: today,
-        total: (parseInt(d.labor) || 0) + (parseInt(d.parts_cost) || 0)
-    });
+        date: today
+    };
+    
+    const result = await insertToDB('bro_works', workData);
+    if (result && result[0]) broWorkList.unshift(result[0]);
     
     // 고객 정보 자동 저장/업데이트
     const existingCust = broCustList.find(c => c.name === d.customer || c.phone === d.phone);
     if (existingCust) {
-        // 기존 고객 - 방문 횟수 증가 및 정보 업데이트
         existingCust.visits = (existingCust.visits || 0) + 1;
         existingCust.last_visit = today;
-        if (d.vehicle && !existingCust.vehicle) existingCust.vehicle = d.vehicle;
-        if (d.plate && !existingCust.plate) existingCust.plate = d.plate;
+        await updateInDB('bro_customers', existingCust.id, { visits: existingCust.visits, last_visit: today });
     } else {
-        // 신규 고객 자동 등록
-        broCustList.push({
-            id: Math.max(...broCustList.map(c => c.id), 0) + 1,
+        const custData = {
             name: d.customer,
             phone: d.phone,
             vehicle: d.vehicle || '',
             plate: d.plate || '',
-            memo: '',
             visits: 1,
             last_visit: today
-        });
+        };
+        const custResult = await insertToDB('bro_customers', custData);
+        if (custResult && custResult[0]) broCustList.unshift(custResult[0]);
         showToast('👤 신규 고객이 자동 등록되었습니다');
     }
     
@@ -3547,18 +3777,20 @@ function loadBroCashbook() {
     document.getElementById('b-cb-tbody').innerHTML = h || '<tr><td colspan="6" class="text-center text-gray-500 py-6">내역 없음</td></tr>';
 }
 
-function submitBroCashbook(e) {
+async function submitBroCashbook(e) {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(e.target));
     
-    broCashbookList.unshift({
-        id: Math.max(...broCashbookList.map(c => c.id), 0) + 1,
+    const cashData = {
         date: d.date,
         type: d.type,
         category: d.category,
         description: d.description,
         amount: parseInt(d.amount) || 0
-    });
+    };
+    
+    const result = await insertToDB('bro_cashbook', cashData);
+    if (result && result[0]) broCashbookList.unshift(result[0]);
     
     showToast('✅ 내역이 등록되었습니다');
     closeModal('cashbookModal');
@@ -5138,7 +5370,7 @@ function openLedgerModal() {
 }
 
 // 원장 내역 등록 처리
-function submitLedgerEntry(e) {
+async function submitLedgerEntry(e) {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(e.target));
     const contract = contractList.find(c => c.id === parseInt(d.contract_id));
@@ -5146,30 +5378,30 @@ function submitLedgerEntry(e) {
     const isAccrual = d.entry_type === 'accrual';
     const isReceipt = d.entry_type === 'receipt';
     
-    ledgerList.unshift({
-        id: Math.max(...ledgerList.map(l => l.id), 0) + 1,
+    const ledgerData = {
         date: d.date,
         contract_id: parseInt(d.contract_id),
         customer_name: contract ? contract.customer_name : '',
         type: d.entry_type,
-        desc: d.desc || (isAccrual ? '청구' : isReceipt ? '수납' : '조정'),
+        description: d.desc || (isAccrual ? '청구' : isReceipt ? '수납' : '조정'),
         accrual: isAccrual ? parseInt(d.amount) || 0 : 0,
         receipt: isReceipt ? parseInt(d.amount) || 0 : 0,
         method: d.method
-    });
+    };
+    
+    const result = await insertToDB('ledger', ledgerData);
+    if (result && result[0]) {
+        ledgerList.unshift({...result[0], desc: result[0].description});
+    }
     
     // 계약 미납금 업데이트
     if (contract) {
         if (isAccrual) {
             contract.arrears += parseInt(d.amount) || 0;
-            if (contract.arrears > 0) contract.status = 'delinquent';
         } else if (isReceipt) {
             contract.arrears = Math.max(0, contract.arrears - (parseInt(d.amount) || 0));
-            if (contract.arrears === 0) {
-                contract.status = 'active';
-                contract.delinquent_days = 0;
-            }
         }
+        await updateInDB('contracts', contract.id, { arrears: contract.arrears });
     }
     
     showToast('✅ 내역이 등록되었습니다');
