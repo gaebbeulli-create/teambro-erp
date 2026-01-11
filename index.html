@@ -2547,6 +2547,7 @@ async function deleteFromDB(table, id) {
 // ======================= 전역 변수 =======================
 let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
+let currentTab = 'overview'; // 현재 탭
 
 // 데이터 배열 (DB에서 로드)
 let staffList = [];
@@ -2736,12 +2737,18 @@ function goToSettlementSettings() {
 }
 
 // ======================= 정산관리 탭 =======================
-function showSettlementTab(name) {
+function showSettlementTab(name, skipHistory = false) {
     document.querySelectorAll('[id^="s-tab-"]').forEach(b => { b.classList.remove('tab-active'); b.classList.add('text-gray-500'); });
     document.getElementById('s-tab-' + name).classList.add('tab-active');
     document.getElementById('s-tab-' + name).classList.remove('text-gray-500');
     document.querySelectorAll('.s-tab-content').forEach(c => c.classList.add('hidden'));
     document.getElementById('s-content-' + name).classList.remove('hidden');
+    
+    // 히스토리 관리
+    if (!skipHistory) {
+        history.pushState({ system: 'settlement', tab: name }, '', `#s-${name}`);
+    }
+    currentTab = name;
     
     if (name === 'overview') loadOverview();
     if (name === 'contracts') loadContracts();
@@ -2947,12 +2954,18 @@ function copyWebhookUrl() {
 }
 
 // ======================= 브로모터스 탭 =======================
-function showBromotorsTab(name) {
+function showBromotorsTab(name, skipHistory = false) {
     document.querySelectorAll('[id^="b-tab-"]').forEach(b => { b.classList.remove('tab-active'); b.classList.add('text-gray-500'); });
     document.getElementById('b-tab-' + name).classList.add('tab-active');
     document.getElementById('b-tab-' + name).classList.remove('text-gray-500');
     document.querySelectorAll('.b-tab-content').forEach(c => c.classList.add('hidden'));
     document.getElementById('b-content-' + name).classList.remove('hidden');
+    
+    // 히스토리 관리
+    if (!skipHistory) {
+        history.pushState({ system: 'bromotors', tab: name }, '', `#b-${name}`);
+    }
+    currentTab = name;
     
     if (name === 'overview') loadBroDashboard();
     if (name === 'work') loadBroWork();
@@ -3686,10 +3699,23 @@ function viewPurchaseVehicle(purchaseId) {
         ${p.memo ? `<div class="p-3 rounded-lg bg-white/5 text-sm text-gray-400 mb-4">📝 ${p.memo}</div>` : ''}
         <div class="flex gap-3">
             <button onclick="closeModal('vehicleDetailModal')" class="btn-secondary flex-1">닫기</button>
-            <button onclick="closeModal('vehicleDetailModal'); showBromotorsTab('purchase');" class="btn-primary flex-1">브로모터스에서 보기</button>
+            <button onclick="goToBromotorsPurchase()" class="btn-primary flex-1">브로모터스에서 보기</button>
         </div>
     `;
     openModal('vehicleDetailModal');
+}
+
+// 브로모터스 매입차량 탭으로 이동
+function goToBromotorsPurchase() {
+    closeModal('vehicleDetailModal');
+    // 정산관리 숨기고 브로모터스 표시
+    document.getElementById('settlementSystem').classList.add('hidden');
+    document.getElementById('bromotorsSystem').classList.remove('hidden');
+    document.getElementById('b-userName').textContent = currentUser.name;
+    document.getElementById('b-userRole').textContent = roleBadge(currentUser.role)[1];
+    currentSystem = 'bromotors';
+    // 매입차량 탭으로 이동
+    showBromotorsTab('purchase');
 }
 
 function filterVehicles(status) {
@@ -7208,6 +7234,56 @@ window.addEventListener('appinstalled', () => {
     showToast('✅ TEAM BRO ERP가 설치되었습니다!');
     document.getElementById('installBtnContainer').classList.add('hidden');
 });
+
+// ======================= 뒤로가기 처리 =======================
+window.addEventListener('popstate', (e) => {
+    // 로그인 안 된 상태면 무시
+    if (!currentUser) return;
+    
+    // 열린 모달 있으면 닫기
+    const openModals = document.querySelectorAll('.modal-overlay:not(.hidden)');
+    if (openModals.length > 0) {
+        openModals.forEach(m => m.classList.add('hidden'));
+        // 모달 닫을 때는 히스토리 추가해서 다시 뒤로가기 가능하게
+        history.pushState({ system: currentSystem, tab: currentTab }, '', `#${currentSystem === 'settlement' ? 's' : 'b'}-${currentTab}`);
+        return;
+    }
+    
+    // state가 있으면 해당 탭으로 이동
+    if (e.state && e.state.system && e.state.tab) {
+        if (e.state.system === 'settlement') {
+            if (currentSystem !== 'settlement') {
+                document.getElementById('bromotorsSystem').classList.add('hidden');
+                document.getElementById('settlementSystem').classList.remove('hidden');
+                currentSystem = 'settlement';
+            }
+            showSettlementTab(e.state.tab, true);
+        } else if (e.state.system === 'bromotors') {
+            if (currentSystem !== 'bromotors') {
+                document.getElementById('settlementSystem').classList.add('hidden');
+                document.getElementById('bromotorsSystem').classList.remove('hidden');
+                currentSystem = 'bromotors';
+            }
+            showBromotorsTab(e.state.tab, true);
+        }
+    }
+});
+
+// URL 해시로 탭 복원
+function restoreFromHash() {
+    const hash = window.location.hash;
+    if (hash.startsWith('#s-')) {
+        const tab = hash.substring(3);
+        if (currentSystem === 'settlement') {
+            showSettlementTab(tab, true);
+        }
+    } else if (hash.startsWith('#b-')) {
+        const tab = hash.substring(3);
+        if (currentSystem === 'bromotors') {
+            showBromotorsTab(tab, true);
+        }
+    }
+}
 </script>
 </body>
 </html>
