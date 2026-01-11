@@ -904,7 +904,7 @@
                 </div>
                 <div class="glass-card rounded-xl overflow-hidden">
                     <table class="data-table">
-                        <thead><tr><th>날짜</th><th>구분</th><th>분류</th><th>내용</th><th>금액</th><th>잔액</th></tr></thead>
+                        <thead><tr><th>날짜</th><th>구분</th><th>분류</th><th>내용</th><th>금액</th><th>잔액</th><th>관리</th></tr></thead>
                         <tbody id="b-cb-tbody"></tbody>
                     </table>
                 </div>
@@ -1156,8 +1156,9 @@
     <!-- ======================= 브로모터스 모달: 금전출납 등록 ======================= -->
     <div id="cashbookModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:500px">
-            <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-lime-400">💰 내역 등록</h2><button onclick="closeModal('cashbookModal')" class="text-gray-400 text-2xl">&times;</button></div>
+            <div class="flex justify-between mb-4"><h2 id="cashbookModalTitle" class="text-xl font-bold text-lime-400">💰 내역 등록</h2><button onclick="closeModal('cashbookModal')" class="text-gray-400 text-2xl">&times;</button></div>
             <form onsubmit="submitBroCashbook(event)" class="space-y-4">
+                <input type="hidden" id="cashbook-edit-id">
                 <div class="grid grid-cols-2 gap-3">
                     <div><label class="block text-xs text-lime-400 mb-1">날짜*</label><input type="date" name="date" id="cb-date" class="input-field" required></div>
                     <div><label class="block text-xs text-lime-400 mb-1">구분*</label>
@@ -1177,11 +1178,11 @@
                         <option value="기타">기타</option>
                     </select>
                 </div>
-                <div><label class="block text-xs text-lime-400 mb-1">내용*</label><input name="description" id="cb-desc" class="input-field" required></div>
+                <div><label class="block text-xs text-lime-400 mb-1">내용*</label><input name="description" id="cb-description" class="input-field" required></div>
                 <div><label class="block text-xs text-lime-400 mb-1">금액*</label><input type="number" name="amount" id="cb-amount" class="input-field" required></div>
                 <div class="flex gap-3 pt-2">
                     <button type="button" onclick="closeModal('cashbookModal')" class="btn-secondary flex-1">취소</button>
-                    <button type="submit" class="btn-primary flex-1">등록</button>
+                    <button type="submit" id="cashbookSubmitBtn" class="btn-primary flex-1">등록</button>
                 </div>
             </form>
         </div>
@@ -3772,13 +3773,45 @@ function loadBroCashbook() {
             <td>${c.description}</td>
             <td class="${c.type === 'income' ? 'text-lime-400' : 'text-red-400'} font-bold">${c.type === 'income' ? '+' : '-'}${fmt(c.amount)}</td>
             <td class="text-gray-400">${fmt(balance)}</td>
+            <td>
+                <button onclick="editCashbook(${c.id})" class="text-blue-400 text-xs hover:underline mr-2">수정</button>
+                <button onclick="deleteCashbook(${c.id})" class="text-red-400 text-xs hover:underline">삭제</button>
+            </td>
         </tr>`;
     });
-    document.getElementById('b-cb-tbody').innerHTML = h || '<tr><td colspan="6" class="text-center text-gray-500 py-6">내역 없음</td></tr>';
+    document.getElementById('b-cb-tbody').innerHTML = h || '<tr><td colspan="7" class="text-center text-gray-500 py-6">내역 없음</td></tr>';
+}
+
+// 금전출납부 수정
+function editCashbook(id) {
+    const c = broCashbookList.find(x => x.id === id);
+    if (!c) return;
+    
+    document.getElementById('cashbook-edit-id').value = c.id;
+    document.getElementById('cb-date').value = c.date;
+    document.getElementById('cb-type').value = c.type;
+    document.getElementById('cb-category').value = c.category;
+    document.getElementById('cb-description').value = c.description;
+    document.getElementById('cb-amount').value = c.amount;
+    
+    document.getElementById('cashbookModalTitle').textContent = '💰 내역 수정';
+    document.getElementById('cashbookSubmitBtn').textContent = '수정';
+    openModal('cashbookModal');
+}
+
+// 금전출납부 삭제
+async function deleteCashbook(id) {
+    if (!confirm('이 내역을 삭제하시겠습니까?')) return;
+    
+    await deleteFromDB('bro_cashbook', id);
+    broCashbookList = broCashbookList.filter(c => c.id !== id);
+    showToast('✅ 내역이 삭제되었습니다');
+    loadBroCashbook();
 }
 
 async function submitBroCashbook(e) {
     e.preventDefault();
+    const editId = document.getElementById('cashbook-edit-id').value;
     const d = Object.fromEntries(new FormData(e.target));
     
     const cashData = {
@@ -3789,12 +3822,22 @@ async function submitBroCashbook(e) {
         amount: parseInt(d.amount) || 0
     };
     
-    const result = await insertToDB('bro_cashbook', cashData);
-    if (result && result[0]) broCashbookList.unshift(result[0]);
+    if (editId) {
+        await updateInDB('bro_cashbook', editId, cashData);
+        const c = broCashbookList.find(x => x.id === parseInt(editId));
+        if (c) Object.assign(c, cashData);
+        showToast('✅ 내역이 수정되었습니다');
+    } else {
+        const result = await insertToDB('bro_cashbook', cashData);
+        if (result && result[0]) broCashbookList.unshift(result[0]);
+        showToast('✅ 내역이 등록되었습니다');
+    }
     
-    showToast('✅ 내역이 등록되었습니다');
     closeModal('cashbookModal');
     e.target.reset();
+    document.getElementById('cashbook-edit-id').value = '';
+    document.getElementById('cashbookModalTitle').textContent = '💰 내역 등록';
+    document.getElementById('cashbookSubmitBtn').textContent = '등록';
     document.getElementById('cb-date').value = new Date().toISOString().split('T')[0];
     loadBroCashbook();
 }
