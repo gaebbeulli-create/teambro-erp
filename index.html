@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TEAM BRO - 통합 ERP</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @keyframes neonGlow { 0%, 100% { filter: drop-shadow(0 0 10px #39FF14); } 50% { filter: drop-shadow(0 0 20px #39FF14); } }
         .neon-text { color: #FFF; animation: neonGlow 2s ease-in-out infinite; }
@@ -13,7 +14,7 @@
         body { background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
         .hidden { display: none; }
         .data-table { width: 100%; border-collapse: collapse; }
-        .data-table th { background: rgba(57, 255, 20, 0.1); padding: 12px; text-align: left; font-size: 12px; font-weight: bold; color: #39FF14; }
+        .data-table th { background: rgba(57, 255, 20, 0.1); padding: 12px; text-align: left; font-size: 12px; font-weight: bold; color: #39FF14; white-space: nowrap; }
         .data-table td { padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 13px; }
         .data-table tr:hover { background: rgba(57, 255, 20, 0.05); cursor: pointer; }
         .input-field { background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(57, 255, 20, 0.3); color: white; padding: 10px 14px; border-radius: 8px; width: 100%; }
@@ -23,8 +24,8 @@
         .btn-secondary { background: rgba(57, 255, 20, 0.1); border: 1px solid rgba(57, 255, 20, 0.3); color: #39FF14; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
         .btn-danger { background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.3); color: #EF4444; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
         .btn-sm { padding: 6px 12px; font-size: 12px; }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.9); display: flex; align-items: center; justify-content: center; z-index: 100; }
-        .modal-content { background: #0a0a0a; border: 1px solid rgba(57, 255, 20, 0.3); border-radius: 16px; padding: 24px; max-width: 900px; width: 95%; max-height: 90vh; overflow-y: auto; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.9); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 10px; }
+        .modal-content { background: #0a0a0a; border: 1px solid rgba(57, 255, 20, 0.3); border-radius: 16px; padding: 16px; max-width: 900px; width: 100%; max-height: 90vh; overflow-y: auto; }
         .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; display: inline-block; }
         .badge-active { background: rgba(16, 185, 129, 0.2); color: #10B981; }
         .badge-delinquent { background: rgba(239, 68, 68, 0.2); color: #EF4444; }
@@ -66,6 +67,51 @@
         .setting-tab.active { border-bottom-color: #39FF14; color: #39FF14; }
         .stat-card { transition: transform 0.2s; }
         .stat-card:hover { transform: translateY(-2px); }
+        
+        /* 모바일 반응형 */
+        @media (max-width: 768px) {
+            .data-table { display: block; overflow-x: auto; white-space: nowrap; }
+            .data-table th, .data-table td { padding: 8px 6px; font-size: 11px; }
+            .modal-content { padding: 12px; border-radius: 12px; }
+            .glass-card { padding: 12px !important; }
+            .btn-primary, .btn-secondary { padding: 8px 12px; font-size: 12px; }
+            .btn-sm { padding: 5px 8px; font-size: 10px; }
+            .input-field { padding: 8px 10px; font-size: 14px; }
+            .text-2xl { font-size: 1.25rem; }
+            .text-xl { font-size: 1rem; }
+            .grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
+            .grid-cols-5 { grid-template-columns: repeat(2, 1fr); }
+            .grid-cols-3 { grid-template-columns: repeat(2, 1fr); }
+            .flex-wrap { flex-wrap: wrap; }
+            .gap-4 { gap: 8px; }
+            .gap-3 { gap: 6px; }
+            .mb-6 { margin-bottom: 16px; }
+            .mb-4 { margin-bottom: 12px; }
+            .p-6 { padding: 12px; }
+            .p-4 { padding: 10px; }
+            .px-4 { padding-left: 10px; padding-right: 10px; }
+            .py-3 { padding-top: 8px; padding-bottom: 8px; }
+            h1.text-5xl { font-size: 2rem; }
+            .neon-text { font-size: 1.8rem; }
+            /* 탭 버튼 스크롤 */
+            .tab-scroll { display: flex; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+            .tab-scroll::-webkit-scrollbar { display: none; }
+            .tab-scroll button { flex-shrink: 0; }
+            /* 필터 영역 */
+            .filter-row { flex-direction: column; align-items: stretch !important; }
+            .filter-row > div { width: 100% !important; }
+            .filter-row input, .filter-row select { width: 100% !important; margin-bottom: 6px; }
+            /* 기간 필터 버튼 */
+            .period-btns { display: flex; flex-wrap: wrap; gap: 4px; }
+            .period-btns button { padding: 6px 10px; font-size: 11px; flex: 1; min-width: 50px; }
+        }
+        
+        @media (max-width: 480px) {
+            .grid-cols-2 { grid-template-columns: 1fr; }
+            .data-table th, .data-table td { padding: 6px 4px; font-size: 10px; }
+            .badge { padding: 2px 6px; font-size: 9px; }
+            h1.text-5xl { font-size: 1.5rem; }
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -868,33 +914,79 @@
 
             <!-- 금전출납부 -->
             <div id="b-content-cashbook" class="b-tab-content hidden">
+                <!-- 요약 카드 (클릭하면 상세 모달) -->
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <div class="glass-card rounded-xl p-4 border-l-4 border-lime-400">
+                    <div class="glass-card rounded-xl p-4 border-l-4 border-lime-400 cursor-pointer hover:bg-lime-400/5" onclick="openCashbookDetail('income')">
                         <div class="text-lime-400 text-xs mb-1">💵 이번달 수입</div>
                         <div class="text-2xl font-black text-lime-400" id="b-cb-income">₩0</div>
+                        <div class="text-xs text-gray-500 mt-1">클릭하여 상세보기</div>
                     </div>
-                    <div class="glass-card rounded-xl p-4 border-l-4 border-red-400">
+                    <div class="glass-card rounded-xl p-4 border-l-4 border-red-400 cursor-pointer hover:bg-red-400/5" onclick="openCashbookDetail('expense')">
                         <div class="text-red-400 text-xs mb-1">💸 이번달 지출</div>
                         <div class="text-2xl font-black text-red-400" id="b-cb-expense">₩0</div>
+                        <div class="text-xs text-gray-500 mt-1">클릭하여 상세보기</div>
                     </div>
-                    <div class="glass-card rounded-xl p-4 border-l-4 border-blue-400">
+                    <div class="glass-card rounded-xl p-4 border-l-4 border-blue-400 cursor-pointer hover:bg-blue-400/5" onclick="openCashbookDetail('profit')">
                         <div class="text-blue-400 text-xs mb-1">📊 순이익</div>
                         <div class="text-2xl font-black text-blue-400" id="b-cb-profit">₩0</div>
+                        <div class="text-xs text-gray-500 mt-1">클릭하여 상세보기</div>
                     </div>
-                    <div class="glass-card rounded-xl p-4 border-l-4 border-purple-400">
+                    <div class="glass-card rounded-xl p-4 border-l-4 border-purple-400 cursor-pointer hover:bg-purple-400/5" onclick="openCashbookDetail('balance')">
                         <div class="text-purple-400 text-xs mb-1">💰 현재 잔액</div>
                         <div class="text-2xl font-black text-purple-400" id="b-cb-balance">₩0</div>
+                        <div class="text-xs text-gray-500 mt-1">클릭하여 상세보기</div>
                     </div>
+                </div>
+                
+                <!-- 그래프 영역 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                    <div class="glass-card rounded-xl p-4">
+                        <div class="text-sm text-lime-400 font-bold mb-3">📈 월별 수입/지출 추이</div>
+                        <canvas id="cashbook-chart" height="200"></canvas>
+                    </div>
+                    <div class="glass-card rounded-xl p-4">
+                        <div class="text-sm text-orange-400 font-bold mb-3">🍩 지출 분류별 비율</div>
+                        <canvas id="expense-chart" height="200"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 기간 필터 버튼 -->
+                <div class="flex flex-wrap gap-2 mb-4 period-btns">
+                    <button onclick="filterCashbookPeriod('1w')" id="cb-filter-1w" class="px-4 py-2 rounded-lg text-sm font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">1주일</button>
+                    <button onclick="filterCashbookPeriod('1m')" id="cb-filter-1m" class="px-4 py-2 rounded-lg text-sm font-bold text-gray-500 border border-white/10">1개월</button>
+                    <button onclick="filterCashbookPeriod('3m')" id="cb-filter-3m" class="px-4 py-2 rounded-lg text-sm font-bold text-gray-500 border border-white/10">3개월</button>
+                    <button onclick="filterCashbookPeriod('all')" id="cb-filter-all" class="px-4 py-2 rounded-lg text-sm font-bold text-gray-500 border border-white/10">전체</button>
                 </div>
                 <div class="glass-card rounded-xl p-4 mb-4 flex flex-wrap items-center justify-between gap-3">
                     <div class="flex flex-wrap items-center gap-2">
-                        <input type="date" id="b-cb-date" class="input-field" style="width:140px">
+                        <input type="date" id="b-cb-start-date" class="input-field" style="width:140px" title="시작일">
+                        <span class="text-gray-500">~</span>
+                        <input type="date" id="b-cb-end-date" class="input-field" style="width:140px" title="종료일">
                         <select id="b-cb-type" class="input-field" style="width:100px">
                             <option value="">전체</option>
                             <option value="income">수입</option>
                             <option value="expense">지출</option>
                         </select>
-                        <input type="text" id="b-cb-search" class="input-field" style="width:180px" placeholder="내용 검색...">
+                        <select id="b-cb-category-filter" class="input-field" style="width:120px">
+                            <option value="">전체 분류</option>
+                            <optgroup label="수입">
+                                <option value="정비수입">정비수입</option>
+                                <option value="부품판매">부품판매</option>
+                            </optgroup>
+                            <optgroup label="운영비">
+                                <option value="임대료">임대료</option>
+                                <option value="전기요금">전기요금</option>
+                                <option value="수도요금">수도요금</option>
+                                <option value="가스요금">가스요금</option>
+                                <option value="인터넷/통신">인터넷/통신</option>
+                            </optgroup>
+                            <optgroup label="인건비">
+                                <option value="급여">급여</option>
+                                <option value="4대보험">4대보험</option>
+                                <option value="식대">식대</option>
+                            </optgroup>
+                        </select>
+                        <input type="text" id="b-cb-search" class="input-field" style="width:150px" placeholder="내용 검색...">
                         <button onclick="loadBroCashbook()" class="btn-secondary btn-sm">검색</button>
                     </div>
                     <div class="flex gap-2">
@@ -1128,23 +1220,54 @@
 
     <!-- ======================= 브로모터스 모달: 작업 등록 ======================= -->
     <div id="workModal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width:600px">
+        <div class="modal-content" style="max-width:650px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-lime-400">🔧 작업 등록</h2><button onclick="closeModal('workModal')" class="text-gray-400 text-2xl">&times;</button></div>
             <form onsubmit="submitBroWork(event)" class="space-y-4">
-                <div class="grid grid-cols-2 gap-3">
-                    <div><label class="block text-xs text-lime-400 mb-1">고객명*</label><input name="customer" id="work-customer" class="input-field" required></div>
-                    <div><label class="block text-xs text-lime-400 mb-1">연락처*</label><input name="phone" id="work-phone" class="input-field" required></div>
+                <!-- 고객 검색 -->
+                <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div class="text-xs text-cyan-400 mb-3">👤 고객 정보</div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="relative">
+                            <label class="block text-xs text-gray-400 mb-1">고객명* (검색)</label>
+                            <input name="customer" id="work-customer" class="input-field" placeholder="이름 입력 후 검색" required oninput="searchBroCustomer()">
+                            <div id="customer-search-results" class="absolute z-50 w-full bg-black border border-lime-400/30 rounded-lg mt-1 hidden max-h-40 overflow-y-auto"></div>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">연락처*</label>
+                            <input name="phone" id="work-phone" class="input-field" required onblur="checkPhoneDuplicate()">
+                            <div id="phone-check-result" class="text-xs mt-1"></div>
+                        </div>
+                    </div>
+                    <div id="customer-info-box" class="mt-3 p-2 rounded bg-lime-400/10 border border-lime-400/30 hidden">
+                        <div class="text-xs text-lime-400">✅ 기존 고객</div>
+                        <div id="customer-info-detail" class="text-sm text-gray-300 mt-1"></div>
+                    </div>
+                    <div id="new-customer-box" class="mt-3 p-2 rounded bg-blue-400/10 border border-blue-400/30 hidden">
+                        <div class="text-xs text-blue-400">🆕 신규 고객으로 등록됩니다</div>
+                    </div>
                 </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div><label class="block text-xs text-lime-400 mb-1">차량*</label><input name="vehicle" id="work-vehicle" class="input-field" placeholder="PCX 125" required></div>
-                    <div><label class="block text-xs text-lime-400 mb-1">번호판</label><input name="plate" id="work-plate" class="input-field" placeholder="12가3456"></div>
+                
+                <!-- 차량 정보 -->
+                <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div class="text-xs text-purple-400 mb-3">🏍️ 차량 정보</div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="block text-xs text-gray-400 mb-1">차량*</label><input name="vehicle" id="work-vehicle" class="input-field" placeholder="PCX 125" required></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">번호판</label><input name="plate" id="work-plate" class="input-field" placeholder="12가3456"></div>
+                    </div>
                 </div>
-                <div><label class="block text-xs text-lime-400 mb-1">작업내용*</label><input name="content" id="work-content" class="input-field" placeholder="엔진오일 교환" required></div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div><label class="block text-xs text-lime-400 mb-1">공임</label><input type="number" name="labor" id="work-labor" class="input-field" value="0"></div>
-                    <div><label class="block text-xs text-lime-400 mb-1">부품비</label><input type="number" name="parts_cost" id="work-parts" class="input-field" value="0"></div>
+                
+                <!-- 작업 내용 -->
+                <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div class="text-xs text-orange-400 mb-3">🔧 작업 내용</div>
+                    <div><label class="block text-xs text-gray-400 mb-1">작업내용*</label><input name="content" id="work-content" class="input-field" placeholder="엔진오일 교환" required></div>
+                    <div class="grid grid-cols-3 gap-3 mt-3">
+                        <div><label class="block text-xs text-gray-400 mb-1">공임</label><input type="number" name="labor" id="work-labor" class="input-field" value="0" oninput="calcWorkTotal()"></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">부품비</label><input type="number" name="parts_cost" id="work-parts" class="input-field" value="0" oninput="calcWorkTotal()"></div>
+                        <div><label class="block text-xs text-emerald-400 mb-1">합계금액</label><input type="text" id="work-total" class="input-field bg-emerald-400/10 text-emerald-400 font-bold" value="₩0" readonly></div>
+                    </div>
+                    <div class="mt-3"><label class="block text-xs text-gray-400 mb-1">메모</label><textarea name="memo" id="work-memo" class="input-field" rows="2"></textarea></div>
                 </div>
-                <div><label class="block text-xs text-lime-400 mb-1">메모</label><textarea name="memo" id="work-memo" class="input-field" rows="2"></textarea></div>
+                
                 <div class="flex gap-3 pt-2">
                     <button type="button" onclick="closeModal('workModal')" class="btn-secondary flex-1">취소</button>
                     <button type="submit" class="btn-primary flex-1">등록</button>
@@ -1155,14 +1278,14 @@
 
     <!-- ======================= 브로모터스 모달: 금전출납 등록 ======================= -->
     <div id="cashbookModal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width:500px">
+        <div class="modal-content" style="max-width:550px">
             <div class="flex justify-between mb-4"><h2 id="cashbookModalTitle" class="text-xl font-bold text-lime-400">💰 내역 등록</h2><button onclick="closeModal('cashbookModal')" class="text-gray-400 text-2xl">&times;</button></div>
             <form onsubmit="submitBroCashbook(event)" class="space-y-4">
                 <input type="hidden" id="cashbook-edit-id">
                 <div class="grid grid-cols-2 gap-3">
                     <div><label class="block text-xs text-lime-400 mb-1">날짜*</label><input type="date" name="date" id="cb-date" class="input-field" required></div>
                     <div><label class="block text-xs text-lime-400 mb-1">구분*</label>
-                        <select name="type" id="cb-type" class="input-field" required>
+                        <select name="type" id="cb-type" class="input-field" required onchange="updateCategoryOptions()">
                             <option value="income">수입</option>
                             <option value="expense">지출</option>
                         </select>
@@ -1170,21 +1293,59 @@
                 </div>
                 <div><label class="block text-xs text-lime-400 mb-1">분류*</label>
                     <select name="category" id="cb-category" class="input-field" required>
-                        <option value="정비수입">정비수입</option>
-                        <option value="부품판매">부품판매</option>
-                        <option value="부품구매">부품구매</option>
-                        <option value="임대료">임대료</option>
-                        <option value="인건비">인건비</option>
-                        <option value="기타">기타</option>
+                        <optgroup label="📈 수입">
+                            <option value="정비수입">정비수입</option>
+                            <option value="부품판매">부품판매</option>
+                            <option value="기타수입">기타수입</option>
+                        </optgroup>
+                        <optgroup label="🏢 운영비">
+                            <option value="임대료">임대료</option>
+                            <option value="전기요금">전기요금</option>
+                            <option value="수도요금">수도요금</option>
+                            <option value="가스요금">가스요금</option>
+                            <option value="인터넷/통신">인터넷/통신</option>
+                            <option value="부품구매">부품구매</option>
+                            <option value="소모품">소모품</option>
+                        </optgroup>
+                        <optgroup label="👷 인건비">
+                            <option value="급여">급여</option>
+                            <option value="4대보험">4대보험</option>
+                            <option value="식대">식대</option>
+                            <option value="복리후생">복리후생</option>
+                        </optgroup>
+                        <optgroup label="🚗 차량/장비">
+                            <option value="장비구매">장비구매</option>
+                            <option value="장비수리">장비수리</option>
+                            <option value="차량유지비">차량유지비</option>
+                            <option value="주유비">주유비</option>
+                        </optgroup>
+                        <optgroup label="📋 세금/보험">
+                            <option value="세금">세금</option>
+                            <option value="보험료">보험료</option>
+                        </optgroup>
+                        <optgroup label="기타">
+                            <option value="기타지출">기타지출</option>
+                        </optgroup>
                     </select>
                 </div>
-                <div><label class="block text-xs text-lime-400 mb-1">내용*</label><input name="description" id="cb-description" class="input-field" required></div>
+                <div><label class="block text-xs text-lime-400 mb-1">내용*</label><input name="description" id="cb-description" class="input-field" required placeholder="상세 내용 입력..."></div>
                 <div><label class="block text-xs text-lime-400 mb-1">금액*</label><input type="number" name="amount" id="cb-amount" class="input-field" required></div>
                 <div class="flex gap-3 pt-2">
                     <button type="button" onclick="closeModal('cashbookModal')" class="btn-secondary flex-1">취소</button>
                     <button type="submit" id="cashbookSubmitBtn" class="btn-primary flex-1">등록</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- ======================= 브로모터스 모달: 금전출납부 상세 ======================= -->
+    <div id="cashbookDetailModal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width:700px; max-height:85vh; overflow-y:auto;">
+            <div class="flex justify-between mb-4">
+                <h2 id="cashbookDetailTitle" class="text-xl font-bold text-lime-400">💰 상세 내역</h2>
+                <button onclick="closeModal('cashbookDetailModal')" class="text-gray-400 text-2xl">&times;</button>
+            </div>
+            <div id="cashbook-detail-content"></div>
         </div>
     </div>
 
@@ -3738,48 +3899,397 @@ function updateWorkStatus(id, status) {
 }
 
 // ======================= 브로모터스: 금전출납부 =======================
+let currentCbPeriod = '1w';
+let cashbookChart = null;
+let expenseChart = null;
+
+function filterCashbookPeriod(period) {
+    currentCbPeriod = period;
+    
+    // 버튼 스타일 업데이트
+    ['1w', '1m', '3m', 'all'].forEach(p => {
+        const btn = document.getElementById(`cb-filter-${p}`);
+        if (btn) {
+            btn.className = p === period 
+                ? 'px-4 py-2 rounded-lg text-sm font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                : 'px-4 py-2 rounded-lg text-sm font-bold text-gray-500 border border-white/10';
+        }
+    });
+    
+    // 날짜 계산
+    const now = new Date();
+    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    const today = koreaTime.toISOString().split('T')[0];
+    let startDate = '';
+    
+    if (period === '1w') {
+        const d = new Date(koreaTime);
+        d.setDate(d.getDate() - 7);
+        startDate = d.toISOString().split('T')[0];
+    } else if (period === '1m') {
+        const d = new Date(koreaTime);
+        d.setMonth(d.getMonth() - 1);
+        startDate = d.toISOString().split('T')[0];
+    } else if (period === '3m') {
+        const d = new Date(koreaTime);
+        d.setMonth(d.getMonth() - 3);
+        startDate = d.toISOString().split('T')[0];
+    }
+    
+    document.getElementById('b-cb-start-date').value = startDate;
+    document.getElementById('b-cb-end-date').value = period === 'all' ? '' : today;
+    
+    loadBroCashbook();
+}
+
 function loadBroCashbook() {
     const typeFilter = document.getElementById('b-cb-type').value;
-    const dateFilter = document.getElementById('b-cb-date').value;
+    const categoryFilter = document.getElementById('b-cb-category-filter')?.value || '';
+    const startDate = document.getElementById('b-cb-start-date').value;
+    const endDate = document.getElementById('b-cb-end-date').value;
     const search = document.getElementById('b-cb-search').value.toLowerCase();
     
-    let list = broCashbookList;
-    if (typeFilter) list = list.filter(c => c.type === typeFilter);
-    if (dateFilter) list = list.filter(c => c.date >= dateFilter);
-    if (search) list = list.filter(c => c.description.toLowerCase().includes(search));
+    // 이번달 계산
+    const now = new Date();
+    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    const thisMonth = koreaTime.toISOString().substring(0, 7);
     
-    // 요약 계산 (필터된 데이터 기준)
-    const income = list.filter(c => c.type === 'income').reduce((s, c) => s + c.amount, 0);
-    const expense = list.filter(c => c.type === 'expense').reduce((s, c) => s + c.amount, 0);
-    const profit = income - expense;
+    // 이번달 데이터
+    const thisMonthData = broCashbookList.filter(c => c.date && c.date.startsWith(thisMonth));
+    const monthIncome = thisMonthData.filter(c => c.type === 'income').reduce((s, c) => s + (c.amount || 0), 0);
+    const monthExpense = thisMonthData.filter(c => c.type === 'expense').reduce((s, c) => s + (c.amount || 0), 0);
     
     // 전체 잔액
-    const totalIncome = broCashbookList.filter(c => c.type === 'income').reduce((s, c) => s + c.amount, 0);
-    const totalExpense = broCashbookList.filter(c => c.type === 'expense').reduce((s, c) => s + c.amount, 0);
+    const totalIncome = broCashbookList.filter(c => c.type === 'income').reduce((s, c) => s + (c.amount || 0), 0);
+    const totalExpense = broCashbookList.filter(c => c.type === 'expense').reduce((s, c) => s + (c.amount || 0), 0);
     
-    document.getElementById('b-cb-income').textContent = fmt(income);
-    document.getElementById('b-cb-expense').textContent = fmt(expense);
-    document.getElementById('b-cb-profit').textContent = fmt(profit);
+    document.getElementById('b-cb-income').textContent = fmt(monthIncome);
+    document.getElementById('b-cb-expense').textContent = fmt(monthExpense);
+    document.getElementById('b-cb-profit').textContent = fmt(monthIncome - monthExpense);
     document.getElementById('b-cb-balance').textContent = fmt(totalIncome - totalExpense);
     
+    // 필터 적용
+    let list = broCashbookList;
+    if (typeFilter) list = list.filter(c => c.type === typeFilter);
+    if (categoryFilter) list = list.filter(c => c.category === categoryFilter);
+    if (startDate) list = list.filter(c => c.date >= startDate);
+    if (endDate) list = list.filter(c => c.date <= endDate);
+    if (search) list = list.filter(c => c.description && c.description.toLowerCase().includes(search));
+    
+    // 날짜순 정렬 (최신순)
+    list = list.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    
     // 테이블
-    let h = '', balance = 0;
+    let h = '', runningBalance = totalIncome - totalExpense;
     list.forEach(c => {
-        balance += c.type === 'income' ? c.amount : -c.amount;
         h += `<tr>
-            <td class="text-gray-400">${c.date}</td>
+            <td class="text-gray-400">${c.date || '-'}</td>
             <td><span class="badge ${c.type === 'income' ? 'badge-active' : 'badge-failed'}">${c.type === 'income' ? '수입' : '지출'}</span></td>
-            <td>${c.category}</td>
-            <td>${c.description}</td>
-            <td class="${c.type === 'income' ? 'text-lime-400' : 'text-red-400'} font-bold">${c.type === 'income' ? '+' : '-'}${fmt(c.amount)}</td>
-            <td class="text-gray-400">${fmt(balance)}</td>
+            <td class="text-xs">${c.category || '-'}</td>
+            <td>${c.description || '-'}</td>
+            <td class="${c.type === 'income' ? 'text-lime-400' : 'text-red-400'} font-bold">${c.type === 'income' ? '+' : '-'}${fmt(c.amount || 0)}</td>
+            <td class="text-gray-400">${fmt(runningBalance)}</td>
             <td>
                 <button onclick="editCashbook(${c.id})" class="text-blue-400 text-xs hover:underline mr-2">수정</button>
                 <button onclick="deleteCashbook(${c.id})" class="text-red-400 text-xs hover:underline">삭제</button>
             </td>
         </tr>`;
+        runningBalance -= c.type === 'income' ? (c.amount || 0) : -(c.amount || 0);
     });
     document.getElementById('b-cb-tbody').innerHTML = h || '<tr><td colspan="7" class="text-center text-gray-500 py-6">내역 없음</td></tr>';
+    
+    // 그래프 업데이트
+    updateCashbookCharts();
+}
+
+// 그래프 업데이트
+function updateCashbookCharts() {
+    // 최근 6개월 데이터 집계
+    const months = [];
+    const incomeData = [];
+    const expenseData = [];
+    
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        const monthKey = d.toISOString().substring(0, 7);
+        const monthLabel = (d.getMonth() + 1) + '월';
+        
+        const monthItems = broCashbookList.filter(c => c.date && c.date.startsWith(monthKey));
+        const income = monthItems.filter(c => c.type === 'income').reduce((s, c) => s + (c.amount || 0), 0);
+        const expense = monthItems.filter(c => c.type === 'expense').reduce((s, c) => s + (c.amount || 0), 0);
+        
+        months.push(monthLabel);
+        incomeData.push(income);
+        expenseData.push(expense);
+    }
+    
+    // 월별 수입/지출 차트
+    const ctx1 = document.getElementById('cashbook-chart');
+    if (ctx1) {
+        if (cashbookChart) cashbookChart.destroy();
+        cashbookChart = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: months,
+                datasets: [
+                    { label: '수입', data: incomeData, backgroundColor: 'rgba(57, 255, 20, 0.6)', borderColor: '#39FF14', borderWidth: 1 },
+                    { label: '지출', data: expenseData, backgroundColor: 'rgba(239, 68, 68, 0.6)', borderColor: '#EF4444', borderWidth: 1 }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: '#fff' } } },
+                scales: {
+                    x: { ticks: { color: '#9CA3AF' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y: { ticks: { color: '#9CA3AF', callback: v => '₩' + (v/10000).toFixed(0) + '만' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                }
+            }
+        });
+    }
+    
+    // 지출 분류별 차트
+    const expenseByCategory = {};
+    broCashbookList.filter(c => c.type === 'expense').forEach(c => {
+        const cat = c.category || '기타';
+        expenseByCategory[cat] = (expenseByCategory[cat] || 0) + (c.amount || 0);
+    });
+    
+    const ctx2 = document.getElementById('expense-chart');
+    if (ctx2 && Object.keys(expenseByCategory).length > 0) {
+        if (expenseChart) expenseChart.destroy();
+        expenseChart = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(expenseByCategory),
+                datasets: [{
+                    data: Object.values(expenseByCategory),
+                    backgroundColor: ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#6B7280', '#14B8A6']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'right', labels: { color: '#fff', font: { size: 11 } } } }
+            }
+        });
+    }
+}
+
+// 상세 모달
+function openCashbookDetail(type) {
+    const now = new Date();
+    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    const thisMonth = koreaTime.toISOString().substring(0, 7);
+    const monthName = thisMonth.replace('-', '년 ') + '월';
+    
+    const thisMonthData = broCashbookList.filter(c => c.date && c.date.startsWith(thisMonth));
+    const totalIncome = broCashbookList.filter(c => c.type === 'income').reduce((s, c) => s + (c.amount || 0), 0);
+    const totalExpense = broCashbookList.filter(c => c.type === 'expense').reduce((s, c) => s + (c.amount || 0), 0);
+    
+    let title = '', content = '';
+    
+    if (type === 'income') {
+        title = '💵 이번달 수입 상세';
+        const incomeData = thisMonthData.filter(c => c.type === 'income');
+        const total = incomeData.reduce((s, c) => s + (c.amount || 0), 0);
+        
+        // 분류별 집계
+        const byCategory = {};
+        incomeData.forEach(c => {
+            const cat = c.category || '기타';
+            byCategory[cat] = (byCategory[cat] || 0) + (c.amount || 0);
+        });
+        
+        content = `
+            <div class="text-center mb-4">
+                <div class="text-gray-400 text-sm">${monthName}</div>
+                <div class="text-3xl font-black text-lime-400">${fmt(total)}</div>
+            </div>
+            <div class="p-4 rounded-lg bg-white/5 border border-white/10 mb-4">
+                <div class="text-xs text-lime-400 mb-3">📊 분류별 수입</div>
+                ${Object.entries(byCategory).map(([cat, amt]) => `
+                    <div class="flex justify-between py-2 border-b border-white/5">
+                        <span>${cat}</span>
+                        <span class="text-lime-400 font-bold">${fmt(amt)}</span>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="p-4 rounded-lg bg-white/5 border border-white/10">
+                <div class="text-xs text-gray-400 mb-3">📋 상세 내역 (${incomeData.length}건)</div>
+                <div class="max-h-48 overflow-y-auto">
+                    ${incomeData.slice(0, 10).map(c => `
+                        <div class="flex justify-between py-2 border-b border-white/5 text-sm">
+                            <span class="text-gray-400">${c.date}</span>
+                            <span>${c.description || '-'}</span>
+                            <span class="text-lime-400">${fmt(c.amount)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    } else if (type === 'expense') {
+        title = '💸 이번달 지출 상세';
+        const expenseData = thisMonthData.filter(c => c.type === 'expense');
+        const total = expenseData.reduce((s, c) => s + (c.amount || 0), 0);
+        
+        // 분류별 집계
+        const byCategory = {};
+        expenseData.forEach(c => {
+            const cat = c.category || '기타';
+            byCategory[cat] = (byCategory[cat] || 0) + (c.amount || 0);
+        });
+        
+        content = `
+            <div class="text-center mb-4">
+                <div class="text-gray-400 text-sm">${monthName}</div>
+                <div class="text-3xl font-black text-red-400">${fmt(total)}</div>
+            </div>
+            <div class="p-4 rounded-lg bg-white/5 border border-white/10 mb-4">
+                <div class="text-xs text-red-400 mb-3">📊 분류별 지출</div>
+                ${Object.entries(byCategory).sort((a, b) => b[1] - a[1]).map(([cat, amt]) => `
+                    <div class="flex justify-between py-2 border-b border-white/5">
+                        <span>${cat}</span>
+                        <span class="text-red-400 font-bold">${fmt(amt)}</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    } else if (type === 'profit') {
+        title = '📊 이번달 순이익';
+        const income = thisMonthData.filter(c => c.type === 'income').reduce((s, c) => s + (c.amount || 0), 0);
+        const expense = thisMonthData.filter(c => c.type === 'expense').reduce((s, c) => s + (c.amount || 0), 0);
+        const profit = income - expense;
+        
+        content = `
+            <div class="text-center mb-4">
+                <div class="text-gray-400 text-sm">${monthName}</div>
+                <div class="text-3xl font-black ${profit >= 0 ? 'text-blue-400' : 'text-red-400'}">${fmt(profit)}</div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="p-4 rounded-lg bg-lime-400/10 border border-lime-400/30 text-center">
+                    <div class="text-xs text-lime-400 mb-1">총 수입</div>
+                    <div class="text-xl font-bold text-lime-400">${fmt(income)}</div>
+                </div>
+                <div class="p-4 rounded-lg bg-red-400/10 border border-red-400/30 text-center">
+                    <div class="text-xs text-red-400 mb-1">총 지출</div>
+                    <div class="text-xl font-bold text-red-400">${fmt(expense)}</div>
+                </div>
+            </div>
+            <div class="p-4 rounded-lg bg-white/5 border border-white/10">
+                <div class="text-xs text-gray-400 mb-2">수익률</div>
+                <div class="h-4 bg-gray-700 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-lime-500 to-emerald-500" style="width: ${income > 0 ? Math.min(100, (profit / income) * 100) : 0}%"></div>
+                </div>
+                <div class="text-right text-sm text-gray-400 mt-1">${income > 0 ? ((profit / income) * 100).toFixed(1) : 0}%</div>
+            </div>
+        `;
+    } else if (type === 'balance') {
+        title = '💰 현재 잔액';
+        const balance = totalIncome - totalExpense;
+        
+        content = `
+            <div class="text-center mb-4">
+                <div class="text-gray-400 text-sm">누적 잔액</div>
+                <div class="text-3xl font-black text-purple-400">${fmt(balance)}</div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="p-4 rounded-lg bg-lime-400/10 border border-lime-400/30 text-center">
+                    <div class="text-xs text-lime-400 mb-1">누적 수입</div>
+                    <div class="text-xl font-bold text-lime-400">${fmt(totalIncome)}</div>
+                </div>
+                <div class="p-4 rounded-lg bg-red-400/10 border border-red-400/30 text-center">
+                    <div class="text-xs text-red-400 mb-1">누적 지출</div>
+                    <div class="text-xl font-bold text-red-400">${fmt(totalExpense)}</div>
+                </div>
+            </div>
+        `;
+    }
+    
+    document.getElementById('cashbookDetailTitle').textContent = title;
+    document.getElementById('cashbook-detail-content').innerHTML = content + `
+        <div class="flex gap-3 mt-4">
+            <button onclick="closeModal('cashbookDetailModal')" class="btn-secondary flex-1">닫기</button>
+        </div>
+    `;
+    openModal('cashbookDetailModal');
+}
+
+// 고객 검색 (작업등록)
+function searchBroCustomer() {
+    const query = document.getElementById('work-customer').value.toLowerCase();
+    const resultsDiv = document.getElementById('customer-search-results');
+    
+    if (query.length < 1) {
+        resultsDiv.classList.add('hidden');
+        document.getElementById('customer-info-box').classList.add('hidden');
+        document.getElementById('new-customer-box').classList.add('hidden');
+        return;
+    }
+    
+    const matches = broCustList.filter(c => c.name.toLowerCase().includes(query) || (c.phone && c.phone.includes(query)));
+    
+    if (matches.length > 0) {
+        resultsDiv.innerHTML = matches.slice(0, 5).map(c => `
+            <div class="p-2 hover:bg-lime-400/10 cursor-pointer border-b border-white/5" onclick="selectBroCustomer(${c.id})">
+                <div class="font-bold text-sm">${c.name}</div>
+                <div class="text-xs text-gray-400">${c.phone || '-'} | ${c.vehicle || '-'}</div>
+            </div>
+        `).join('');
+        resultsDiv.classList.remove('hidden');
+        document.getElementById('new-customer-box').classList.add('hidden');
+    } else {
+        resultsDiv.classList.add('hidden');
+        document.getElementById('new-customer-box').classList.remove('hidden');
+        document.getElementById('customer-info-box').classList.add('hidden');
+    }
+}
+
+function selectBroCustomer(id) {
+    const c = broCustList.find(x => x.id === id);
+    if (!c) return;
+    
+    document.getElementById('work-customer').value = c.name;
+    document.getElementById('work-phone').value = c.phone || '';
+    document.getElementById('work-vehicle').value = c.vehicle || '';
+    document.getElementById('work-plate').value = c.plate || '';
+    
+    document.getElementById('customer-search-results').classList.add('hidden');
+    document.getElementById('new-customer-box').classList.add('hidden');
+    document.getElementById('customer-info-box').classList.remove('hidden');
+    document.getElementById('customer-info-detail').innerHTML = `
+        ${c.name} | ${c.phone || '-'} | 방문 ${c.visits || 0}회
+    `;
+}
+
+// 연락처 중복 확인
+function checkPhoneDuplicate() {
+    const phone = document.getElementById('work-phone').value;
+    const resultDiv = document.getElementById('phone-check-result');
+    
+    if (!phone) {
+        resultDiv.innerHTML = '';
+        return;
+    }
+    
+    const existing = broCustList.find(c => c.phone === phone);
+    if (existing) {
+        resultDiv.innerHTML = `<span class="text-yellow-400">⚠️ 기존 고객: ${existing.name}</span>`;
+        // 기존 고객 정보 자동 채우기
+        document.getElementById('work-customer').value = existing.name;
+        document.getElementById('work-vehicle').value = existing.vehicle || '';
+        document.getElementById('work-plate').value = existing.plate || '';
+        document.getElementById('customer-info-box').classList.remove('hidden');
+        document.getElementById('customer-info-detail').innerHTML = `${existing.name} | 방문 ${existing.visits || 0}회`;
+    } else {
+        resultDiv.innerHTML = `<span class="text-lime-400">✅ 신규 연락처</span>`;
+    }
+}
+
+// 합계금액 계산
+function calcWorkTotal() {
+    const labor = parseInt(document.getElementById('work-labor').value) || 0;
+    const parts = parseInt(document.getElementById('work-parts').value) || 0;
+    document.getElementById('work-total').value = fmt(labor + parts);
 }
 
 // 금전출납부 수정
