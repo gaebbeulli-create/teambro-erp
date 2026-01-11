@@ -202,7 +202,7 @@
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v1.0.0</p>
+                <p class="text-gray-500 text-xs mt-1">v1.1.0</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -1312,7 +1312,7 @@
                         <input type="text" id="b-cust-search" class="input-field" style="width:180px" placeholder="고객명, 연락처, 차량 검색...">
                         <button onclick="loadBroCustomers()" class="btn-secondary btn-sm">검색</button>
                     </div>
-                    <button onclick="openModal('broCustModal')" class="btn-primary btn-sm">+ 고객 등록</button>
+                    <button onclick="openBroCustModal()" class="btn-primary btn-sm">+ 고객 등록</button>
                 </div>
                 <div class="glass-card rounded-xl overflow-hidden">
                     <table class="data-table">
@@ -1846,8 +1846,9 @@
     <!-- ======================= 브로모터스 모달: 고객 등록 ======================= -->
     <div id="broCustModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:500px">
-            <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-lime-400">👤 고객 등록</h2><button onclick="closeModal('broCustModal')" class="text-gray-400 text-2xl">&times;</button></div>
-            <form onsubmit="submitBroCustomer(event)" class="space-y-4">
+            <div class="flex justify-between mb-4"><h2 id="broCustModalTitle" class="text-xl font-bold text-lime-400">👤 고객 등록</h2><button onclick="closeModal('broCustModal')" class="text-gray-400 text-2xl">&times;</button></div>
+            <form onsubmit="submitBroCustomer(event)" id="broCustForm" class="space-y-4">
+                <input type="hidden" id="bro-cust-edit-id">
                 <div class="grid grid-cols-2 gap-3">
                     <div><label class="block text-xs text-lime-400 mb-1">고객명*</label><input name="name" id="bro-cust-name" class="input-field" required></div>
                     <div><label class="block text-xs text-lime-400 mb-1">연락처*</label><input name="phone" id="bro-cust-phone" class="input-field" required></div>
@@ -1859,7 +1860,7 @@
                 <div><label class="block text-xs text-lime-400 mb-1">메모</label><textarea name="memo" id="bro-cust-memo" class="input-field" rows="2"></textarea></div>
                 <div class="flex gap-3 pt-2">
                     <button type="button" onclick="closeModal('broCustModal')" class="btn-secondary flex-1">취소</button>
-                    <button type="submit" class="btn-primary flex-1">등록</button>
+                    <button type="submit" id="broCustSubmitBtn" class="btn-primary flex-1">등록</button>
                 </div>
             </form>
         </div>
@@ -2546,7 +2547,7 @@ async function deleteFromDB(table, id) {
 }
 
 // ======================= 전역 변수 =======================
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.0';
 let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
 let currentTab = 'overview'; // 현재 탭
@@ -5657,8 +5658,9 @@ function loadBroCustomers() {
             <td class="text-gray-400">${c.plate || '-'}</td>
             <td class="text-blue-400">${c.visits}회</td>
             <td class="text-gray-400">${c.last_visit}</td>
-            <td>
-                <button onclick="event.stopPropagation(); viewBroCustDetail(${c.id})" class="text-lime-400 text-xs hover:underline">상세</button>
+            <td class="flex gap-2">
+                <button onclick="event.stopPropagation(); editBroCustomer(${c.id})" class="text-blue-400 text-xs hover:underline">수정</button>
+                <button onclick="event.stopPropagation(); deleteBroCustomer(${c.id})" class="text-red-400 text-xs hover:underline">삭제</button>
             </td>
         </tr>`;
     });
@@ -5729,32 +5731,91 @@ function viewBroCustDetail(custId) {
         </div>
         
         <div class="flex gap-3">
+            <button onclick="deleteBroCustomer(${c.id}); closeModal('broCustDetailModal');" class="btn-danger flex-1">삭제</button>
             <button onclick="closeModal('broCustDetailModal')" class="btn-secondary flex-1">닫기</button>
-            <button onclick="closeModal('broCustDetailModal'); showBromotorsTab('work'); document.getElementById('b-work-search').value='${c.name}'; loadBroWork();" class="btn-primary flex-1">전체 작업 보기</button>
+            <button onclick="closeModal('broCustDetailModal'); editBroCustomer(${c.id});" class="btn-primary flex-1">수정</button>
         </div>
     `;
     
     openModal('broCustDetailModal');
 }
 
-function submitBroCustomer(e) {
+async function submitBroCustomer(e) {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(e.target));
+    const editId = document.getElementById('bro-cust-edit-id').value;
     
-    broCustList.push({
-        id: Math.max(...broCustList.map(c => c.id), 0) + 1,
+    const now = new Date();
+    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    const today = koreaTime.toISOString().split('T')[0];
+    
+    const custData = {
         name: d.name,
         phone: d.phone,
         vehicle: d.vehicle || '',
         plate: d.plate || '',
-        memo: d.memo || '',
-        visits: 0,
-        last_visit: new Date().toISOString().split('T')[0]
-    });
+        memo: d.memo || ''
+    };
     
-    showToast('✅ 고객이 등록되었습니다');
+    if (editId) {
+        // 수정
+        await updateInDB('bro_customers', editId, custData);
+        const c = broCustList.find(x => x.id === parseInt(editId));
+        if (c) Object.assign(c, custData);
+        showToast('✅ 고객 정보가 수정되었습니다');
+    } else {
+        // 신규 등록
+        custData.visits = 0;
+        custData.last_visit = today;
+        const result = await insertToDB('bro_customers', custData);
+        if (result && result[0]) broCustList.unshift(result[0]);
+        showToast('✅ 고객이 등록되었습니다');
+    }
+    
     closeModal('broCustModal');
-    e.target.reset();
+    document.getElementById('broCustForm').reset();
+    document.getElementById('bro-cust-edit-id').value = '';
+    document.getElementById('broCustModalTitle').textContent = '👤 고객 등록';
+    document.getElementById('broCustSubmitBtn').textContent = '등록';
+    loadBroCustomers();
+}
+
+// 고객 등록 모달 열기
+function openBroCustModal() {
+    document.getElementById('broCustModalTitle').textContent = '👤 고객 등록';
+    document.getElementById('broCustSubmitBtn').textContent = '등록';
+    document.getElementById('bro-cust-edit-id').value = '';
+    document.getElementById('broCustForm').reset();
+    openModal('broCustModal');
+}
+
+// 고객 수정
+function editBroCustomer(id) {
+    const c = broCustList.find(x => x.id === id);
+    if (!c) return;
+    
+    document.getElementById('broCustModalTitle').textContent = '👤 고객 수정';
+    document.getElementById('broCustSubmitBtn').textContent = '수정';
+    document.getElementById('bro-cust-edit-id').value = c.id;
+    document.getElementById('bro-cust-name').value = c.name;
+    document.getElementById('bro-cust-phone').value = c.phone;
+    document.getElementById('bro-cust-vehicle').value = c.vehicle || '';
+    document.getElementById('bro-cust-plate').value = c.plate || '';
+    document.getElementById('bro-cust-memo').value = c.memo || '';
+    
+    openModal('broCustModal');
+}
+
+// 고객 삭제
+async function deleteBroCustomer(id) {
+    const c = broCustList.find(x => x.id === id);
+    if (!c) return;
+    
+    if (!confirm(`'${c.name}' 고객을 삭제하시겠습니까?\n\n⚠️ 이 작업은 되돌릴 수 없습니다.`)) return;
+    
+    await deleteFromDB('bro_customers', id);
+    broCustList = broCustList.filter(x => x.id !== id);
+    showToast('✅ 고객이 삭제되었습니다');
     loadBroCustomers();
 }
 
