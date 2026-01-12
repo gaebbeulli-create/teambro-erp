@@ -215,7 +215,7 @@
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v1.8.0</p>
+                <p class="text-gray-500 text-xs mt-1">v1.9.0</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -254,7 +254,7 @@
                 <div id="installSection" class="mt-6 pt-4 border-t border-white/10">
                     <!-- PWA 설치 버튼 -->
                     <button id="installBtn" onclick="installApp()" class="w-full p-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold text-sm hover:opacity-90 transition">
-                        📲 앱 설치하기 <span class="text-white/70 text-xs">v1.8.0</span>
+                        📲 앱 설치하기 <span class="text-white/70 text-xs">v1.9.0</span>
                     </button>
                 </div>
             </div>
@@ -308,6 +308,7 @@
                 <button onclick="showSettlementTab('customers')" id="s-tab-customers" class="px-2 md:px-4 py-2 md:py-3 font-bold text-[10px] md:text-sm text-gray-500 whitespace-nowrap">👥 고객관리</button>
                 <button onclick="showSettlementTab('charges')" id="s-tab-charges" class="px-2 md:px-4 py-2 md:py-3 font-bold text-[10px] md:text-sm text-gray-500 whitespace-nowrap">💳 자동결제</button>
                 <button onclick="showSettlementTab('ledger')" id="s-tab-ledger" class="px-2 md:px-4 py-2 md:py-3 font-bold text-[10px] md:text-sm text-gray-500 whitespace-nowrap">📖 원장</button>
+                <button onclick="showSettlementTab('fines')" id="s-tab-fines" class="px-2 md:px-4 py-2 md:py-3 font-bold text-[10px] md:text-sm text-gray-500 whitespace-nowrap">🚨 과태료</button>
                 <button onclick="showSettlementTab('delinquent')" id="s-tab-delinquent" class="px-2 md:px-4 py-2 md:py-3 font-bold text-[10px] md:text-sm text-gray-500 whitespace-nowrap">⚠️ 연체</button>
                 <button onclick="showSettlementTab('settings')" id="s-tab-settings" class="px-2 md:px-4 py-2 md:py-3 font-bold text-[10px] md:text-sm text-gray-500 whitespace-nowrap">⚙️ 설정</button>
             </div>
@@ -591,6 +592,45 @@
                     <table class="data-table">
                         <thead><tr><th>일자</th><th>고객명</th><th>구분</th><th>내용</th><th>발생</th><th>수납</th><th>잔액</th></tr></thead>
                         <tbody id="ledger-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 과태료 -->
+            <div id="s-content-fines" class="s-tab-content hidden">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="glass-card rounded-xl p-4 border-l-4 border-red-400">
+                        <div class="text-red-400 text-xs mb-1">🚨 총 과태료</div>
+                        <div class="text-2xl font-black text-red-400" id="fine-total-count">0건</div>
+                    </div>
+                    <div class="glass-card rounded-xl p-4 border-l-4 border-orange-400">
+                        <div class="text-orange-400 text-xs mb-1">💸 미납 금액</div>
+                        <div class="text-2xl font-black text-orange-400" id="fine-unpaid">₩0</div>
+                    </div>
+                    <div class="glass-card rounded-xl p-4 border-l-4 border-emerald-400">
+                        <div class="text-emerald-400 text-xs mb-1">✅ 납부 완료</div>
+                        <div class="text-2xl font-black text-emerald-400" id="fine-paid">₩0</div>
+                    </div>
+                    <div class="glass-card rounded-xl p-4 border-l-4 border-blue-400">
+                        <div class="text-blue-400 text-xs mb-1">📊 총 금액</div>
+                        <div class="text-2xl font-black text-blue-400" id="fine-total-amount">₩0</div>
+                    </div>
+                </div>
+                <div class="glass-card rounded-xl p-4 mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <input type="text" id="fine-search" placeholder="검색 (고객명, 차량번호)" class="input-field w-48" oninput="loadFines()">
+                        <select id="fine-status" class="input-field w-32" onchange="loadFines()">
+                            <option value="">전체</option>
+                            <option value="unpaid">미납</option>
+                            <option value="paid">납부완료</option>
+                        </select>
+                    </div>
+                    <button onclick="openFineModal()" class="btn-primary btn-sm">+ 과태료 등록</button>
+                </div>
+                <div class="glass-card rounded-xl overflow-hidden">
+                    <table class="data-table">
+                        <thead><tr><th>번호</th><th>날짜</th><th>계약</th><th>고객</th><th>차량번호</th><th>사유</th><th>금액</th><th>상태</th><th>관리</th></tr></thead>
+                        <tbody id="fine-tbody"></tbody>
                     </table>
                 </div>
             </div>
@@ -2123,6 +2163,48 @@
         </div>
     </div>
 
+    <!-- ======================= 정산관리 모달: 과태료 등록 ======================= -->
+    <div id="fineModal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width:500px">
+            <div class="flex justify-between mb-4"><h2 id="fineModalTitle" class="text-xl font-bold text-red-400">🚨 과태료 등록</h2><button onclick="closeModal('fineModal')" class="text-gray-400 text-2xl">&times;</button></div>
+            <form onsubmit="submitFine(event)" id="fineForm" class="space-y-4">
+                <input type="hidden" id="fine-edit-id">
+                
+                <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div class="text-xs text-blue-400 mb-3">📋 계약 선택</div>
+                    <select id="fine-contract-id" class="input-field" required onchange="onFineContractChange()">
+                        <option value="">계약 선택...</option>
+                    </select>
+                    <div id="fine-contract-info" class="mt-2 p-2 rounded bg-white/5 text-sm hidden"></div>
+                </div>
+                
+                <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div class="text-xs text-red-400 mb-3">🚨 과태료 정보</div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="block text-xs text-gray-400 mb-1">발생일*</label><input type="date" name="fine_date" id="fine-date" class="input-field" required></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">금액*</label><input type="number" name="fine_amount" id="fine-amount" class="input-field" required placeholder="0"></div>
+                    </div>
+                    <div class="mt-3"><label class="block text-xs text-gray-400 mb-1">사유*</label><input name="fine_reason" id="fine-reason" class="input-field" required placeholder="예: 주정차위반, 과속, 신호위반"></div>
+                    <div class="mt-3 grid grid-cols-2 gap-3">
+                        <div><label class="block text-xs text-gray-400 mb-1">납부상태</label>
+                            <select name="fine_status" id="fine-paid-status" class="input-field">
+                                <option value="unpaid">미납</option>
+                                <option value="paid">납부완료</option>
+                            </select>
+                        </div>
+                        <div><label class="block text-xs text-gray-400 mb-1">납부일</label><input type="date" name="paid_date" id="fine-paid-date" class="input-field"></div>
+                    </div>
+                    <div class="mt-3"><label class="block text-xs text-gray-400 mb-1">메모</label><textarea name="fine_memo" id="fine-memo" class="input-field" rows="2" placeholder="추가 메모..."></textarea></div>
+                </div>
+                
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closeModal('fineModal')" class="btn-secondary flex-1">취소</button>
+                    <button type="submit" id="fineSubmitBtn" class="btn-primary flex-1">등록</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- ======================= 정산관리 모달: 계약 등록 ======================= -->
     <div id="contractModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:800px; max-height:90vh; overflow-y:auto;">
@@ -2186,14 +2268,6 @@
                                 <option value="completed">종료</option>
                                 <option value="cancelled">해지</option>
                             </select>
-                        </div>
-                    </div>
-                    <!-- 과태료/벌칙금 -->
-                    <div class="mt-3 p-2 rounded-lg bg-red-400/10 border border-red-400/30">
-                        <div class="text-xs text-red-400 mb-2">🚨 과태료/벌칙금</div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div><label class="block text-xs text-gray-400 mb-1">과태료 금액</label><input type="number" name="fine_amount" id="con-fine-amount" class="input-field" value="0" placeholder="0"></div>
-                            <div><label class="block text-xs text-gray-400 mb-1">과태료 사유</label><input name="fine_reason" id="con-fine-reason" class="input-field" placeholder="예: 주정차위반, 과속"></div>
                         </div>
                     </div>
                     <div class="mt-3"><label class="block text-xs text-gray-400 mb-1">메모</label><textarea name="memo" id="con-memo" class="input-field" rows="2" placeholder="계약 관련 메모..."></textarea></div>
@@ -2614,7 +2688,7 @@ async function deleteFromDB(table, id) {
 }
 
 // ======================= 전역 변수 =======================
-const APP_VERSION = '1.8.0';
+const APP_VERSION = '1.9.0';
 let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
 let currentTab = 'overview'; // 현재 탭
@@ -2629,6 +2703,7 @@ let pgPaymentsList = [];
 let paymentHistory = [];
 let ledgerList = [];
 let vehicleList = [];
+let fineList = [];
 let broWorkList = [];
 let broCashbookList = [];
 let broPartsList = [];
@@ -2721,7 +2796,7 @@ async function handleLogin(e) {
 async function loadAllData() {
     showToast('데이터 로딩 중...', 'info');
     
-    const [staff, customers, contracts, vehicles, ledger, pgPayments, works, cashbook, parts, broCustomers, accidents, purchases] = await Promise.all([
+    const [staff, customers, contracts, vehicles, ledger, pgPayments, works, cashbook, parts, broCustomers, accidents, purchases, fines] = await Promise.all([
         loadFromDB('staff'),
         loadFromDB('customers'),
         loadFromDB('contracts'),
@@ -2733,7 +2808,8 @@ async function loadAllData() {
         loadFromDB('bro_parts'),
         loadFromDB('bro_customers'),
         loadFromDB('bro_accidents'),
-        loadFromDB('bro_purchases')
+        loadFromDB('bro_purchases'),
+        loadFromDB('fines')
     ]);
     
     staffList = staff || [];
@@ -2748,6 +2824,7 @@ async function loadAllData() {
     broCustList = broCustomers || [];
     accidentList = accidents || [];
     purchaseList = purchases || [];
+    fineList = fines || [];
     
     // recentPayments는 ledger에서 추출
     recentPayments = ledgerList.filter(l => l.type === 'receipt').slice(0, 5).map((l, i) => ({
@@ -2854,6 +2931,7 @@ function showSettlementTab(name, skipHistory = false) {
     if (name === 'customers') loadCustomers();
     if (name === 'charges') loadPgPayments();
     if (name === 'ledger') loadLedger();
+    if (name === 'fines') loadFines();
     if (name === 'delinquent') loadDelinquent();
     if (name === 'settings') renderStaffList();
 }
@@ -3284,6 +3362,10 @@ function loadContracts() {
         const period = c.start_date && c.end_date ? `${c.start_date.substring(5)} ~ ${c.end_date.substring(5)}` : c.start_date ? c.start_date.substring(5) + ' ~' : '-';
         const hasDoc = c.contractor_id_url || c.vehicle_reg_url;
         
+        // 이 계약의 미납 과태료 합계
+        const contractFines = fineList.filter(f => f.contract_id === c.id && f.status === 'unpaid');
+        const fineTotal = contractFines.reduce((s, f) => s + (f.amount || 0), 0);
+        
         h += `<tr onclick="viewContractDetail(${c.id})" class="cursor-pointer hover:bg-white/5">
             <td class="text-lime-400">#${String(c.id).padStart(3,'0')}</td>
             <td class="font-bold">${c.customer_name}</td>
@@ -3294,7 +3376,7 @@ function loadContracts() {
             <td class="text-xs text-gray-400">${period}</td>
             <td class="font-bold">${fmt(c.monthly)}</td>
             <td class="${hasArrears ? 'text-orange-400 font-bold' : 'text-gray-500'}">${hasArrears ? fmt(c.arrears) : '-'}</td>
-            <td class="${(c.fine_amount > 0) ? 'text-red-400 font-bold' : 'text-gray-500'}">${(c.fine_amount > 0) ? fmt(c.fine_amount) : '-'}</td>
+            <td class="${(fineTotal > 0) ? 'text-red-400 font-bold' : 'text-gray-500'}">${(fineTotal > 0) ? fmt(fineTotal) : '-'}</td>
             <td><span class="badge ${statusBadge[0]}">${statusBadge[1]}</span></td>
             <td>${hasDoc ? '<span class="text-cyan-400">📎</span>' : '<span class="text-gray-600">-</span>'}</td>
         </tr>`;
@@ -3423,6 +3505,12 @@ function viewContractDetail(id) {
     const phoneClean = (c.phone || '').replace(/-/g, '');
     const guarantorPhoneClean = (c.guarantor_phone || '').replace(/-/g, '');
     
+    // 이 계약의 과태료 목록
+    const contractFines = fineList.filter(f => f.contract_id === c.id);
+    const unpaidFines = contractFines.filter(f => f.status === 'unpaid');
+    const totalFineAmount = contractFines.reduce((s, f) => s + (f.amount || 0), 0);
+    const unpaidFineAmount = unpaidFines.reduce((s, f) => s + (f.amount || 0), 0);
+    
     document.getElementById('contract-detail-content').innerHTML = `
         <div class="p-4 rounded-lg bg-white/5 border border-white/10 mb-4">
             <div class="grid grid-cols-2 gap-4">
@@ -3465,14 +3553,32 @@ function viewContractDetail(id) {
             </div>
         </div>` : ''}
         
-        ${(c.fine_amount && c.fine_amount > 0) ? `
+        ${contractFines.length > 0 ? `
         <div class="p-4 rounded-lg bg-red-400/10 border border-red-400/30 mb-4">
-            <div class="text-xs text-red-400 mb-2">🚨 과태료/벌칙금</div>
-            <div class="flex justify-between items-center">
-                <span class="text-gray-300">${c.fine_reason || '사유 없음'}</span>
-                <span class="text-xl font-black text-red-400">${fmt(c.fine_amount)}</span>
+            <div class="flex justify-between items-center mb-2">
+                <div class="text-xs text-red-400">🚨 과태료 (${contractFines.length}건)</div>
+                <button onclick="closeModal('contractDetailModal'); openFineModalForContract(${c.id})" class="text-xs px-2 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30">+ 추가</button>
             </div>
-        </div>` : ''}
+            <div class="space-y-2">
+                ${contractFines.map(f => `
+                    <div class="flex justify-between items-center p-2 rounded bg-white/5">
+                        <div>
+                            <span class="text-gray-300 text-sm">${f.reason || '-'}</span>
+                            <span class="text-gray-500 text-xs ml-2">${f.fine_date || ''}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold ${f.status === 'paid' ? 'text-gray-500 line-through' : 'text-red-400'}">${fmt(f.amount)}</span>
+                            <span class="badge ${f.status === 'paid' ? 'badge-complete' : 'badge-failed'} text-xs">${f.status === 'paid' ? '납부' : '미납'}</span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            ${unpaidFineAmount > 0 ? `<div class="mt-2 pt-2 border-t border-red-400/30 flex justify-between"><span class="text-red-400 text-sm">미납 합계</span><span class="font-bold text-red-400">${fmt(unpaidFineAmount)}</span></div>` : ''}
+        </div>` : `
+        <div class="p-3 rounded-lg bg-white/5 border border-white/10 mb-4 flex justify-between items-center">
+            <span class="text-gray-500 text-sm">과태료 없음</span>
+            <button onclick="closeModal('contractDetailModal'); openFineModalForContract(${c.id})" class="text-xs px-2 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30">+ 과태료 등록</button>
+        </div>`}
         
         ${docLinks.length > 0 ? `
         <div class="p-4 rounded-lg bg-cyan-400/10 border border-cyan-400/30 mb-4">
@@ -3515,8 +3621,6 @@ function editContract(id) {
     document.getElementById('con-fuel').value = c.fuel_type || '휘발유';
     document.getElementById('con-memo').value = c.memo || '';
     document.getElementById('con-status').value = c.status || 'active';
-    document.getElementById('con-fine-amount').value = c.fine_amount || 0;
-    document.getElementById('con-fine-reason').value = c.fine_reason || '';
     
     // 계약 유형 선택
     const typeRadio = document.querySelector(`input[name="contract_type"][value="${c.type || 'rent'}"]`);
@@ -3656,8 +3760,6 @@ async function submitContract(e) {
         status: d.status || 'active',
         guarantor_name: d.guarantor_name || null,
         guarantor_phone: d.guarantor_phone || null,
-        fine_amount: parseInt(d.fine_amount) || 0,
-        fine_reason: d.fine_reason || null,
         // 기존 URL 유지 (새 파일 없으면 기존 값 사용)
         contractor_id_url: contractorIdUrl || (existingContract ? existingContract.contractor_id_url : null),
         contractor_doc_url: contractorDocUrl || (existingContract ? existingContract.contractor_doc_url : null),
@@ -7609,6 +7711,209 @@ async function submitLedgerEntry(e) {
     closeModal('ledgerModal');
     e.target.reset();
     loadLedger();
+}
+
+// ======================= 정산관리: 과태료 관리 =======================
+function loadFines() {
+    const search = (document.getElementById('fine-search')?.value || '').toLowerCase();
+    const status = document.getElementById('fine-status')?.value || '';
+    
+    let list = [...fineList];
+    
+    // 필터
+    if (status === 'unpaid') list = list.filter(f => f.status === 'unpaid');
+    else if (status === 'paid') list = list.filter(f => f.status === 'paid');
+    if (search) list = list.filter(f => 
+        (f.customer_name || '').toLowerCase().includes(search) || 
+        (f.plate || '').toLowerCase().includes(search) ||
+        (f.reason || '').toLowerCase().includes(search)
+    );
+    
+    // 날짜순 정렬 (최신순)
+    list.sort((a, b) => (b.fine_date || '').localeCompare(a.fine_date || ''));
+    
+    // 요약
+    const totalCount = fineList.length;
+    const unpaidFines = fineList.filter(f => f.status === 'unpaid');
+    const paidFines = fineList.filter(f => f.status === 'paid');
+    const unpaidAmount = unpaidFines.reduce((s, f) => s + (f.amount || 0), 0);
+    const paidAmount = paidFines.reduce((s, f) => s + (f.amount || 0), 0);
+    const totalAmount = unpaidAmount + paidAmount;
+    
+    document.getElementById('fine-total-count').textContent = totalCount + '건';
+    document.getElementById('fine-unpaid').textContent = fmt(unpaidAmount);
+    document.getElementById('fine-paid').textContent = fmt(paidAmount);
+    document.getElementById('fine-total-amount').textContent = fmt(totalAmount);
+    
+    // 테이블
+    let h = '';
+    list.forEach(f => {
+        const statusBadge = f.status === 'paid' ? ['badge-complete', '납부완료'] : ['badge-failed', '미납'];
+        const contract = contractList.find(c => c.id === f.contract_id);
+        
+        h += `<tr class="hover:bg-white/5">
+            <td class="text-red-400">#F${String(f.id).padStart(3,'0')}</td>
+            <td>${f.fine_date || '-'}</td>
+            <td class="text-lime-400">${contract ? '#' + String(contract.id).padStart(3,'0') : '-'}</td>
+            <td class="font-bold">${f.customer_name || '-'}</td>
+            <td class="font-mono">${f.plate || '-'}</td>
+            <td class="text-gray-400">${f.reason || '-'}</td>
+            <td class="font-bold text-red-400">${fmt(f.amount)}</td>
+            <td><span class="badge ${statusBadge[0]}">${statusBadge[1]}</span></td>
+            <td>
+                <div class="flex gap-1">
+                    ${f.status === 'unpaid' ? `<button onclick="payFine(${f.id})" class="px-2 py-1 text-xs rounded bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30">납부</button>` : ''}
+                    <button onclick="editFine(${f.id})" class="px-2 py-1 text-xs rounded bg-blue-500/20 text-blue-400 hover:bg-blue-500/30">수정</button>
+                    <button onclick="deleteFine(${f.id})" class="px-2 py-1 text-xs rounded bg-red-500/20 text-red-400 hover:bg-red-500/30">삭제</button>
+                </div>
+            </td>
+        </tr>`;
+    });
+    document.getElementById('fine-tbody').innerHTML = h || '<tr><td colspan="9" class="text-center text-gray-500 py-6">과태료 없음</td></tr>';
+}
+
+function openFineModal() {
+    document.getElementById('fineModalTitle').textContent = '🚨 과태료 등록';
+    document.getElementById('fineSubmitBtn').textContent = '등록';
+    document.getElementById('fine-edit-id').value = '';
+    document.getElementById('fineForm').reset();
+    document.getElementById('fine-contract-info').classList.add('hidden');
+    
+    // 오늘 날짜
+    const now = new Date();
+    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    document.getElementById('fine-date').value = koreaTime.toISOString().split('T')[0];
+    
+    // 계약 목록 로드
+    loadFineContractOptions();
+    
+    openModal('fineModal');
+}
+
+// 계약 상세에서 과태료 등록
+function openFineModalForContract(contractId) {
+    openFineModal();
+    document.getElementById('fine-contract-id').value = contractId;
+    onFineContractChange();
+}
+
+function loadFineContractOptions() {
+    const select = document.getElementById('fine-contract-id');
+    select.innerHTML = '<option value="">계약 선택...</option>';
+    
+    // 진행중인 계약만
+    const activeContracts = contractList.filter(c => c.status === 'active');
+    activeContracts.forEach(c => {
+        const typeLabel = (c.type || 'rent') === 'rent' ? '렌트' : '리스';
+        select.innerHTML += `<option value="${c.id}">[${typeLabel}] ${c.customer_name} - ${c.plate}</option>`;
+    });
+}
+
+function onFineContractChange() {
+    const contractId = document.getElementById('fine-contract-id').value;
+    const infoBox = document.getElementById('fine-contract-info');
+    
+    if (!contractId) {
+        infoBox.classList.add('hidden');
+        return;
+    }
+    
+    const contract = contractList.find(c => c.id === parseInt(contractId));
+    if (contract) {
+        infoBox.classList.remove('hidden');
+        infoBox.innerHTML = `
+            <div class="text-xs text-gray-400">고객: <span class="text-white font-bold">${contract.customer_name}</span></div>
+            <div class="text-xs text-gray-400">차량: <span class="text-white">${contract.vehicle}</span> · <span class="text-lime-400">${contract.plate}</span></div>
+            <div class="text-xs text-gray-400">연락처: <span class="text-white">${contract.phone}</span></div>
+        `;
+    }
+}
+
+async function submitFine(e) {
+    e.preventDefault();
+    const editId = document.getElementById('fine-edit-id').value;
+    const contractId = document.getElementById('fine-contract-id').value;
+    
+    if (!contractId) {
+        showToast('계약을 선택하세요', 'error');
+        return;
+    }
+    
+    const contract = contractList.find(c => c.id === parseInt(contractId));
+    
+    const fineData = {
+        contract_id: parseInt(contractId),
+        customer_name: contract ? contract.customer_name : '',
+        plate: contract ? contract.plate : '',
+        fine_date: document.getElementById('fine-date').value,
+        amount: parseInt(document.getElementById('fine-amount').value) || 0,
+        reason: document.getElementById('fine-reason').value,
+        status: document.getElementById('fine-paid-status').value,
+        paid_date: document.getElementById('fine-paid-date').value || null,
+        memo: document.getElementById('fine-memo').value || null
+    };
+    
+    if (editId) {
+        await updateInDB('fines', editId, fineData);
+        const f = fineList.find(x => x.id === parseInt(editId));
+        if (f) Object.assign(f, fineData);
+        showToast('✅ 과태료가 수정되었습니다');
+    } else {
+        const result = await insertToDB('fines', fineData);
+        if (result && result[0]) fineList.unshift(result[0]);
+        showToast('✅ 과태료가 등록되었습니다');
+    }
+    
+    closeModal('fineModal');
+    loadFines();
+}
+
+function editFine(id) {
+    const f = fineList.find(x => x.id === id);
+    if (!f) return;
+    
+    document.getElementById('fineModalTitle').textContent = '🚨 과태료 수정';
+    document.getElementById('fineSubmitBtn').textContent = '수정';
+    document.getElementById('fine-edit-id').value = f.id;
+    
+    loadFineContractOptions();
+    document.getElementById('fine-contract-id').value = f.contract_id || '';
+    onFineContractChange();
+    
+    document.getElementById('fine-date').value = f.fine_date || '';
+    document.getElementById('fine-amount').value = f.amount || 0;
+    document.getElementById('fine-reason').value = f.reason || '';
+    document.getElementById('fine-paid-status').value = f.status || 'unpaid';
+    document.getElementById('fine-paid-date').value = f.paid_date || '';
+    document.getElementById('fine-memo').value = f.memo || '';
+    
+    openModal('fineModal');
+}
+
+async function deleteFine(id) {
+    if (!confirm('과태료를 삭제하시겠습니까?')) return;
+    
+    await deleteFromDB('fines', id);
+    fineList = fineList.filter(f => f.id !== id);
+    showToast('🗑️ 과태료가 삭제되었습니다');
+    loadFines();
+}
+
+async function payFine(id) {
+    if (!confirm('납부 완료 처리하시겠습니까?')) return;
+    
+    const now = new Date();
+    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    const today = koreaTime.toISOString().split('T')[0];
+    
+    await updateInDB('fines', id, { status: 'paid', paid_date: today });
+    const f = fineList.find(x => x.id === id);
+    if (f) {
+        f.status = 'paid';
+        f.paid_date = today;
+    }
+    showToast('✅ 납부 완료 처리되었습니다');
+    loadFines();
 }
 
 // ======================= 정산관리: 연체관리 =======================
