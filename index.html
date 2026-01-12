@@ -215,7 +215,7 @@
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v1.0.2</p>
+                <p class="text-gray-500 text-xs mt-1">v1.03</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -254,7 +254,7 @@
                 <div id="installSection" class="mt-6 pt-4 border-t border-white/10">
                     <!-- PWA 설치 버튼 -->
                     <button id="installBtn" onclick="installApp()" class="w-full p-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold text-sm hover:opacity-90 transition">
-                        📲 앱 설치하기 <span class="text-white/70 text-xs">v1.0.2</span>
+                        📲 앱 설치하기 <span class="text-white/70 text-xs">v1.02</span>
                     </button>
                 </div>
             </div>
@@ -603,24 +603,58 @@
 
             <!-- 과태료 -->
             <div id="s-content-fines" class="s-tab-content hidden">
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <div class="glass-card rounded-xl p-4 border-l-4 border-red-400">
-                        <div class="text-red-400 text-xs mb-1">🚨 총 과태료</div>
-                        <div class="text-2xl font-black text-red-400" id="fine-total-count">0건</div>
-                    </div>
-                    <div class="glass-card rounded-xl p-4 border-l-4 border-orange-400">
-                        <div class="text-orange-400 text-xs mb-1">💸 미납 금액</div>
-                        <div class="text-2xl font-black text-orange-400" id="fine-unpaid">₩0</div>
-                    </div>
-                    <div class="glass-card rounded-xl p-4 border-l-4 border-emerald-400">
-                        <div class="text-emerald-400 text-xs mb-1">✅ 납부 완료</div>
-                        <div class="text-2xl font-black text-emerald-400" id="fine-paid">₩0</div>
-                    </div>
-                    <div class="glass-card rounded-xl p-4 border-l-4 border-blue-400">
-                        <div class="text-blue-400 text-xs mb-1">📊 총 금액</div>
-                        <div class="text-2xl font-black text-blue-400" id="fine-total-amount">₩0</div>
+                <!-- 기간 선택 -->
+                <div class="glass-card rounded-xl p-4 mb-4">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div class="flex gap-2">
+                            <button onclick="setFinePeriod('1m')" id="fine-period-1m" class="px-3 py-1 rounded-lg text-xs font-bold bg-lime-500/20 border border-lime-500 text-lime-400">1개월</button>
+                            <button onclick="setFinePeriod('6m')" id="fine-period-6m" class="px-3 py-1 rounded-lg text-xs font-bold bg-white/5 border border-white/20 text-gray-400">6개월</button>
+                            <button onclick="setFinePeriod('1y')" id="fine-period-1y" class="px-3 py-1 rounded-lg text-xs font-bold bg-white/5 border border-white/20 text-gray-400">1년</button>
+                            <button onclick="setFinePeriod('all')" id="fine-period-all" class="px-3 py-1 rounded-lg text-xs font-bold bg-white/5 border border-white/20 text-gray-400">전체</button>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="date" id="fine-date-start" class="input-field text-xs" onchange="setFinePeriod('custom')">
+                            <span class="text-gray-500">~</span>
+                            <input type="date" id="fine-date-end" class="input-field text-xs" onchange="setFinePeriod('custom')">
+                        </div>
                     </div>
                 </div>
+                
+                <!-- 통계 카드 (기간별) -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <div class="glass-card rounded-xl p-4 border-l-4 border-red-400">
+                        <div class="text-red-400 text-xs mb-1">🚨 기간 내 과태료</div>
+                        <div class="text-2xl font-black text-red-400" id="fine-period-count">0건</div>
+                    </div>
+                    <div class="glass-card rounded-xl p-4 border-l-4 border-orange-400">
+                        <div class="text-orange-400 text-xs mb-1">💸 기간 내 미납</div>
+                        <div class="text-2xl font-black text-orange-400" id="fine-period-unpaid">₩0</div>
+                    </div>
+                    <div class="glass-card rounded-xl p-4 border-l-4 border-emerald-400">
+                        <div class="text-emerald-400 text-xs mb-1">✅ 기간 내 납부</div>
+                        <div class="text-2xl font-black text-emerald-400" id="fine-period-paid">₩0</div>
+                    </div>
+                    <div class="glass-card rounded-xl p-4 border-l-4 border-blue-400">
+                        <div class="text-blue-400 text-xs mb-1">📊 기간 내 총액</div>
+                        <div class="text-2xl font-black text-blue-400" id="fine-period-total">₩0</div>
+                    </div>
+                </div>
+                
+                <!-- 총 미납금 (기간 무관) -->
+                <div class="glass-card rounded-xl p-4 mb-4 border-2 border-red-500/50 bg-red-500/5">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="text-red-400 text-xs mb-1">🔥 총 미납금 (전체 미결제)</div>
+                            <div class="text-gray-400 text-xs">기간과 관계없이 미납된 전체 과태료</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-3xl font-black text-red-400" id="fine-total-unpaid">₩0</div>
+                            <div class="text-xs text-red-400/70" id="fine-total-unpaid-count">0건</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 검색/필터 -->
                 <div class="glass-card rounded-xl p-4 mb-4 flex flex-wrap items-center justify-between gap-3">
                     <div class="flex flex-wrap items-center gap-2">
                         <input type="text" id="fine-search" placeholder="검색 (고객명, 차량번호)" class="input-field w-48" oninput="loadFines()">
@@ -2391,7 +2425,7 @@
 
     <!-- ======================= 정산관리 모달: 차량 등록 ======================= -->
     <div id="vehicleModal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width:550px">
+        <div class="modal-content" style="max-width:650px; max-height:90vh; overflow-y:auto;">
             <div class="flex justify-between mb-4"><h2 id="vehicleModalTitle" class="text-xl font-bold text-lime-400">🚗 차량 등록</h2><button onclick="closeModal('vehicleModal')" class="text-gray-400 text-2xl">&times;</button></div>
             <form onsubmit="submitVehicle(event)" id="vehicleForm" class="space-y-4">
                 <input type="hidden" id="vehicle-edit-id">
@@ -2411,16 +2445,78 @@
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-2 gap-3">
-                    <div><label class="block text-xs text-lime-400 mb-1">번호판*</label><input name="plate" id="veh-plate" class="input-field" required></div>
-                    <div><label class="block text-xs text-lime-400 mb-1">모델*</label><input name="model" id="veh-model" class="input-field" required></div>
+                <!-- 기본 정보 -->
+                <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div class="text-xs text-cyan-400 mb-3">🚗 기본 정보</div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="block text-xs text-gray-400 mb-1">번호판*</label><input name="plate" id="veh-plate" class="input-field" required></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">모델*</label><input name="model" id="veh-model" class="input-field" required></div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3 mt-3">
+                        <div><label class="block text-xs text-gray-400 mb-1">연식</label><input type="number" name="year" id="veh-year" class="input-field" value="2024"></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">색상</label><input name="color" id="veh-color" class="input-field"></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">주행거리</label><input type="number" name="mileage" id="veh-mileage" class="input-field" value="0"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 mt-3">
+                        <div><label class="block text-xs text-gray-400 mb-1">연료</label>
+                            <select name="fuel_type" id="veh-fuel" class="input-field">
+                                <option value="휘발유">휘발유</option>
+                                <option value="경유">경유</option>
+                                <option value="LPG">LPG</option>
+                                <option value="전기">전기</option>
+                                <option value="하이브리드">하이브리드</option>
+                            </select>
+                        </div>
+                        <div><label class="block text-xs text-gray-400 mb-1">차대번호</label><input name="vin" id="veh-vin" class="input-field" placeholder="VIN"></div>
+                    </div>
                 </div>
-                <div class="grid grid-cols-3 gap-3">
-                    <div><label class="block text-xs text-lime-400 mb-1">연식</label><input type="number" name="year" id="veh-year" class="input-field" value="2024"></div>
-                    <div><label class="block text-xs text-lime-400 mb-1">색상</label><input name="color" id="veh-color" class="input-field"></div>
-                    <div><label class="block text-xs text-lime-400 mb-1">주행거리</label><input type="number" name="mileage" id="veh-mileage" class="input-field" value="0"></div>
+                
+                <!-- 보험 정보 -->
+                <div class="p-3 rounded-lg bg-blue-400/10 border border-blue-400/30">
+                    <div class="text-xs text-blue-400 mb-3">🛡️ 보험 정보</div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="block text-xs text-gray-400 mb-1">보험사</label>
+                            <select name="insurance" id="veh-insurance" class="input-field">
+                                <option value="">선택</option>
+                                <option value="삼성화재">삼성화재</option>
+                                <option value="현대해상">현대해상</option>
+                                <option value="DB손해보험">DB손해보험</option>
+                                <option value="KB손해보험">KB손해보험</option>
+                                <option value="메리츠화재">메리츠화재</option>
+                                <option value="한화손해보험">한화손해보험</option>
+                                <option value="롯데손해보험">롯데손해보험</option>
+                                <option value="흥국화재">흥국화재</option>
+                                <option value="기타">기타</option>
+                            </select>
+                        </div>
+                        <div><label class="block text-xs text-gray-400 mb-1">보험만료일</label><input type="date" name="insurance_expiry" id="veh-ins-expiry" class="input-field"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 mt-3">
+                        <div><label class="block text-xs text-gray-400 mb-1">보험증권번호</label><input name="insurance_no" id="veh-ins-no" class="input-field"></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">보험료 (월)</label><input type="number" name="insurance_fee" id="veh-ins-fee" class="input-field" value="0"></div>
+                    </div>
                 </div>
-                <div><label class="block text-xs text-lime-400 mb-1">메모</label><input name="memo" id="veh-memo" class="input-field"></div>
+                
+                <!-- 정비 정보 -->
+                <div class="p-3 rounded-lg bg-orange-400/10 border border-orange-400/30">
+                    <div class="text-xs text-orange-400 mb-3">🔧 정비 정보</div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="block text-xs text-gray-400 mb-1">최근 정비일</label><input type="date" name="last_maintenance" id="veh-last-maint" class="input-field"></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">다음 정비예정일</label><input type="date" name="next_maintenance" id="veh-next-maint" class="input-field"></div>
+                    </div>
+                    <div class="mt-3"><label class="block text-xs text-gray-400 mb-1">정비 내역</label><textarea name="maintenance_history" id="veh-maint-history" class="input-field" rows="2" placeholder="예: 2024-01-15 엔진오일 교환, 2024-02-20 타이어 교체"></textarea></div>
+                </div>
+                
+                <!-- 기타 -->
+                <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div class="text-xs text-gray-400 mb-3">📝 기타</div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="block text-xs text-gray-400 mb-1">취득일</label><input type="date" name="purchase_date" id="veh-purchase-date" class="input-field"></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">취득가</label><input type="number" name="purchase_price" id="veh-purchase-price" class="input-field" value="0"></div>
+                    </div>
+                    <div class="mt-3"><label class="block text-xs text-gray-400 mb-1">메모</label><textarea name="memo" id="veh-memo" class="input-field" rows="2"></textarea></div>
+                </div>
+                
                 <div class="flex gap-3 pt-2">
                     <button type="button" onclick="closeModal('vehicleModal')" class="btn-secondary flex-1">취소</button>
                     <button type="submit" class="btn-primary flex-1" id="vehicleSubmitBtn">등록</button>
@@ -2736,7 +2832,7 @@ async function deleteFromDB(table, id) {
 }
 
 // ======================= 전역 변수 =======================
-const APP_VERSION = '1.0.2';
+const APP_VERSION = '1.02';
 let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
 let currentTab = 'overview'; // 현재 탭
@@ -2979,7 +3075,7 @@ function showSettlementTab(name, skipHistory = false) {
     if (name === 'customers') loadCustomers();
     if (name === 'charges') loadPgPayments();
     if (name === 'ledger') loadLedger();
-    if (name === 'fines') loadFines();
+    if (name === 'fines') { initFinePeriod(); loadFines(); }
     if (name === 'delinquent') loadDelinquent();
     if (name === 'settings') renderStaffList();
 }
@@ -4029,6 +4125,7 @@ function viewVehicleDetail(id) {
     
     const [sc, sl] = vStatusBadge(v.status);
     const contract = v.contract_id ? contractList.find(c => c.id === v.contract_id) : null;
+    const ownerBadge = (v.ownership || 'owned') === 'owned' ? ['text-emerald-400', '🏢 자사차량'] : ['text-blue-400', '🤝 임대차량'];
     
     let actionBtns = '';
     if (v.status === '입고') actionBtns = `<button onclick="changeVehicleStatus(${v.id}, '출고')" class="btn-primary flex-1">📤 출고</button><button onclick="changeVehicleStatus(${v.id}, '정비')" class="btn-secondary flex-1">🔧 정비</button>`;
@@ -4041,18 +4138,63 @@ function viewVehicleDetail(id) {
         actionBtns += `<button onclick="changeVehicleStatus(${v.id}, '폐차')" class="flex-1 p-2 rounded-lg bg-red-500/20 border border-red-500/50 text-red-400 text-sm hover:bg-red-500/30">🚫 폐차/매각</button>`;
     }
     
+    // 보험 만료 D-Day 계산
+    let insuranceWarning = '';
+    if (v.insurance_expiry) {
+        const today = new Date();
+        const expiry = new Date(v.insurance_expiry);
+        const diffDays = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+        if (diffDays < 0) insuranceWarning = `<span class="text-red-400 font-bold">만료됨!</span>`;
+        else if (diffDays <= 30) insuranceWarning = `<span class="text-orange-400">D-${diffDays}</span>`;
+        else insuranceWarning = `<span class="text-gray-400">D-${diffDays}</span>`;
+    }
+    
     document.getElementById('vehicle-detail-content').innerHTML = `
         <div class="p-4 rounded-lg bg-white/5 border border-white/10 mb-4">
             <div class="grid grid-cols-2 gap-4">
                 <div class="info-row"><span class="info-label">번호판</span><span class="text-lime-400 font-bold">${v.plate}</span></div>
                 <div class="info-row"><span class="info-label">상태</span><span class="badge ${sc}">${sl}</span></div>
+                <div class="info-row"><span class="info-label">소유유형</span><span class="${ownerBadge[0]} font-bold">${ownerBadge[1]}</span></div>
                 <div class="info-row"><span class="info-label">모델</span><span class="font-bold">${v.model}</span></div>
                 <div class="info-row"><span class="info-label">연식</span><span>${v.year}년</span></div>
                 <div class="info-row"><span class="info-label">색상</span><span>${v.color || '-'}</span></div>
-                <div class="info-row"><span class="info-label">주행거리</span><span>${v.mileage.toLocaleString()} km</span></div>
+                <div class="info-row"><span class="info-label">연료</span><span>${v.fuel_type || '-'}</span></div>
+                <div class="info-row"><span class="info-label">주행거리</span><span>${(v.mileage || 0).toLocaleString()} km</span></div>
+                ${v.vin ? `<div class="info-row col-span-2"><span class="info-label">차대번호</span><span class="font-mono text-xs">${v.vin}</span></div>` : ''}
                 ${contract ? `<div class="info-row col-span-2"><span class="info-label">연결계약</span><span class="text-blue-400">#${String(contract.id).padStart(3,'0')} ${contract.customer_name}</span></div>` : ''}
             </div>
         </div>
+        
+        ${v.insurance ? `
+        <div class="p-4 rounded-lg bg-blue-400/10 border border-blue-400/30 mb-4">
+            <div class="text-xs text-blue-400 mb-2">🛡️ 보험 정보</div>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+                <div><span class="text-gray-400">보험사:</span> <span class="font-bold">${v.insurance}</span></div>
+                <div><span class="text-gray-400">만료일:</span> <span>${v.insurance_expiry || '-'}</span> ${insuranceWarning}</div>
+                ${v.insurance_no ? `<div><span class="text-gray-400">증권번호:</span> <span>${v.insurance_no}</span></div>` : ''}
+                ${v.insurance_fee ? `<div><span class="text-gray-400">보험료:</span> <span>${fmt(v.insurance_fee)}/월</span></div>` : ''}
+            </div>
+        </div>` : ''}
+        
+        ${(v.last_maintenance || v.next_maintenance || v.maintenance_history) ? `
+        <div class="p-4 rounded-lg bg-orange-400/10 border border-orange-400/30 mb-4">
+            <div class="text-xs text-orange-400 mb-2">🔧 정비 정보</div>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+                ${v.last_maintenance ? `<div><span class="text-gray-400">최근 정비:</span> <span>${v.last_maintenance}</span></div>` : ''}
+                ${v.next_maintenance ? `<div><span class="text-gray-400">다음 예정:</span> <span>${v.next_maintenance}</span></div>` : ''}
+            </div>
+            ${v.maintenance_history ? `<div class="mt-2 p-2 rounded bg-white/5 text-xs text-gray-300 whitespace-pre-line">${v.maintenance_history}</div>` : ''}
+        </div>` : ''}
+        
+        ${(v.purchase_date || v.purchase_price) ? `
+        <div class="p-4 rounded-lg bg-white/5 border border-white/10 mb-4">
+            <div class="text-xs text-cyan-400 mb-2">💰 취득 정보</div>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+                ${v.purchase_date ? `<div><span class="text-gray-400">취득일:</span> <span>${v.purchase_date}</span></div>` : ''}
+                ${v.purchase_price ? `<div><span class="text-gray-400">취득가:</span> <span class="text-cyan-400 font-bold">${fmt(v.purchase_price)}</span></div>` : ''}
+            </div>
+        </div>` : ''}
+        
         ${v.memo ? `<div class="p-4 rounded-lg bg-white/5 border border-white/10 mb-4"><div class="text-xs text-lime-400 mb-2">📝 메모</div><div class="text-sm">${v.memo}</div></div>` : ''}
         <div class="flex gap-3 mb-3">${actionBtns}</div>
         <div class="flex gap-3">
@@ -4083,11 +4225,30 @@ function editVehicle(id) {
     document.getElementById('vehicleModalTitle').textContent = '🚗 차량 수정';
     document.getElementById('vehicleSubmitBtn').textContent = '수정';
     document.getElementById('vehicle-edit-id').value = v.id;
+    
+    // 기본 정보
     document.getElementById('veh-plate').value = v.plate;
     document.getElementById('veh-model').value = v.model;
     document.getElementById('veh-year').value = v.year;
     document.getElementById('veh-color').value = v.color || '';
     document.getElementById('veh-mileage').value = v.mileage;
+    document.getElementById('veh-fuel').value = v.fuel_type || '휘발유';
+    document.getElementById('veh-vin').value = v.vin || '';
+    
+    // 보험 정보
+    document.getElementById('veh-insurance').value = v.insurance || '';
+    document.getElementById('veh-ins-expiry').value = v.insurance_expiry || '';
+    document.getElementById('veh-ins-no').value = v.insurance_no || '';
+    document.getElementById('veh-ins-fee').value = v.insurance_fee || 0;
+    
+    // 정비 정보
+    document.getElementById('veh-last-maint').value = v.last_maintenance || '';
+    document.getElementById('veh-next-maint').value = v.next_maintenance || '';
+    document.getElementById('veh-maint-history').value = v.maintenance_history || '';
+    
+    // 기타
+    document.getElementById('veh-purchase-date').value = v.purchase_date || '';
+    document.getElementById('veh-purchase-price').value = v.purchase_price || 0;
     document.getElementById('veh-memo').value = v.memo || '';
     
     // 소유유형 선택
@@ -4102,30 +4263,37 @@ function submitVehicle(e) {
     const editId = document.getElementById('vehicle-edit-id').value;
     const d = Object.fromEntries(new FormData(e.target));
     
+    const vehicleData = {
+        plate: d.plate,
+        model: d.model,
+        year: parseInt(d.year) || 2024,
+        color: d.color || '',
+        mileage: parseInt(d.mileage) || 0,
+        fuel_type: d.fuel_type || '휘발유',
+        vin: d.vin || '',
+        insurance: d.insurance || '',
+        insurance_expiry: d.insurance_expiry || null,
+        insurance_no: d.insurance_no || '',
+        insurance_fee: parseInt(d.insurance_fee) || 0,
+        last_maintenance: d.last_maintenance || null,
+        next_maintenance: d.next_maintenance || null,
+        maintenance_history: d.maintenance_history || '',
+        purchase_date: d.purchase_date || null,
+        purchase_price: parseInt(d.purchase_price) || 0,
+        memo: d.memo || '',
+        ownership: d.ownership || 'owned'
+    };
+    
     if (editId) {
         const v = vehicleList.find(x => x.id === parseInt(editId));
-        if (v) {
-            v.plate = d.plate;
-            v.model = d.model;
-            v.year = parseInt(d.year) || 2024;
-            v.color = d.color || '';
-            v.mileage = parseInt(d.mileage) || 0;
-            v.memo = d.memo || '';
-            v.ownership = d.ownership || 'owned';
-        }
+        if (v) Object.assign(v, vehicleData);
         showToast('✅ 차량이 수정되었습니다');
     } else {
         vehicleList.push({
             id: Math.max(...vehicleList.map(v => v.id), 0) + 1,
-            plate: d.plate,
-            model: d.model,
-            year: parseInt(d.year) || 2024,
-            color: d.color || '',
-            mileage: parseInt(d.mileage) || 0,
             status: '입고',
             contract_id: null,
-            memo: d.memo || '',
-            ownership: d.ownership || 'owned'
+            ...vehicleData
         });
         showToast('✅ 차량이 등록되었습니다');
     }
@@ -7830,13 +7998,93 @@ async function submitLedgerEntry(e) {
 }
 
 // ======================= 정산관리: 과태료 관리 =======================
+// 과태료 기간 설정
+let finePeriodType = '1m';
+
+function setFinePeriod(type) {
+    finePeriodType = type;
+    
+    // 버튼 스타일 업데이트
+    ['1m', '6m', '1y', 'all'].forEach(t => {
+        const btn = document.getElementById('fine-period-' + t);
+        if (btn) {
+            btn.className = t === type && type !== 'custom'
+                ? 'px-3 py-1 rounded-lg text-xs font-bold bg-lime-500/20 border border-lime-500 text-lime-400'
+                : 'px-3 py-1 rounded-lg text-xs font-bold bg-white/5 border border-white/20 text-gray-400';
+        }
+    });
+    
+    // 날짜 계산
+    const now = new Date();
+    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    const today = koreaTime.toISOString().split('T')[0];
+    let startDate = '';
+    
+    if (type === '1m') {
+        const d = new Date(koreaTime);
+        d.setMonth(d.getMonth() - 1);
+        startDate = d.toISOString().split('T')[0];
+    } else if (type === '6m') {
+        const d = new Date(koreaTime);
+        d.setMonth(d.getMonth() - 6);
+        startDate = d.toISOString().split('T')[0];
+    } else if (type === '1y') {
+        const d = new Date(koreaTime);
+        d.setFullYear(d.getFullYear() - 1);
+        startDate = d.toISOString().split('T')[0];
+    } else if (type === 'all') {
+        startDate = '';
+    }
+    
+    if (type !== 'custom') {
+        document.getElementById('fine-date-start').value = startDate;
+        document.getElementById('fine-date-end').value = today;
+    }
+    
+    loadFines();
+}
+
+function initFinePeriod() {
+    const now = new Date();
+    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    const today = koreaTime.toISOString().split('T')[0];
+    const oneMonthAgo = new Date(koreaTime);
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    
+    document.getElementById('fine-date-start').value = oneMonthAgo.toISOString().split('T')[0];
+    document.getElementById('fine-date-end').value = today;
+}
+
 function loadFines() {
     const search = (document.getElementById('fine-search')?.value || '').toLowerCase();
     const status = document.getElementById('fine-status')?.value || '';
+    const dateStart = document.getElementById('fine-date-start')?.value || '';
+    const dateEnd = document.getElementById('fine-date-end')?.value || '';
     
-    let list = [...fineList];
+    // 전체 미납금 (기간 무관)
+    const allUnpaidFines = fineList.filter(f => f.status === 'unpaid');
+    const totalUnpaidAmount = allUnpaidFines.reduce((s, f) => s + (f.amount || 0), 0);
+    document.getElementById('fine-total-unpaid').textContent = fmt(totalUnpaidAmount);
+    document.getElementById('fine-total-unpaid-count').textContent = allUnpaidFines.length + '건';
     
-    // 필터
+    // 기간 필터 적용
+    let periodList = [...fineList];
+    if (dateStart) periodList = periodList.filter(f => f.fine_date >= dateStart);
+    if (dateEnd) periodList = periodList.filter(f => f.fine_date <= dateEnd);
+    
+    // 기간 내 통계
+    const periodUnpaid = periodList.filter(f => f.status === 'unpaid');
+    const periodPaid = periodList.filter(f => f.status === 'paid');
+    const periodUnpaidAmount = periodUnpaid.reduce((s, f) => s + (f.amount || 0), 0);
+    const periodPaidAmount = periodPaid.reduce((s, f) => s + (f.amount || 0), 0);
+    
+    document.getElementById('fine-period-count').textContent = periodList.length + '건';
+    document.getElementById('fine-period-unpaid').textContent = fmt(periodUnpaidAmount);
+    document.getElementById('fine-period-paid').textContent = fmt(periodPaidAmount);
+    document.getElementById('fine-period-total').textContent = fmt(periodUnpaidAmount + periodPaidAmount);
+    
+    // 검색/상태 필터 적용
+    let list = [...periodList];
     if (status === 'unpaid') list = list.filter(f => f.status === 'unpaid');
     else if (status === 'paid') list = list.filter(f => f.status === 'paid');
     if (search) list = list.filter(f => 
@@ -7847,19 +8095,6 @@ function loadFines() {
     
     // 날짜순 정렬 (최신순)
     list.sort((a, b) => (b.fine_date || '').localeCompare(a.fine_date || ''));
-    
-    // 요약
-    const totalCount = fineList.length;
-    const unpaidFines = fineList.filter(f => f.status === 'unpaid');
-    const paidFines = fineList.filter(f => f.status === 'paid');
-    const unpaidAmount = unpaidFines.reduce((s, f) => s + (f.amount || 0), 0);
-    const paidAmount = paidFines.reduce((s, f) => s + (f.amount || 0), 0);
-    const totalAmount = unpaidAmount + paidAmount;
-    
-    document.getElementById('fine-total-count').textContent = totalCount + '건';
-    document.getElementById('fine-unpaid').textContent = fmt(unpaidAmount);
-    document.getElementById('fine-paid').textContent = fmt(paidAmount);
-    document.getElementById('fine-total-amount').textContent = fmt(totalAmount);
     
     // 테이블
     let h = '';
