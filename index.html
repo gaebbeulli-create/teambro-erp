@@ -215,7 +215,7 @@
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v1.9.0</p>
+                <p class="text-gray-500 text-xs mt-1">v2.0.0</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -254,7 +254,7 @@
                 <div id="installSection" class="mt-6 pt-4 border-t border-white/10">
                     <!-- PWA 설치 버튼 -->
                     <button id="installBtn" onclick="installApp()" class="w-full p-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold text-sm hover:opacity-90 transition">
-                        📲 앱 설치하기 <span class="text-white/70 text-xs">v1.9.0</span>
+                        📲 앱 설치하기 <span class="text-white/70 text-xs">v2.0.0</span>
                     </button>
                 </div>
             </div>
@@ -393,6 +393,12 @@
 
             <!-- 차량관리 -->
             <div id="s-content-vehicles" class="s-tab-content hidden">
+                <!-- 자사/임대 탭 -->
+                <div class="flex gap-2 mb-4">
+                    <button onclick="switchVehicleOwnership('owned')" id="v-tab-owned" class="flex-1 py-3 rounded-xl font-bold text-sm bg-emerald-500/20 border-2 border-emerald-500 text-emerald-400">🏢 자사차량</button>
+                    <button onclick="switchVehicleOwnership('rental')" id="v-tab-rental" class="flex-1 py-3 rounded-xl font-bold text-sm bg-white/5 border border-white/20 text-gray-400">🤝 임대차량</button>
+                </div>
+                
                 <div class="grid grid-cols-5 gap-4 mb-4">
                     <div class="glass-card rounded-xl p-4 text-center cursor-pointer hover:border-lime-400/50" onclick="filterVehicles('입고')"><div class="text-2xl mb-1">📥</div><div class="text-gray-400 text-xs">입고(대기)</div><div class="text-xl font-black text-lime-400" id="v-stock">-</div></div>
                     <div class="glass-card rounded-xl p-4 text-center cursor-pointer hover:border-blue-400/50" onclick="filterVehicles('출고')"><div class="text-2xl mb-1">📤</div><div class="text-gray-400 text-xs">출고(계약중)</div><div class="text-xl font-black text-blue-400" id="v-out">-</div></div>
@@ -402,8 +408,8 @@
                 </div>
                 <div class="glass-card rounded-xl p-4 mb-4 flex flex-wrap items-center justify-between gap-3">
                     <div class="flex flex-wrap items-center gap-2">
-                        <input type="text" id="vehicle-search" class="input-field" style="width:180px" placeholder="번호판, 모델 검색...">
-                        <select id="vehicle-status" class="input-field" style="width:120px">
+                        <input type="text" id="vehicle-search" class="input-field" style="width:180px" placeholder="번호판, 모델 검색..." oninput="loadVehicles()">
+                        <select id="vehicle-status" class="input-field" style="width:120px" onchange="loadVehicles()">
                             <option value="">전체 상태</option>
                             <option value="입고">입고(대기)</option>
                             <option value="출고">출고(계약중)</option>
@@ -411,11 +417,10 @@
                             <option value="정비">정비중</option>
                             <option value="폐차">폐차/매각</option>
                         </select>
-                        <button onclick="loadVehicles()" class="btn-secondary btn-sm">검색</button>
                     </div>
                     <div class="flex gap-2">
                         <button onclick="downloadExcel('vehicles')" class="btn-secondary btn-sm">📥 엑셀</button>
-                        <button onclick="openModal('vehicleModal')" class="btn-primary btn-sm">+ 차량 등록</button>
+                        <button onclick="openVehicleModal()" class="btn-primary btn-sm">+ 차량 등록</button>
                     </div>
                 </div>
                 <div class="glass-card rounded-xl overflow-hidden">
@@ -2363,6 +2368,22 @@
             <div class="flex justify-between mb-4"><h2 id="vehicleModalTitle" class="text-xl font-bold text-lime-400">🚗 차량 등록</h2><button onclick="closeModal('vehicleModal')" class="text-gray-400 text-2xl">&times;</button></div>
             <form onsubmit="submitVehicle(event)" id="vehicleForm" class="space-y-4">
                 <input type="hidden" id="vehicle-edit-id">
+                
+                <!-- 소유 유형 -->
+                <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <label class="block text-xs text-lime-400 mb-2">소유 유형*</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="ownership" value="owned" checked class="accent-emerald-500">
+                            <span class="text-emerald-400 font-bold">🏢 자사차량</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="ownership" value="rental" class="accent-blue-500">
+                            <span class="text-blue-400 font-bold">🤝 임대차량</span>
+                        </label>
+                    </div>
+                </div>
+                
                 <div class="grid grid-cols-2 gap-3">
                     <div><label class="block text-xs text-lime-400 mb-1">번호판*</label><input name="plate" id="veh-plate" class="input-field" required></div>
                     <div><label class="block text-xs text-lime-400 mb-1">모델*</label><input name="model" id="veh-model" class="input-field" required></div>
@@ -2688,7 +2709,7 @@ async function deleteFromDB(table, id) {
 }
 
 // ======================= 전역 변수 =======================
-const APP_VERSION = '1.9.0';
+const APP_VERSION = '2.0.0';
 let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
 let currentTab = 'overview'; // 현재 탭
@@ -3825,6 +3846,36 @@ async function deleteContract(id) {
 // ======================= 정산관리: 차량관리 =======================
 const vStatusBadge = s => ({ '입고': ['badge-active', '입고(대기)'], '출고': ['badge-completed', '출고(계약중)'], '반납': ['badge-pending', '반납(점검)'], '정비': ['badge-delinquent', '정비중'], '폐차': ['badge-staff', '폐차/매각'] }[s] || ['', '']);
 
+// 차량 소유유형 탭
+let currentVehicleOwnership = 'owned';
+
+function switchVehicleOwnership(type) {
+    currentVehicleOwnership = type;
+    
+    // 탭 스타일 변경
+    document.getElementById('v-tab-owned').className = type === 'owned' 
+        ? 'flex-1 py-3 rounded-xl font-bold text-sm bg-emerald-500/20 border-2 border-emerald-500 text-emerald-400'
+        : 'flex-1 py-3 rounded-xl font-bold text-sm bg-white/5 border border-white/20 text-gray-400';
+    document.getElementById('v-tab-rental').className = type === 'rental'
+        ? 'flex-1 py-3 rounded-xl font-bold text-sm bg-blue-500/20 border-2 border-blue-500 text-blue-400'
+        : 'flex-1 py-3 rounded-xl font-bold text-sm bg-white/5 border border-white/20 text-gray-400';
+    
+    loadVehicles();
+}
+
+function openVehicleModal() {
+    document.getElementById('vehicleModalTitle').textContent = '🚗 차량 등록';
+    document.getElementById('vehicleSubmitBtn').textContent = '등록';
+    document.getElementById('vehicle-edit-id').value = '';
+    document.getElementById('vehicleForm').reset();
+    
+    // 현재 선택된 탭에 맞게 소유유형 기본값 설정
+    const ownershipRadio = document.querySelector(`input[name="ownership"][value="${currentVehicleOwnership}"]`);
+    if (ownershipRadio) ownershipRadio.checked = true;
+    
+    openModal('vehicleModal');
+}
+
 function loadVehicles() {
     const search = document.getElementById('vehicle-search').value.toLowerCase();
     const status = document.getElementById('vehicle-status').value;
@@ -3842,11 +3893,15 @@ function loadVehicles() {
         is_purchase: true,
         purchase_id: p.id,
         purchase_price: p.purchase_price,
-        sell_price: p.sell_price
+        sell_price: p.sell_price,
+        ownership: 'owned' // 매입차량은 자사차량
     }));
     
     // 기존 차량 + 매입완료 차량
     let allVehicles = [...vehicleList, ...completedPurchases];
+    
+    // 소유유형 필터 (기본값: owned)
+    allVehicles = allVehicles.filter(v => (v.ownership || 'owned') === currentVehicleOwnership);
     
     let list = allVehicles;
     if (status) list = list.filter(v => v.status === status);
@@ -3865,8 +3920,9 @@ function loadVehicles() {
         const [sc, sl] = vStatusBadge(v.status);
         const contract = v.contract_id ? contractList.find(c => c.id === v.contract_id) : null;
         const isPurchase = v.is_purchase;
+        const ownerBadge = (v.ownership || 'owned') === 'owned' ? '🏢' : '🤝';
         h += `<tr onclick="${isPurchase ? `viewPurchaseVehicle(${v.purchase_id})` : `viewVehicleDetail(${v.id})`}" class="cursor-pointer">
-            <td class="font-mono font-bold ${isPurchase ? 'text-cyan-400' : 'text-lime-400'}">${v.plate}${isPurchase ? ' 🏷️' : ''}</td>
+            <td class="font-mono font-bold ${isPurchase ? 'text-cyan-400' : 'text-lime-400'}">${ownerBadge} ${v.plate}${isPurchase ? ' 🏷️' : ''}</td>
             <td>${v.model}</td>
             <td>${v.year}</td>
             <td>${v.color || '-'}</td>
@@ -4006,6 +4062,11 @@ function editVehicle(id) {
     document.getElementById('veh-color').value = v.color || '';
     document.getElementById('veh-mileage').value = v.mileage;
     document.getElementById('veh-memo').value = v.memo || '';
+    
+    // 소유유형 선택
+    const ownershipRadio = document.querySelector(`input[name="ownership"][value="${v.ownership || 'owned'}"]`);
+    if (ownershipRadio) ownershipRadio.checked = true;
+    
     openModal('vehicleModal');
 }
 
@@ -4023,6 +4084,7 @@ function submitVehicle(e) {
             v.color = d.color || '';
             v.mileage = parseInt(d.mileage) || 0;
             v.memo = d.memo || '';
+            v.ownership = d.ownership || 'owned';
         }
         showToast('✅ 차량이 수정되었습니다');
     } else {
@@ -4035,7 +4097,8 @@ function submitVehicle(e) {
             mileage: parseInt(d.mileage) || 0,
             status: '입고',
             contract_id: null,
-            memo: d.memo || ''
+            memo: d.memo || '',
+            ownership: d.ownership || 'owned'
         });
         showToast('✅ 차량이 등록되었습니다');
     }
