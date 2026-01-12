@@ -197,12 +197,25 @@
     <div id="toast-container"></div>
 
     <!-- ======================= 로그인 페이지 ======================= -->
-    <div id="loginPage" class="relative z-10 min-h-screen flex items-center justify-center px-4">
+    <!-- 로딩 화면 -->
+    <div id="loadingScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-black">
+        <div class="text-center">
+            <h1 class="text-4xl font-black neon-text mb-4">TEAM BRO</h1>
+            <div class="flex items-center justify-center gap-2">
+                <div class="w-2 h-2 bg-lime-400 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
+                <div class="w-2 h-2 bg-lime-400 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
+                <div class="w-2 h-2 bg-lime-400 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+            </div>
+            <p class="text-gray-500 text-xs mt-4">로딩 중...</p>
+        </div>
+    </div>
+
+    <div id="loginPage" class="hidden relative z-10 min-h-screen flex items-center justify-center px-4">
         <div class="w-full max-w-lg">
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v1.2.0</p>
+                <p class="text-gray-500 text-xs mt-1">v1.4.0</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -237,13 +250,36 @@
                     <button type="submit" class="w-full btn-primary text-lg py-3">⚡ 로그인</button>
                 </form>
                 
-                <!-- 앱 설치 버튼 -->
-                <div id="installBtnContainer" class="mt-4 space-y-2">
-                    <button id="installBtn" onclick="installApp()" class="hidden w-full p-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold text-sm hover:opacity-90 transition">
+                <!-- 앱 설치 안내 -->
+                <div id="installSection" class="mt-6 pt-4 border-t border-white/10">
+                    <div class="text-center text-xs text-gray-400 mb-3">📱 앱으로 더 편하게 사용하세요</div>
+                    
+                    <!-- PWA 설치 버튼 (Android Chrome 등) -->
+                    <button id="installBtn" onclick="installApp()" class="hidden w-full p-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold text-sm hover:opacity-90 transition mb-2">
                         📲 앱 설치하기
                     </button>
-                    <div id="installGuide" class="hidden p-3 rounded-xl bg-white/5 border border-white/10 text-center">
-                        <div class="text-xs text-gray-400 mb-2" id="installGuideText"></div>
+                    
+                    <!-- iOS / Android 수동 설치 가이드 -->
+                    <div id="installGuideBox" class="p-3 rounded-xl bg-white/5 border border-white/10">
+                        <div id="iosGuide" class="hidden">
+                            <div class="text-lime-400 font-bold text-sm mb-2">🍎 iPhone 설치 방법</div>
+                            <div class="text-xs text-gray-300 space-y-1">
+                                <div>1. Safari 하단 <span class="text-blue-400">공유 버튼</span> (□↑) 터치</div>
+                                <div>2. <span class="text-lime-400">"홈 화면에 추가"</span> 선택</div>
+                                <div>3. 우측 상단 <span class="text-lime-400">"추가"</span> 터치</div>
+                            </div>
+                        </div>
+                        <div id="androidGuide" class="hidden">
+                            <div class="text-lime-400 font-bold text-sm mb-2">🤖 Android 설치 방법</div>
+                            <div class="text-xs text-gray-300 space-y-1">
+                                <div>1. 브라우저 우측 상단 <span class="text-blue-400">⋮ 메뉴</span> 터치</div>
+                                <div>2. <span class="text-lime-400">"홈 화면에 추가"</span> 또는</div>
+                                <div class="pl-3"><span class="text-lime-400">"앱 설치"</span> 선택</div>
+                            </div>
+                        </div>
+                        <div id="desktopGuide" class="hidden">
+                            <div class="text-gray-400 text-xs text-center">💻 PC에서는 브라우저로 이용해주세요</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2548,7 +2584,7 @@ async function deleteFromDB(table, id) {
 }
 
 // ======================= 전역 변수 =======================
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.4.0';
 let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
 let currentTab = 'overview'; // 현재 탭
@@ -2615,6 +2651,14 @@ async function handleLogin(e) {
     if (users && users.length > 0) {
         const user = users[0];
         currentUser = user;
+        
+        // 세션 저장 (localStorage)
+        localStorage.setItem('teambro_session', JSON.stringify({
+            userId: user.id,
+            system: currentSystem,
+            tab: 'overview',
+            timestamp: Date.now()
+        }));
         
         // 모든 데이터 로드
         await loadAllData();
@@ -2711,7 +2755,24 @@ function initDates() {
 
 function handleLogout() {
     currentUser = null;
+    localStorage.removeItem('teambro_session');
     location.reload();
+}
+
+// 세션에 현재 탭 저장
+function updateSessionTab(system, tab) {
+    const sessionData = localStorage.getItem('teambro_session');
+    if (!sessionData) return;
+    
+    try {
+        const session = JSON.parse(sessionData);
+        session.system = system;
+        session.tab = tab;
+        session.timestamp = Date.now();
+        localStorage.setItem('teambro_session', JSON.stringify(session));
+    } catch (e) {
+        console.error('세션 업데이트 실패:', e);
+    }
 }
 
 // ======================= 시스템 전환 =======================
@@ -2753,6 +2814,9 @@ function showSettlementTab(name, skipHistory = false) {
         history.pushState({ system: 'settlement', tab: name }, '', `#s-${name}`);
     }
     currentTab = name;
+    
+    // 세션에 현재 탭 저장
+    updateSessionTab('settlement', name);
     
     if (name === 'overview') loadOverview();
     if (name === 'contracts') loadContracts();
@@ -2970,6 +3034,9 @@ function showBromotorsTab(name, skipHistory = false) {
         history.pushState({ system: 'bromotors', tab: name }, '', `#b-${name}`);
     }
     currentTab = name;
+    
+    // 세션에 현재 탭 저장
+    updateSessionTab('bromotors', name);
     
     if (name === 'overview') loadBroDashboard();
     if (name === 'work') loadBroWork();
@@ -5783,6 +5850,12 @@ async function submitBroCustomer(e) {
     const d = Object.fromEntries(new FormData(e.target));
     const editId = document.getElementById('bro-cust-edit-id').value;
     
+    // 필수값 체크
+    if (!d.name || !d.phone) {
+        showToast('⚠️ 고객명과 연락처를 입력해주세요', 'error');
+        return;
+    }
+    
     const now = new Date();
     const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
     const today = koreaTime.toISOString().split('T')[0];
@@ -5795,27 +5868,37 @@ async function submitBroCustomer(e) {
         memo: d.memo || ''
     };
     
-    if (editId) {
-        // 수정
-        await updateInDB('bro_customers', editId, custData);
-        const c = broCustList.find(x => x.id === parseInt(editId));
-        if (c) Object.assign(c, custData);
-        showToast('✅ 고객 정보가 수정되었습니다');
-    } else {
-        // 신규 등록
-        custData.visits = 0;
-        custData.last_visit = today;
-        const result = await insertToDB('bro_customers', custData);
-        if (result && result[0]) broCustList.unshift(result[0]);
-        showToast('✅ 고객이 등록되었습니다');
+    try {
+        if (editId) {
+            // 수정
+            await updateInDB('bro_customers', editId, custData);
+            const c = broCustList.find(x => x.id === parseInt(editId));
+            if (c) Object.assign(c, custData);
+            showToast('✅ 고객 정보가 수정되었습니다');
+        } else {
+            // 신규 등록
+            custData.visits = 0;
+            custData.last_visit = today;
+            const result = await insertToDB('bro_customers', custData);
+            if (result && result[0]) {
+                broCustList.unshift(result[0]);
+                showToast('✅ 고객이 등록되었습니다');
+            } else {
+                showToast('⚠️ 등록 실패. 다시 시도해주세요', 'error');
+                return;
+            }
+        }
+        
+        closeModal('broCustModal');
+        document.getElementById('broCustForm').reset();
+        document.getElementById('bro-cust-edit-id').value = '';
+        document.getElementById('broCustModalTitle').textContent = '👤 고객 등록';
+        document.getElementById('broCustSubmitBtn').textContent = '등록';
+        loadBroCustomers();
+    } catch (err) {
+        console.error('고객 등록 오류:', err);
+        showToast('⚠️ 오류가 발생했습니다', 'error');
     }
-    
-    closeModal('broCustModal');
-    document.getElementById('broCustForm').reset();
-    document.getElementById('bro-cust-edit-id').value = '';
-    document.getElementById('broCustModalTitle').textContent = '👤 고객 등록';
-    document.getElementById('broCustSubmitBtn').textContent = '등록';
-    loadBroCustomers();
 }
 
 // 고객 등록 모달 열기
@@ -7276,6 +7359,8 @@ window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
     document.getElementById('installBtn').classList.remove('hidden');
+    // PWA 설치 가능하면 가이드 숨김
+    document.getElementById('installGuideBox').classList.add('hidden');
 });
 
 // 앱 설치 함수
@@ -7299,29 +7384,31 @@ function showInstallGuide() {
     const isAndroid = /Android/.test(ua);
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     
-    // 이미 앱으로 실행 중이면 숨김
+    // 이미 앱으로 실행 중이면 설치 섹션 숨김
     if (isStandalone) {
-        document.getElementById('installBtnContainer').classList.add('hidden');
+        document.getElementById('installSection').classList.add('hidden');
         return;
     }
     
-    const guideEl = document.getElementById('installGuide');
-    const guideText = document.getElementById('installGuideText');
+    // PWA 설치 가능하면 (deferredPrompt 있으면) 가이드 숨김
+    if (deferredPrompt) {
+        document.getElementById('installGuideBox').classList.add('hidden');
+        return;
+    }
     
-    if (isIOS && !deferredPrompt) {
-        guideEl.classList.remove('hidden');
-        guideText.innerHTML = `
-            <div class="text-lime-400 font-bold mb-1">📱 iPhone 앱 설치</div>
-            <div>1. 하단 <span class="text-blue-400">공유 버튼</span> (□↑) 터치</div>
-            <div>2. <span class="text-lime-400">"홈 화면에 추가"</span> 선택</div>
-        `;
-    } else if (isAndroid && !deferredPrompt) {
-        guideEl.classList.remove('hidden');
-        guideText.innerHTML = `
-            <div class="text-lime-400 font-bold mb-1">📱 Android 앱 설치</div>
-            <div>1. 우측 상단 <span class="text-blue-400">⋮ 메뉴</span> 터치</div>
-            <div>2. <span class="text-lime-400">"홈 화면에 추가"</span> 선택</div>
-        `;
+    // 기기별 가이드 표시
+    if (isIOS) {
+        document.getElementById('iosGuide').classList.remove('hidden');
+        document.getElementById('androidGuide').classList.add('hidden');
+        document.getElementById('desktopGuide').classList.add('hidden');
+    } else if (isAndroid) {
+        document.getElementById('iosGuide').classList.add('hidden');
+        document.getElementById('androidGuide').classList.remove('hidden');
+        document.getElementById('desktopGuide').classList.add('hidden');
+    } else {
+        document.getElementById('iosGuide').classList.add('hidden');
+        document.getElementById('androidGuide').classList.add('hidden');
+        document.getElementById('desktopGuide').classList.remove('hidden');
     }
 }
 
@@ -7333,7 +7420,7 @@ window.addEventListener('load', () => {
 // 앱으로 설치되면 이벤트
 window.addEventListener('appinstalled', () => {
     showToast('✅ TEAM BRO ERP가 설치되었습니다!');
-    document.getElementById('installBtnContainer').classList.add('hidden');
+    document.getElementById('installSection').classList.add('hidden');
 });
 
 // ======================= 뒤로가기 처리 =======================
@@ -7385,6 +7472,87 @@ function restoreFromHash() {
         }
     }
 }
+
+// ======================= 세션 복원 =======================
+async function restoreSession() {
+    const sessionData = localStorage.getItem('teambro_session');
+    if (!sessionData) return false;
+    
+    try {
+        const session = JSON.parse(sessionData);
+        
+        // 세션 만료 체크 (24시간)
+        const sessionAge = Date.now() - session.timestamp;
+        if (sessionAge > 24 * 60 * 60 * 1000) {
+            localStorage.removeItem('teambro_session');
+            return false;
+        }
+        
+        // 사용자 정보 로드
+        const users = await supabaseCall('staff', 'GET', null, `?id=eq.${session.userId}`);
+        if (!users || users.length === 0) {
+            localStorage.removeItem('teambro_session');
+            return false;
+        }
+        
+        const user = users[0];
+        
+        // 비활성 사용자 체크
+        if (user.status !== 'active') {
+            localStorage.removeItem('teambro_session');
+            return false;
+        }
+        
+        currentUser = user;
+        currentSystem = session.system;
+        const savedTab = session.tab || 'overview';
+        
+        // 모든 데이터 로드
+        await loadAllData();
+        
+        document.getElementById('loginPage').classList.add('hidden');
+        
+        // 시스템 표시 및 저장된 탭으로 이동
+        if (currentSystem === 'settlement') {
+            document.getElementById('settlementSystem').classList.remove('hidden');
+            document.getElementById('s-userName').textContent = user.name;
+            document.getElementById('s-userRole').textContent = roleBadge(user.role)[1];
+            renderStaffList();
+            initDates();
+            showSettlementTab(savedTab, true);
+        } else {
+            document.getElementById('bromotorsSystem').classList.remove('hidden');
+            document.getElementById('b-userName').textContent = user.name;
+            document.getElementById('b-userRole').textContent = roleBadge(user.role)[1];
+            initDates();
+            showBromotorsTab(savedTab, true);
+        }
+        
+        // 세션 타임스탬프 갱신
+        session.timestamp = Date.now();
+        localStorage.setItem('teambro_session', JSON.stringify(session));
+        
+        showToast(`${user.name}님, 다시 오셨군요!`);
+        return true;
+    } catch (e) {
+        console.error('세션 복원 실패:', e);
+        localStorage.removeItem('teambro_session');
+        return false;
+    }
+}
+
+// 페이지 로드 시 세션 복원 시도
+document.addEventListener('DOMContentLoaded', async () => {
+    const restored = await restoreSession();
+    
+    // 로딩 화면 숨기기
+    document.getElementById('loadingScreen').classList.add('hidden');
+    
+    // 세션 복원 안 됐으면 로그인 페이지 표시
+    if (!restored) {
+        document.getElementById('loginPage').classList.remove('hidden');
+    }
+});
 </script>
 </body>
 </html>
