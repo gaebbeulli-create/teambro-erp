@@ -215,7 +215,7 @@
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v2.0.0</p>
+                <p class="text-gray-500 text-xs mt-1">v2.0.1</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -254,7 +254,7 @@
                 <div id="installSection" class="mt-6 pt-4 border-t border-white/10">
                     <!-- PWA 설치 버튼 -->
                     <button id="installBtn" onclick="installApp()" class="w-full p-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold text-sm hover:opacity-90 transition">
-                        📲 앱 설치하기 <span class="text-white/70 text-xs">v2.0.0</span>
+                        📲 앱 설치하기 <span class="text-white/70 text-xs">v2.0.1</span>
                     </button>
                 </div>
             </div>
@@ -1149,9 +1149,9 @@
                         <button onclick="openModal('accidentModal')" class="btn-primary btn-sm">+ 사고차 등록</button>
                     </div>
                 </div>
-                <div class="glass-card rounded-xl overflow-hidden">
+                <div class="glass-card rounded-xl overflow-hidden overflow-x-auto">
                     <table class="data-table">
-                        <thead><tr><th>접수번호</th><th>접수일</th><th>차량번호</th><th>고객</th><th>보험사</th><th>청구금액</th><th>승인금액</th><th>실수리비</th><th>수익</th><th>상태</th></tr></thead>
+                        <thead><tr><th>접수번호</th><th>접수일</th><th>차량번호</th><th>고객</th><th>보험사</th><th>청구금액</th><th>승인금액</th><th>실수리비</th><th>수익</th><th>상태</th><th>관리</th></tr></thead>
                         <tbody id="b-acc-tbody"></tbody>
                     </table>
                 </div>
@@ -2709,7 +2709,7 @@ async function deleteFromDB(table, id) {
 }
 
 // ======================= 전역 변수 =======================
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '2.0.1';
 let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
 let currentTab = 'overview'; // 현재 탭
@@ -5667,20 +5667,44 @@ function loadAccidentList() {
             '수리중': 'badge-progress', '완료': 'badge-complete'
         }[a.status] || 'badge-staff';
         
-        h += `<tr onclick="viewAccidentDetail(${a.id})" class="cursor-pointer hover:bg-white/5">
-            <td class="text-orange-400">#${String(a.id).padStart(3,'0')}</td>
+        h += `<tr class="hover:bg-white/5">
+            <td class="text-orange-400 cursor-pointer" onclick="viewAccidentDetail(${a.id})">#${String(a.id).padStart(3,'0')}</td>
             <td class="text-gray-400">${a.receipt_date || '-'}</td>
-            <td class="font-mono font-bold">${a.plate || '-'}</td>
-            <td>${a.customer || '-'}</td>
+            <td class="font-mono font-bold cursor-pointer" onclick="viewAccidentDetail(${a.id})">${a.plate || '-'}</td>
+            <td class="cursor-pointer" onclick="viewAccidentDetail(${a.id})">${a.customer || '-'}</td>
             <td class="text-blue-400">${a.insurance || '-'}</td>
             <td class="text-purple-400">${fmt(a.estimate_request || 0)}</td>
             <td class="text-cyan-400">${fmt(a.estimate_approved || 0)}</td>
             <td class="text-orange-400">${fmt(actualCost)}</td>
             <td class="${profit >= 0 ? 'text-emerald-400' : 'text-red-400'} font-bold">${fmt(profit)}</td>
-            <td><span class="badge ${statusClass}">${a.status || '-'}</span></td>
+            <td>
+                <select onchange="changeAccidentStatus(${a.id}, this.value)" class="bg-transparent border border-white/20 rounded px-2 py-1 text-xs ${statusClass}" onclick="event.stopPropagation()">
+                    <option value="접수" ${a.status === '접수' ? 'selected' : ''}>접수</option>
+                    <option value="견적요청" ${a.status === '견적요청' ? 'selected' : ''}>견적요청</option>
+                    <option value="승인대기" ${a.status === '승인대기' ? 'selected' : ''}>승인대기</option>
+                    <option value="수리중" ${a.status === '수리중' ? 'selected' : ''}>수리중</option>
+                    <option value="완료" ${a.status === '완료' ? 'selected' : ''}>완료</option>
+                </select>
+            </td>
+            <td>
+                <div class="flex gap-1">
+                    <button onclick="event.stopPropagation(); editAccident(${a.id})" class="px-2 py-1 text-xs rounded bg-blue-500/20 text-blue-400 hover:bg-blue-500/30">수정</button>
+                    <button onclick="event.stopPropagation(); deleteAccident(${a.id})" class="px-2 py-1 text-xs rounded bg-red-500/20 text-red-400 hover:bg-red-500/30">삭제</button>
+                </div>
+            </td>
         </tr>`;
     });
-    document.getElementById('b-acc-tbody').innerHTML = h || '<tr><td colspan="10" class="text-center text-gray-500 py-6">등록된 사고차 없음</td></tr>';
+    document.getElementById('b-acc-tbody').innerHTML = h || '<tr><td colspan="11" class="text-center text-gray-500 py-6">등록된 사고차 없음</td></tr>';
+}
+
+// 사고차 상태 빠른 변경
+async function changeAccidentStatus(id, newStatus) {
+    await updateInDB('bro_accidents', id, { status: newStatus });
+    const a = accidentList.find(x => x.id === id);
+    if (a) a.status = newStatus;
+    showToast(`✅ 상태가 "${newStatus}"로 변경되었습니다`);
+    loadAccidentList();
+    loadBroDashboard();
 }
 
 function calcAccidentProfit() {
@@ -5814,7 +5838,6 @@ function editAccident(id) {
     document.getElementById('acc-ins-contact').value = a.insurance_contact || '';
     document.getElementById('acc-est-req').value = a.estimate_request || 0;
     document.getElementById('acc-est-appr').value = a.estimate_approved || 0;
-    document.getElementById('acc-actual').value = a.actual_cost || 0;
     document.getElementById('acc-parts').value = a.parts_cost || 0;
     document.getElementById('acc-labor').value = a.labor_cost || 0;
     document.getElementById('acc-status').value = a.status || '접수';
