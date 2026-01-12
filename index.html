@@ -215,7 +215,7 @@
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v1.21</p>
+                <p class="text-gray-500 text-xs mt-1">v1.22</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -2236,7 +2236,7 @@
                     <div class="text-xs text-orange-400 mb-3">📅 기간내 과태료</div>
                     <div class="grid grid-cols-2 gap-3">
                         <div><label class="block text-xs text-gray-400 mb-1">기간내 금액</label><input type="number" name="amount_in_period" id="fine-amount-in" class="input-field" placeholder="0" oninput="calcFineTotals()"></div>
-                        <div><label class="block text-xs text-gray-400 mb-1">납부기한</label><input type="date" name="due_date_in" id="fine-due-in" class="input-field"></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">납부기한</label><input type="date" name="due_date_in" id="fine-due-in" class="input-field" onchange="calcFineTotals()"></div>
                     </div>
                 </div>
                 
@@ -2245,14 +2245,17 @@
                     <div class="text-xs text-red-400 mb-3">⏰ 기간외 과태료</div>
                     <div class="grid grid-cols-2 gap-3">
                         <div><label class="block text-xs text-gray-400 mb-1">기간외 금액</label><input type="number" name="amount_out_period" id="fine-amount-out" class="input-field" placeholder="0" oninput="calcFineTotals()"></div>
-                        <div><label class="block text-xs text-gray-400 mb-1">납부기한</label><input type="date" name="due_date_out" id="fine-due-out" class="input-field"></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">납부기한</label><input type="date" name="due_date_out" id="fine-due-out" class="input-field" onchange="calcFineTotals()"></div>
                     </div>
                 </div>
                 
-                <!-- 합계 표시 -->
+                <!-- 현재 납부금액 표시 -->
                 <div class="p-3 rounded-lg bg-purple-400/10 border border-purple-400/30">
                     <div class="flex justify-between items-center">
-                        <span class="text-purple-400 text-sm font-bold">💰 총 과태료</span>
+                        <div>
+                            <span class="text-purple-400 text-sm font-bold">💰 현재 납부금액</span>
+                            <div class="text-xs text-gray-400" id="fine-due-status">기간내</div>
+                        </div>
                         <span class="text-xl font-black text-purple-400" id="fine-total-display">₩0</span>
                     </div>
                 </div>
@@ -2985,7 +2988,7 @@ async function deleteFromDB(table, id) {
 }
 
 // ======================= 전역 변수 =======================
-const APP_VERSION = '1.21';
+const APP_VERSION = '1.22';
 let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
 let currentTab = 'overview'; // 현재 탭
@@ -8878,15 +8881,41 @@ function initFinePeriod() {
     document.getElementById('fine-date-end').value = today;
 }
 
+// 과태료 현재 금액 계산 (납부기한 기준)
+function getCurrentFineAmount(f, today) {
+    const amountIn = f.amount_in_period || 0;
+    const amountOut = f.amount_out_period || 0;
+    const dueIn = f.due_date_in;
+    
+    // 기간내/기간외 금액이 없으면 기존 amount 사용
+    if (amountIn === 0 && amountOut === 0) {
+        return f.amount || 0;
+    }
+    
+    // 납부기한 기준으로 현재 금액 결정
+    if (dueIn && today <= dueIn) {
+        // 기간내 납부기한 전 → 기간내 금액
+        return amountIn;
+    } else {
+        // 기간내 지남 → 기간외 금액
+        return amountOut || amountIn;
+    }
+}
+
 function loadFines() {
     const search = (document.getElementById('fine-search')?.value || '').toLowerCase();
     const status = document.getElementById('fine-status')?.value || '';
     const dateStart = document.getElementById('fine-date-start')?.value || '';
     const dateEnd = document.getElementById('fine-date-end')?.value || '';
     
-    // 전체 미납금 (기간 무관)
+    // 오늘 날짜 (한국시간)
+    const now = new Date();
+    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    const today = koreaTime.toISOString().split('T')[0];
+    
+    // 전체 미납금 (기간 무관) - 납부기한 기준 현재 금액으로 계산
     const allUnpaidFines = fineList.filter(f => f.status === 'unpaid');
-    const totalUnpaidAmount = allUnpaidFines.reduce((s, f) => s + (f.amount || 0), 0);
+    const totalUnpaidAmount = allUnpaidFines.reduce((s, f) => s + getCurrentFineAmount(f, today), 0);
     
     // 요소가 있을 때만 업데이트
     const totalUnpaidEl = document.getElementById('fine-total-unpaid');
@@ -8901,10 +8930,10 @@ function loadFines() {
     if (dateStart) periodList = periodList.filter(f => f.fine_date >= dateStart);
     if (dateEnd) periodList = periodList.filter(f => f.fine_date <= dateEnd);
     
-    // 기간 내 통계
+    // 기간 내 통계 - 납부기한 기준 현재 금액
     const periodUnpaid = periodList.filter(f => f.status === 'unpaid');
     const periodPaid = periodList.filter(f => f.status === 'paid');
-    const periodUnpaidAmount = periodUnpaid.reduce((s, f) => s + (f.amount || 0), 0);
+    const periodUnpaidAmount = periodUnpaid.reduce((s, f) => s + getCurrentFineAmount(f, today), 0);
     const periodPaidAmount = periodPaid.reduce((s, f) => s + (f.amount || 0), 0);
     
     const periodCountEl = document.getElementById('fine-period-count');
@@ -8935,6 +8964,8 @@ function loadFines() {
     list.forEach(f => {
         const statusBadge = f.status === 'paid' ? ['badge-complete', '납부완료'] : ['badge-failed', '미납'];
         const contract = contractList.find(c => c.id === f.contract_id);
+        const currentAmount = getCurrentFineAmount(f, today);
+        const isOverdue = f.due_date_in && today > f.due_date_in;
         
         h += `<tr onclick="viewFineDetail(${f.id})" class="cursor-pointer hover:bg-white/5">
             <td class="text-red-400">#F${String(f.id).padStart(3,'0')}</td>
@@ -8943,7 +8974,7 @@ function loadFines() {
             <td class="font-bold">${f.customer_name || '-'}</td>
             <td class="font-mono">${f.plate || '-'}</td>
             <td class="text-gray-400">${f.reason || '-'}</td>
-            <td class="font-bold text-red-400">${fmt(f.amount)}</td>
+            <td class="font-bold ${isOverdue ? 'text-orange-400' : 'text-red-400'}">${fmt(currentAmount)}${isOverdue ? ' ⏰' : ''}</td>
             <td>${f.receipt_url ? '<span class="text-cyan-400">🧾</span>' : '<span class="text-gray-600">-</span>'}</td>
             <td><span class="badge ${statusBadge[0]}">${statusBadge[1]}</span></td>
         </tr>`;
@@ -9030,18 +9061,50 @@ function openFineModal() {
     document.getElementById('fine-due-in').value = sevenDaysLater.toISOString().split('T')[0];
     document.getElementById('fine-due-out').value = fourteenDaysLater.toISOString().split('T')[0];
     
+    // 초기 금액 계산
+    calcFineTotals();
+    
     // 계약 목록 로드
     loadFineContractOptions();
     
     openModal('fineModal');
 }
 
-// 과태료 합계 계산
+// 과태료 현재 납부금액 계산 (날짜 기준)
 function calcFineTotals() {
     const amountIn = parseInt(document.getElementById('fine-amount-in').value) || 0;
     const amountOut = parseInt(document.getElementById('fine-amount-out').value) || 0;
-    const total = amountIn + amountOut;
-    document.getElementById('fine-total-display').textContent = fmt(total);
+    const dueIn = document.getElementById('fine-due-in').value;
+    const dueOut = document.getElementById('fine-due-out').value;
+    
+    // 오늘 날짜 (한국시간)
+    const now = new Date();
+    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    const today = koreaTime.toISOString().split('T')[0];
+    
+    let currentAmount = 0;
+    let statusText = '';
+    
+    if (dueIn && today <= dueIn) {
+        // 기간내 납부기한 전 → 기간내 금액
+        currentAmount = amountIn;
+        statusText = `기간내 (${dueIn}까지)`;
+    } else if (dueOut && today <= dueOut) {
+        // 기간내 지남, 기간외 납부기한 전 → 기간외 금액
+        currentAmount = amountOut;
+        statusText = `기간외 (${dueOut}까지)`;
+    } else if (amountOut > 0) {
+        // 기간외도 지남 → 기간외 금액 (연체)
+        currentAmount = amountOut;
+        statusText = '⚠️ 납부기한 초과';
+    } else {
+        // 기간외 금액 없으면 기간내 금액
+        currentAmount = amountIn;
+        statusText = '납부기한 확인 필요';
+    }
+    
+    document.getElementById('fine-total-display').textContent = fmt(currentAmount);
+    document.getElementById('fine-due-status').textContent = statusText;
 }
 
 function viewFineDetail(id) {
@@ -9153,11 +9216,24 @@ async function submitFine(e) {
     // 금액 계산
     const amountIn = parseInt(document.getElementById('fine-amount-in').value) || 0;
     const amountOut = parseInt(document.getElementById('fine-amount-out').value) || 0;
-    const totalAmount = amountIn + amountOut;
+    const dueIn = document.getElementById('fine-due-in').value;
+    const dueOut = document.getElementById('fine-due-out').value;
     
-    if (totalAmount <= 0) {
+    if (amountIn <= 0 && amountOut <= 0) {
         showToast('금액을 입력하세요', 'error');
         return;
+    }
+    
+    // 현재 납부금액 계산 (날짜 기준)
+    const now = new Date();
+    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    const today = koreaTime.toISOString().split('T')[0];
+    
+    let currentAmount = amountIn; // 기본값
+    if (dueIn && today <= dueIn) {
+        currentAmount = amountIn;
+    } else if (amountOut > 0) {
+        currentAmount = amountOut;
     }
     
     // 영수증 파일 업로드
@@ -9176,11 +9252,11 @@ async function submitFine(e) {
         customer_name: contract ? contract.customer_name : '',
         plate: contract ? contract.plate : '',
         fine_date: document.getElementById('fine-date').value,
-        amount: totalAmount,
+        amount: currentAmount,
         amount_in_period: amountIn,
         amount_out_period: amountOut,
-        due_date_in: document.getElementById('fine-due-in').value || null,
-        due_date_out: document.getElementById('fine-due-out').value || null,
+        due_date_in: dueIn || null,
+        due_date_out: dueOut || null,
         reason: document.getElementById('fine-reason').value,
         status: document.getElementById('fine-paid-status').value,
         paid_date: document.getElementById('fine-paid-date').value || null,
