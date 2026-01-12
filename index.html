@@ -215,7 +215,7 @@
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v1.4.0</p>
+                <p class="text-gray-500 text-xs mt-1">v1.4.1</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -2556,7 +2556,11 @@ async function supabaseCall(table, method = 'GET', data = null, query = '') {
     }
     try {
         const res = await fetch(url, options);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error(`Supabase ${method} ${table} error:`, res.status, errorText);
+            throw new Error(`HTTP ${res.status}: ${errorText}`);
+        }
         if (method === 'DELETE') return true;
         const text = await res.text();
         return text ? JSON.parse(text) : [];
@@ -2584,7 +2588,7 @@ async function deleteFromDB(table, id) {
 }
 
 // ======================= 전역 변수 =======================
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.4.1';
 let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
 let currentTab = 'overview'; // 현재 탭
