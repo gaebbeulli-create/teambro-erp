@@ -215,7 +215,7 @@
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v3</p>
+                <p class="text-gray-500 text-xs mt-1">v1.0.0</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -254,7 +254,7 @@
                 <div id="installSection" class="mt-6 pt-4 border-t border-white/10">
                     <!-- PWA 설치 버튼 -->
                     <button id="installBtn" onclick="installApp()" class="w-full p-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold text-sm hover:opacity-90 transition">
-                        📲 앱 설치하기 <span class="text-white/70 text-xs">v3</span>
+                        📲 앱 설치하기 <span class="text-white/70 text-xs">v1.0.0</span>
                     </button>
                 </div>
             </div>
@@ -634,7 +634,7 @@
                 </div>
                 <div class="glass-card rounded-xl overflow-hidden">
                     <table class="data-table">
-                        <thead><tr><th>번호</th><th>날짜</th><th>계약</th><th>고객</th><th>차량번호</th><th>사유</th><th>금액</th><th>영수증</th><th>상태</th><th>관리</th></tr></thead>
+                        <thead><tr><th>번호</th><th>날짜</th><th>계약</th><th>고객</th><th>차량번호</th><th>사유</th><th>금액</th><th>영수증</th><th>상태</th></tr></thead>
                         <tbody id="fine-tbody"></tbody>
                     </table>
                 </div>
@@ -2168,6 +2168,14 @@
         </div>
     </div>
 
+    <!-- ======================= 정산관리 모달: 과태료 상세 ======================= -->
+    <div id="fineDetailModal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width:500px">
+            <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-red-400">🚨 과태료 상세</h2><button onclick="closeModal('fineDetailModal')" class="text-gray-400 text-2xl">&times;</button></div>
+            <div id="fine-detail-content"></div>
+        </div>
+    </div>
+
     <!-- ======================= 정산관리 모달: 과태료 등록 ======================= -->
     <div id="fineModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:500px">
@@ -2214,6 +2222,14 @@
                     <button type="submit" id="fineSubmitBtn" class="btn-primary flex-1">등록</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- ======================= 정산관리 모달: 과태료 상세 ======================= -->
+    <div id="fineDetailModal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width:500px">
+            <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-red-400">🚨 과태료 상세</h2><button onclick="closeModal('fineDetailModal')" class="text-gray-400 text-2xl">&times;</button></div>
+            <div id="fine-detail-content"></div>
         </div>
     </div>
 
@@ -2716,7 +2732,7 @@ async function deleteFromDB(table, id) {
 }
 
 // ======================= 전역 변수 =======================
-const APP_VERSION = '3';
+const APP_VERSION = '1.0.0';
 let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
 let currentTab = 'overview'; // 현재 탭
@@ -7844,7 +7860,7 @@ function loadFines() {
         const statusBadge = f.status === 'paid' ? ['badge-complete', '납부완료'] : ['badge-failed', '미납'];
         const contract = contractList.find(c => c.id === f.contract_id);
         
-        h += `<tr class="hover:bg-white/5">
+        h += `<tr onclick="viewFineDetail(${f.id})" class="cursor-pointer hover:bg-white/5">
             <td class="text-red-400">#F${String(f.id).padStart(3,'0')}</td>
             <td>${f.fine_date || '-'}</td>
             <td class="text-lime-400">${contract ? '#' + String(contract.id).padStart(3,'0') : '-'}</td>
@@ -7852,18 +7868,69 @@ function loadFines() {
             <td class="font-mono">${f.plate || '-'}</td>
             <td class="text-gray-400">${f.reason || '-'}</td>
             <td class="font-bold text-red-400">${fmt(f.amount)}</td>
-            <td>${f.receipt_url ? `<a href="${f.receipt_url}" target="_blank" class="text-cyan-400 hover:underline">🧾 다운</a>` : '<span class="text-gray-600">-</span>'}</td>
+            <td>${f.receipt_url ? '<span class="text-cyan-400">🧾</span>' : '<span class="text-gray-600">-</span>'}</td>
             <td><span class="badge ${statusBadge[0]}">${statusBadge[1]}</span></td>
-            <td>
-                <div class="flex gap-1">
-                    ${f.status === 'unpaid' ? `<button onclick="payFine(${f.id})" class="px-2 py-1 text-xs rounded bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30">납부</button>` : ''}
-                    <button onclick="editFine(${f.id})" class="px-2 py-1 text-xs rounded bg-blue-500/20 text-blue-400 hover:bg-blue-500/30">수정</button>
-                    <button onclick="deleteFine(${f.id})" class="px-2 py-1 text-xs rounded bg-red-500/20 text-red-400 hover:bg-red-500/30">삭제</button>
-                </div>
-            </td>
         </tr>`;
     });
-    document.getElementById('fine-tbody').innerHTML = h || '<tr><td colspan="10" class="text-center text-gray-500 py-6">과태료 없음</td></tr>';
+    document.getElementById('fine-tbody').innerHTML = h || '<tr><td colspan="9" class="text-center text-gray-500 py-6">과태료 없음</td></tr>';
+}
+
+function viewFineDetail(id) {
+    const f = fineList.find(x => x.id === id);
+    if (!f) return;
+    
+    const contract = contractList.find(c => c.id === f.contract_id);
+    const statusBadge = f.status === 'paid' ? ['badge-complete', '납부완료'] : ['badge-failed', '미납'];
+    const phoneClean = (contract?.phone || '').replace(/-/g, '');
+    
+    document.getElementById('fine-detail-content').innerHTML = `
+        <div class="p-4 rounded-lg bg-white/5 border border-white/10 mb-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div class="info-row"><span class="info-label">과태료번호</span><span class="text-red-400 font-bold">#F${String(f.id).padStart(3,'0')}</span></div>
+                <div class="info-row"><span class="info-label">상태</span><span class="badge ${statusBadge[0]}">${statusBadge[1]}</span></div>
+                <div class="info-row"><span class="info-label">발생일</span><span>${f.fine_date || '-'}</span></div>
+                <div class="info-row"><span class="info-label">금액</span><span class="font-bold text-red-400">${fmt(f.amount)}</span></div>
+                <div class="info-row col-span-2"><span class="info-label">사유</span><span>${f.reason || '-'}</span></div>
+            </div>
+        </div>
+        
+        <div class="p-4 rounded-lg bg-blue-400/10 border border-blue-400/30 mb-4">
+            <div class="text-xs text-blue-400 mb-2">📋 연결 계약</div>
+            <div class="grid grid-cols-2 gap-2">
+                <div><span class="text-gray-400 text-xs">계약번호:</span> <span class="text-lime-400 font-bold">${contract ? '#' + String(contract.id).padStart(3,'0') : '-'}</span></div>
+                <div><span class="text-gray-400 text-xs">고객명:</span> <span class="font-bold">${f.customer_name || '-'}</span></div>
+                <div><span class="text-gray-400 text-xs">차량번호:</span> <span class="font-mono">${f.plate || '-'}</span></div>
+                <div class="flex items-center gap-2">
+                    <span class="text-gray-400 text-xs">연락처:</span> 
+                    <span>${contract?.phone || '-'}</span>
+                    ${phoneClean ? `<a href="tel:${phoneClean}" class="px-2 py-1 rounded bg-green-500/20 text-green-400 text-xs">📞</a>` : ''}
+                </div>
+            </div>
+        </div>
+        
+        ${f.status === 'paid' ? `
+        <div class="p-4 rounded-lg bg-emerald-400/10 border border-emerald-400/30 mb-4">
+            <div class="text-xs text-emerald-400 mb-2">✅ 납부 정보</div>
+            <div><span class="text-gray-400 text-xs">납부일:</span> <span class="font-bold">${f.paid_date || '-'}</span></div>
+        </div>` : ''}
+        
+        ${f.receipt_url ? `
+        <div class="p-4 rounded-lg bg-cyan-400/10 border border-cyan-400/30 mb-4">
+            <div class="text-xs text-cyan-400 mb-2">🧾 영수증</div>
+            <a href="${f.receipt_url}" target="_blank" class="inline-flex items-center gap-2 px-3 py-2 rounded bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30">
+                📥 영수증 다운로드
+            </a>
+        </div>` : ''}
+        
+        ${f.memo ? `<div class="p-3 rounded-lg bg-white/5 text-sm text-gray-400 mb-4">📝 ${f.memo}</div>` : ''}
+        
+        <div class="flex gap-3">
+            <button onclick="deleteFine(${f.id}); closeModal('fineDetailModal');" class="btn-danger flex-1">삭제</button>
+            ${f.status === 'unpaid' ? `<button onclick="payFine(${f.id}); closeModal('fineDetailModal');" class="btn-secondary flex-1">납부처리</button>` : ''}
+            <button onclick="closeModal('fineDetailModal'); editFine(${f.id});" class="btn-primary flex-1">수정</button>
+        </div>
+    `;
+    openModal('fineDetailModal');
 }
 
 function openFineModal() {
@@ -7883,6 +7950,59 @@ function openFineModal() {
     loadFineContractOptions();
     
     openModal('fineModal');
+}
+
+function viewFineDetail(id) {
+    const f = fineList.find(x => x.id === id);
+    if (!f) return;
+    
+    const contract = contractList.find(c => c.id === f.contract_id);
+    const statusBadge = f.status === 'paid' ? ['badge-complete', '납부완료'] : ['badge-failed', '미납'];
+    
+    document.getElementById('fine-detail-content').innerHTML = `
+        <div class="p-4 rounded-lg bg-white/5 border border-white/10 mb-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div class="info-row"><span class="info-label">과태료 번호</span><span class="text-red-400 font-bold">#F${String(f.id).padStart(3,'0')}</span></div>
+                <div class="info-row"><span class="info-label">상태</span><span class="badge ${statusBadge[0]}">${statusBadge[1]}</span></div>
+                <div class="info-row"><span class="info-label">발생일</span><span>${f.fine_date || '-'}</span></div>
+                <div class="info-row"><span class="info-label">금액</span><span class="text-red-400 font-bold">${fmt(f.amount)}</span></div>
+                <div class="info-row col-span-2"><span class="info-label">사유</span><span>${f.reason || '-'}</span></div>
+            </div>
+        </div>
+        
+        <div class="p-4 rounded-lg bg-blue-400/10 border border-blue-400/30 mb-4">
+            <div class="text-xs text-blue-400 mb-2">📋 연결 계약</div>
+            <div class="grid grid-cols-2 gap-2">
+                <div><span class="text-gray-400 text-xs">계약번호:</span> <span class="text-lime-400 font-bold">${contract ? '#' + String(contract.id).padStart(3,'0') : '-'}</span></div>
+                <div><span class="text-gray-400 text-xs">고객:</span> <span class="font-bold">${f.customer_name || '-'}</span></div>
+                <div><span class="text-gray-400 text-xs">차량번호:</span> <span>${f.plate || '-'}</span></div>
+                <div><span class="text-gray-400 text-xs">연락처:</span> <span>${contract?.phone || '-'}</span></div>
+            </div>
+        </div>
+        
+        ${f.status === 'paid' ? `
+        <div class="p-4 rounded-lg bg-emerald-400/10 border border-emerald-400/30 mb-4">
+            <div class="text-xs text-emerald-400 mb-2">✅ 납부 정보</div>
+            <div><span class="text-gray-400 text-xs">납부일:</span> <span class="font-bold">${f.paid_date || '-'}</span></div>
+        </div>` : ''}
+        
+        ${f.receipt_url ? `
+        <div class="p-4 rounded-lg bg-cyan-400/10 border border-cyan-400/30 mb-4">
+            <div class="text-xs text-cyan-400 mb-2">🧾 영수증</div>
+            <a href="${f.receipt_url}" target="_blank" class="inline-flex items-center gap-2 px-3 py-2 rounded bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30">
+                📥 영수증 다운로드
+            </a>
+        </div>` : ''}
+        
+        ${f.memo ? `<div class="p-3 rounded-lg bg-white/5 text-sm text-gray-400 mb-4">📝 ${f.memo}</div>` : ''}
+        
+        <div class="flex gap-3">
+            <button onclick="deleteFine(${f.id})" class="btn-danger flex-1">삭제</button>
+            ${f.status === 'unpaid' ? `<button onclick="closeModal('fineDetailModal'); payFine(${f.id})" class="btn-secondary flex-1">납부처리</button>` : ''}
+            <button onclick="closeModal('fineDetailModal'); editFine(${f.id})" class="btn-primary flex-1">수정</button>
+        </div>
+    `;
+    openModal('fineDetailModal');
 }
 
 // 계약 상세에서 과태료 등록
@@ -8017,6 +8137,7 @@ async function deleteFine(id) {
     await deleteFromDB('fines', id);
     fineList = fineList.filter(f => f.id !== id);
     showToast('🗑️ 과태료가 삭제되었습니다');
+    closeModal('fineDetailModal');
     loadFines();
 }
 
