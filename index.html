@@ -215,7 +215,7 @@
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v1.7.0</p>
+                <p class="text-gray-500 text-xs mt-1">v1.8.0</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -254,7 +254,7 @@
                 <div id="installSection" class="mt-6 pt-4 border-t border-white/10">
                     <!-- PWA 설치 버튼 -->
                     <button id="installBtn" onclick="installApp()" class="w-full p-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold text-sm hover:opacity-90 transition">
-                        📲 앱 설치하기 <span class="text-white/70 text-xs">v1.7.0</span>
+                        📲 앱 설치하기 <span class="text-white/70 text-xs">v1.8.0</span>
                     </button>
                 </div>
             </div>
@@ -384,7 +384,7 @@
                 </div>
                 <div class="glass-card rounded-xl overflow-hidden">
                     <table class="data-table">
-                        <thead><tr><th>번호</th><th>고객</th><th>연락처</th><th>차량</th><th>번호판</th><th>연료</th><th>계약기간</th><th>월납입</th><th>미납</th><th>상태</th><th>서류</th></tr></thead>
+                        <thead><tr><th>번호</th><th>고객</th><th>연락처</th><th>차량</th><th>번호판</th><th>연료</th><th>계약기간</th><th>월납입</th><th>미납</th><th>과태료</th><th>상태</th><th>서류</th></tr></thead>
                         <tbody id="contract-tbody"></tbody>
                     </table>
                 </div>
@@ -987,9 +987,10 @@
                         <div class="text-xs text-gray-500 mt-1" id="b-work-amount">₩0</div>
                     </div>
                     <div class="glass-card rounded-xl p-4 border-l-4 border-emerald-400 stat-card cursor-pointer hover:border-emerald-400" onclick="openBroMonthSummary()">
-                        <div class="text-emerald-400 text-xs mb-1">📊 기간 순이익</div>
+                        <div class="text-emerald-400 text-xs mb-1">💰 기간 손익</div>
                         <div class="text-2xl font-black" id="b-month-profit">₩0</div>
                         <div class="text-xs text-gray-500 mt-1" id="b-profit-rate">-</div>
+                        <div class="text-xs text-gray-400 mt-1" id="b-profit-detail">입금 ₩0 - 지출 ₩0</div>
                     </div>
                 </div>
                 
@@ -2187,6 +2188,14 @@
                             </select>
                         </div>
                     </div>
+                    <!-- 과태료/벌칙금 -->
+                    <div class="mt-3 p-2 rounded-lg bg-red-400/10 border border-red-400/30">
+                        <div class="text-xs text-red-400 mb-2">🚨 과태료/벌칙금</div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="block text-xs text-gray-400 mb-1">과태료 금액</label><input type="number" name="fine_amount" id="con-fine-amount" class="input-field" value="0" placeholder="0"></div>
+                            <div><label class="block text-xs text-gray-400 mb-1">과태료 사유</label><input name="fine_reason" id="con-fine-reason" class="input-field" placeholder="예: 주정차위반, 과속"></div>
+                        </div>
+                    </div>
                     <div class="mt-3"><label class="block text-xs text-gray-400 mb-1">메모</label><textarea name="memo" id="con-memo" class="input-field" rows="2" placeholder="계약 관련 메모..."></textarea></div>
                 </div>
                 
@@ -2605,7 +2614,7 @@ async function deleteFromDB(table, id) {
 }
 
 // ======================= 전역 변수 =======================
-const APP_VERSION = '1.7.0';
+const APP_VERSION = '1.8.0';
 let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
 let currentTab = 'overview'; // 현재 탭
@@ -3285,11 +3294,12 @@ function loadContracts() {
             <td class="text-xs text-gray-400">${period}</td>
             <td class="font-bold">${fmt(c.monthly)}</td>
             <td class="${hasArrears ? 'text-orange-400 font-bold' : 'text-gray-500'}">${hasArrears ? fmt(c.arrears) : '-'}</td>
+            <td class="${(c.fine_amount > 0) ? 'text-red-400 font-bold' : 'text-gray-500'}">${(c.fine_amount > 0) ? fmt(c.fine_amount) : '-'}</td>
             <td><span class="badge ${statusBadge[0]}">${statusBadge[1]}</span></td>
             <td>${hasDoc ? '<span class="text-cyan-400">📎</span>' : '<span class="text-gray-600">-</span>'}</td>
         </tr>`;
     });
-    document.getElementById('contract-tbody').innerHTML = h || '<tr><td colspan="11" class="text-center text-gray-500 py-6">계약 없음</td></tr>';
+    document.getElementById('contract-tbody').innerHTML = h || '<tr><td colspan="12" class="text-center text-gray-500 py-6">계약 없음</td></tr>';
 }
 
 // 월 정산금액 상세 모달
@@ -3455,6 +3465,15 @@ function viewContractDetail(id) {
             </div>
         </div>` : ''}
         
+        ${(c.fine_amount && c.fine_amount > 0) ? `
+        <div class="p-4 rounded-lg bg-red-400/10 border border-red-400/30 mb-4">
+            <div class="text-xs text-red-400 mb-2">🚨 과태료/벌칙금</div>
+            <div class="flex justify-between items-center">
+                <span class="text-gray-300">${c.fine_reason || '사유 없음'}</span>
+                <span class="text-xl font-black text-red-400">${fmt(c.fine_amount)}</span>
+            </div>
+        </div>` : ''}
+        
         ${docLinks.length > 0 ? `
         <div class="p-4 rounded-lg bg-cyan-400/10 border border-cyan-400/30 mb-4">
             <div class="text-xs text-cyan-400 mb-2">📎 첨부 서류</div>
@@ -3496,6 +3515,8 @@ function editContract(id) {
     document.getElementById('con-fuel').value = c.fuel_type || '휘발유';
     document.getElementById('con-memo').value = c.memo || '';
     document.getElementById('con-status').value = c.status || 'active';
+    document.getElementById('con-fine-amount').value = c.fine_amount || 0;
+    document.getElementById('con-fine-reason').value = c.fine_reason || '';
     
     // 계약 유형 선택
     const typeRadio = document.querySelector(`input[name="contract_type"][value="${c.type || 'rent'}"]`);
@@ -3635,6 +3656,8 @@ async function submitContract(e) {
         status: d.status || 'active',
         guarantor_name: d.guarantor_name || null,
         guarantor_phone: d.guarantor_phone || null,
+        fine_amount: parseInt(d.fine_amount) || 0,
+        fine_reason: d.fine_reason || null,
         // 기존 URL 유지 (새 파일 없으면 기존 값 사용)
         contractor_id_url: contractorIdUrl || (existingContract ? existingContract.contractor_id_url : null),
         contractor_doc_url: contractorDocUrl || (existingContract ? existingContract.contractor_doc_url : null),
@@ -6309,7 +6332,7 @@ function loadBroDashboard() {
     const totalIncome = cashIncomeTotal + workTotal + accidentProfit;
     // 총 지출 = 금전출납부 지출
     const totalExpense = cashExpenseTotal;
-    // 순이익
+    // 손익
     const profit = totalIncome - totalExpense;
     const profitRate = totalIncome > 0 ? Math.round((profit / totalIncome) * 100) : 0;
     
@@ -6321,7 +6344,12 @@ function loadBroDashboard() {
     document.getElementById('b-period-work').textContent = periodWorks.length + '건';
     document.getElementById('b-work-amount').textContent = fmt(workTotal);
     document.getElementById('b-month-profit').textContent = fmt(profit);
-    document.getElementById('b-profit-rate').textContent = profit >= 0 ? `이익률 ${profitRate}%` : '적자';
+    document.getElementById('b-profit-rate').textContent = profit >= 0 ? `+${profitRate}%` : `${profitRate}%`;
+    
+    // 손익 상세 (입금 - 지출)
+    if (document.getElementById('b-profit-detail')) {
+        document.getElementById('b-profit-detail').innerHTML = `<span class="text-blue-400">+${fmt(totalIncome)}</span> <span class="text-red-400">-${fmt(totalExpense)}</span>`;
+    }
     
     // 사고차 수익 표시 추가
     if (document.getElementById('b-accident-profit')) {
