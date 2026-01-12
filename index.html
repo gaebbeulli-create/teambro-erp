@@ -215,7 +215,7 @@
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v1.4.1</p>
+                <p class="text-gray-500 text-xs mt-1">v1.4.2</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -296,7 +296,10 @@
                 <div class="flex items-center justify-between flex-wrap gap-2">
                     <!-- 로고 -->
                     <div onclick="showSettlementTab('overview')" class="cursor-pointer flex-shrink-0">
-                        <h1 class="text-xl md:text-2xl font-black neon-text">정산관리</h1>
+                        <div class="flex items-baseline gap-2">
+                            <h1 class="text-xl md:text-2xl font-black neon-text">정산관리</h1>
+                            <span class="text-[9px] text-gray-500">v1.4.1</span>
+                        </div>
                         <p class="text-lime-400/50 text-[10px] italic">TEAM BRO</p>
                     </div>
                     
@@ -928,7 +931,10 @@
                 <div class="flex items-center justify-between flex-wrap gap-2">
                     <!-- 로고 -->
                     <div onclick="showBromotorsTab('overview')" class="cursor-pointer flex-shrink-0">
-                        <h1 class="text-xl md:text-2xl font-black neon-text">브로모터스</h1>
+                        <div class="flex items-baseline gap-2">
+                            <h1 class="text-xl md:text-2xl font-black neon-text">브로모터스</h1>
+                            <span class="text-[9px] text-gray-500">v1.4.1</span>
+                        </div>
                         <p class="text-lime-400/50 text-[10px] italic">직영수리점</p>
                     </div>
                     
@@ -1894,7 +1900,6 @@
                     <div><label class="block text-xs text-lime-400 mb-1">차량</label><input name="vehicle" id="bro-cust-vehicle" class="input-field" placeholder="PCX 125"></div>
                     <div><label class="block text-xs text-lime-400 mb-1">번호판</label><input name="plate" id="bro-cust-plate" class="input-field" placeholder="12가3456"></div>
                 </div>
-                <div><label class="block text-xs text-lime-400 mb-1">메모</label><textarea name="memo" id="bro-cust-memo" class="input-field" rows="2"></textarea></div>
                 <div class="flex gap-3 pt-2">
                     <button type="button" onclick="closeModal('broCustModal')" class="btn-secondary flex-1">취소</button>
                     <button type="submit" id="broCustSubmitBtn" class="btn-primary flex-1">등록</button>
@@ -2588,7 +2593,7 @@ async function deleteFromDB(table, id) {
 }
 
 // ======================= 전역 변수 =======================
-const APP_VERSION = '1.4.1';
+const APP_VERSION = '1.4.2';
 let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
 let currentTab = 'overview'; // 현재 탭
@@ -5867,9 +5872,8 @@ async function submitBroCustomer(e) {
     const custData = {
         name: d.name,
         phone: d.phone,
-        vehicle: d.vehicle || '',
-        plate: d.plate || '',
-        memo: d.memo || ''
+        vehicle: d.vehicle || null,
+        plate: d.plate || null
     };
     
     try {
@@ -5926,7 +5930,6 @@ function editBroCustomer(id) {
     document.getElementById('bro-cust-phone').value = c.phone;
     document.getElementById('bro-cust-vehicle').value = c.vehicle || '';
     document.getElementById('bro-cust-plate').value = c.plate || '';
-    document.getElementById('bro-cust-memo').value = c.memo || '';
     
     openModal('broCustModal');
 }
