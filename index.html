@@ -215,7 +215,7 @@
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v1.20</p>
+                <p class="text-gray-500 text-xs mt-1">v1.21</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -2985,7 +2985,7 @@ async function deleteFromDB(table, id) {
 }
 
 // ======================= 전역 변수 =======================
-const APP_VERSION = '1.20';
+const APP_VERSION = '1.21';
 let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
 let currentTab = 'overview'; // 현재 탭
@@ -8887,8 +8887,14 @@ function loadFines() {
     // 전체 미납금 (기간 무관)
     const allUnpaidFines = fineList.filter(f => f.status === 'unpaid');
     const totalUnpaidAmount = allUnpaidFines.reduce((s, f) => s + (f.amount || 0), 0);
-    document.getElementById('fine-total-unpaid').textContent = fmt(totalUnpaidAmount);
-    document.getElementById('fine-total-unpaid-count').textContent = allUnpaidFines.length + '건';
+    
+    // 요소가 있을 때만 업데이트
+    const totalUnpaidEl = document.getElementById('fine-total-unpaid');
+    const totalUnpaidCountEl = document.getElementById('fine-total-unpaid-count');
+    if (totalUnpaidEl) totalUnpaidEl.textContent = fmt(totalUnpaidAmount);
+    if (totalUnpaidCountEl) totalUnpaidCountEl.textContent = allUnpaidFines.length + '건';
+    
+    console.log('과태료 로드:', fineList.length + '건, 미납:', allUnpaidFines.length + '건, 총액:', totalUnpaidAmount);
     
     // 기간 필터 적용
     let periodList = [...fineList];
@@ -8901,10 +8907,15 @@ function loadFines() {
     const periodUnpaidAmount = periodUnpaid.reduce((s, f) => s + (f.amount || 0), 0);
     const periodPaidAmount = periodPaid.reduce((s, f) => s + (f.amount || 0), 0);
     
-    document.getElementById('fine-period-count').textContent = periodList.length + '건';
-    document.getElementById('fine-period-unpaid').textContent = fmt(periodUnpaidAmount);
-    document.getElementById('fine-period-paid').textContent = fmt(periodPaidAmount);
-    document.getElementById('fine-period-total').textContent = fmt(periodUnpaidAmount + periodPaidAmount);
+    const periodCountEl = document.getElementById('fine-period-count');
+    const periodUnpaidEl = document.getElementById('fine-period-unpaid');
+    const periodPaidEl = document.getElementById('fine-period-paid');
+    const periodTotalEl = document.getElementById('fine-period-total');
+    
+    if (periodCountEl) periodCountEl.textContent = periodList.length + '건';
+    if (periodUnpaidEl) periodUnpaidEl.textContent = fmt(periodUnpaidAmount);
+    if (periodPaidEl) periodPaidEl.textContent = fmt(periodPaidAmount);
+    if (periodTotalEl) periodTotalEl.textContent = fmt(periodUnpaidAmount + periodPaidAmount);
     
     // 검색/상태 필터 적용
     let list = [...periodList];
