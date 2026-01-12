@@ -215,7 +215,7 @@
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v2.0.1</p>
+                <p class="text-gray-500 text-xs mt-1">v3</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -254,7 +254,7 @@
                 <div id="installSection" class="mt-6 pt-4 border-t border-white/10">
                     <!-- PWA 설치 버튼 -->
                     <button id="installBtn" onclick="installApp()" class="w-full p-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold text-sm hover:opacity-90 transition">
-                        📲 앱 설치하기 <span class="text-white/70 text-xs">v2.0.1</span>
+                        📲 앱 설치하기 <span class="text-white/70 text-xs">v3</span>
                     </button>
                 </div>
             </div>
@@ -634,7 +634,7 @@
                 </div>
                 <div class="glass-card rounded-xl overflow-hidden">
                     <table class="data-table">
-                        <thead><tr><th>번호</th><th>날짜</th><th>계약</th><th>고객</th><th>차량번호</th><th>사유</th><th>금액</th><th>상태</th><th>관리</th></tr></thead>
+                        <thead><tr><th>번호</th><th>날짜</th><th>계약</th><th>고객</th><th>차량번호</th><th>사유</th><th>금액</th><th>영수증</th><th>상태</th><th>관리</th></tr></thead>
                         <tbody id="fine-tbody"></tbody>
                     </table>
                 </div>
@@ -2202,6 +2202,13 @@
                     <div class="mt-3"><label class="block text-xs text-gray-400 mb-1">메모</label><textarea name="fine_memo" id="fine-memo" class="input-field" rows="2" placeholder="추가 메모..."></textarea></div>
                 </div>
                 
+                <!-- 영수증 업로드 -->
+                <div class="p-3 rounded-lg bg-cyan-400/10 border border-cyan-400/30">
+                    <div class="text-xs text-cyan-400 mb-3">🧾 영수증 첨부</div>
+                    <input type="file" id="fine-receipt" class="input-field text-xs" accept=".pdf,.jpg,.jpeg,.png">
+                    <div id="fine-receipt-preview" class="mt-2 text-xs text-gray-400"></div>
+                </div>
+                
                 <div class="flex gap-3 pt-2">
                     <button type="button" onclick="closeModal('fineModal')" class="btn-secondary flex-1">취소</button>
                     <button type="submit" id="fineSubmitBtn" class="btn-primary flex-1">등록</button>
@@ -2709,7 +2716,7 @@ async function deleteFromDB(table, id) {
 }
 
 // ======================= 전역 변수 =======================
-const APP_VERSION = '2.0.1';
+const APP_VERSION = '3';
 let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
 let currentTab = 'overview'; // 현재 탭
@@ -7845,6 +7852,7 @@ function loadFines() {
             <td class="font-mono">${f.plate || '-'}</td>
             <td class="text-gray-400">${f.reason || '-'}</td>
             <td class="font-bold text-red-400">${fmt(f.amount)}</td>
+            <td>${f.receipt_url ? `<a href="${f.receipt_url}" target="_blank" class="text-cyan-400 hover:underline">🧾 다운</a>` : '<span class="text-gray-600">-</span>'}</td>
             <td><span class="badge ${statusBadge[0]}">${statusBadge[1]}</span></td>
             <td>
                 <div class="flex gap-1">
@@ -7855,7 +7863,7 @@ function loadFines() {
             </td>
         </tr>`;
     });
-    document.getElementById('fine-tbody').innerHTML = h || '<tr><td colspan="9" class="text-center text-gray-500 py-6">과태료 없음</td></tr>';
+    document.getElementById('fine-tbody').innerHTML = h || '<tr><td colspan="10" class="text-center text-gray-500 py-6">과태료 없음</td></tr>';
 }
 
 function openFineModal() {
@@ -7864,6 +7872,7 @@ function openFineModal() {
     document.getElementById('fine-edit-id').value = '';
     document.getElementById('fineForm').reset();
     document.getElementById('fine-contract-info').classList.add('hidden');
+    document.getElementById('fine-receipt-preview').innerHTML = '';
     
     // 오늘 날짜
     const now = new Date();
@@ -7917,6 +7926,8 @@ function onFineContractChange() {
 
 async function submitFine(e) {
     e.preventDefault();
+    showToast('저장 중...', 'info');
+    
     const editId = document.getElementById('fine-edit-id').value;
     const contractId = document.getElementById('fine-contract-id').value;
     
@@ -7927,6 +7938,17 @@ async function submitFine(e) {
     
     const contract = contractList.find(c => c.id === parseInt(contractId));
     
+    // 영수증 파일 업로드
+    const receiptFile = document.getElementById('fine-receipt').files[0];
+    let receiptUrl = null;
+    
+    if (receiptFile) {
+        receiptUrl = await uploadFile(receiptFile, 'fine_receipts');
+    }
+    
+    // 기존 영수증 URL 유지 (수정 시 새 파일 없으면)
+    const existingFine = editId ? fineList.find(f => f.id === parseInt(editId)) : null;
+    
     const fineData = {
         contract_id: parseInt(contractId),
         customer_name: contract ? contract.customer_name : '',
@@ -7936,7 +7958,8 @@ async function submitFine(e) {
         reason: document.getElementById('fine-reason').value,
         status: document.getElementById('fine-paid-status').value,
         paid_date: document.getElementById('fine-paid-date').value || null,
-        memo: document.getElementById('fine-memo').value || null
+        memo: document.getElementById('fine-memo').value || null,
+        receipt_url: receiptUrl || (existingFine ? existingFine.receipt_url : null)
     };
     
     if (editId) {
@@ -7972,6 +7995,18 @@ function editFine(id) {
     document.getElementById('fine-paid-status').value = f.status || 'unpaid';
     document.getElementById('fine-paid-date').value = f.paid_date || '';
     document.getElementById('fine-memo').value = f.memo || '';
+    
+    // 기존 영수증 표시
+    const previewEl = document.getElementById('fine-receipt-preview');
+    if (f.receipt_url) {
+        previewEl.innerHTML = `<div class="flex items-center gap-2 p-2 rounded bg-white/5">
+            <span class="text-cyan-400">✅ 영수증 첨부됨</span>
+            <a href="${f.receipt_url}" target="_blank" class="text-blue-400 hover:underline">📥 다운로드</a>
+            <span class="text-gray-500 text-xs">(새 파일 선택 시 교체됨)</span>
+        </div>`;
+    } else {
+        previewEl.innerHTML = '';
+    }
     
     openModal('fineModal');
 }
