@@ -215,7 +215,7 @@
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v1.19</p>
+                <p class="text-gray-500 text-xs mt-1">v1.20</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -2166,7 +2166,7 @@
     </div>
 
     <!-- ======================= 정산관리 모달: 수납 처리 ======================= -->
-    <div id="paymentProcessModal" class="modal-overlay hidden">
+    <div id="paymentProcessModal" class="modal-overlay hidden" style="z-index: 9999;">
         <div class="modal-content" style="max-width:500px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-emerald-400">💰 수납 처리</h2><button onclick="closeModal('paymentProcessModal')" class="text-gray-400 text-2xl">&times;</button></div>
             <div id="payment-info" class="mb-4"></div>
@@ -2210,7 +2210,7 @@
 
     <!-- ======================= 정산관리 모달: 과태료 등록 ======================= -->
     <div id="fineModal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width:500px">
+        <div class="modal-content" style="max-width:550px; max-height:90vh; overflow-y:auto;">
             <div class="flex justify-between mb-4"><h2 id="fineModalTitle" class="text-xl font-bold text-red-400">🚨 과태료 등록</h2><button onclick="closeModal('fineModal')" class="text-gray-400 text-2xl">&times;</button></div>
             <form onsubmit="submitFine(event)" id="fineForm" class="space-y-4">
                 <input type="hidden" id="fine-edit-id">
@@ -2227,10 +2227,38 @@
                     <div class="text-xs text-red-400 mb-3">🚨 과태료 정보</div>
                     <div class="grid grid-cols-2 gap-3">
                         <div><label class="block text-xs text-gray-400 mb-1">발생일*</label><input type="date" name="fine_date" id="fine-date" class="input-field" required></div>
-                        <div><label class="block text-xs text-gray-400 mb-1">금액*</label><input type="number" name="fine_amount" id="fine-amount" class="input-field" required placeholder="0"></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">사유*</label><input name="fine_reason" id="fine-reason" class="input-field" required placeholder="예: 주정차위반, 과속"></div>
                     </div>
-                    <div class="mt-3"><label class="block text-xs text-gray-400 mb-1">사유*</label><input name="fine_reason" id="fine-reason" class="input-field" required placeholder="예: 주정차위반, 과속, 신호위반"></div>
-                    <div class="mt-3 grid grid-cols-2 gap-3">
+                </div>
+                
+                <!-- 기간내 과태료 -->
+                <div class="p-3 rounded-lg bg-orange-400/10 border border-orange-400/30">
+                    <div class="text-xs text-orange-400 mb-3">📅 기간내 과태료</div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="block text-xs text-gray-400 mb-1">기간내 금액</label><input type="number" name="amount_in_period" id="fine-amount-in" class="input-field" placeholder="0" oninput="calcFineTotals()"></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">납부기한</label><input type="date" name="due_date_in" id="fine-due-in" class="input-field"></div>
+                    </div>
+                </div>
+                
+                <!-- 기간외 과태료 -->
+                <div class="p-3 rounded-lg bg-red-400/10 border border-red-400/30">
+                    <div class="text-xs text-red-400 mb-3">⏰ 기간외 과태료</div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="block text-xs text-gray-400 mb-1">기간외 금액</label><input type="number" name="amount_out_period" id="fine-amount-out" class="input-field" placeholder="0" oninput="calcFineTotals()"></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">납부기한</label><input type="date" name="due_date_out" id="fine-due-out" class="input-field"></div>
+                    </div>
+                </div>
+                
+                <!-- 합계 표시 -->
+                <div class="p-3 rounded-lg bg-purple-400/10 border border-purple-400/30">
+                    <div class="flex justify-between items-center">
+                        <span class="text-purple-400 text-sm font-bold">💰 총 과태료</span>
+                        <span class="text-xl font-black text-purple-400" id="fine-total-display">₩0</span>
+                    </div>
+                </div>
+                
+                <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div class="grid grid-cols-2 gap-3">
                         <div><label class="block text-xs text-gray-400 mb-1">납부상태</label>
                             <select name="fine_status" id="fine-paid-status" class="input-field">
                                 <option value="unpaid">미납</option>
@@ -2541,7 +2569,7 @@
     </div>
 
     <!-- ======================= 정산관리 모달: 계약 상세 ======================= -->
-    <div id="contractDetailModal" class="modal-overlay hidden">
+    <div id="contractDetailModal" class="modal-overlay hidden" style="z-index: 200;">
         <div class="modal-content" style="max-width:600px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-lime-400">📋 계약 상세</h2><button onclick="closeModal('contractDetailModal')" class="text-gray-400 text-2xl">&times;</button></div>
             <div id="contract-detail-content"></div>
@@ -2957,7 +2985,7 @@ async function deleteFromDB(table, id) {
 }
 
 // ======================= 전역 변수 =======================
-const APP_VERSION = '1.19';
+const APP_VERSION = '1.20';
 let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
 let currentTab = 'overview'; // 현재 탭
@@ -5206,6 +5234,9 @@ function loadSettlementDashboard() {
     // 고객 목록 로드
     loadCustomers();
     
+    // 과태료 목록 로드
+    loadFines();
+    
     console.log('✅ 정산관리 대시보드 로드 완료');
 }
 
@@ -5398,15 +5429,15 @@ function viewArrearsDetail(contractId) {
         
         <div class="flex gap-3">
             <button onclick="closeModal('arrearsDetailModal')" class="btn-secondary flex-1">닫기</button>
-            <button onclick="openPaymentModal(${c.id})" class="btn-primary flex-1">💰 수납 처리</button>
+            <button onclick="openPaymentProcessModal(${c.id})" class="btn-primary flex-1">💰 수납 처리</button>
         </div>
     `;
     
     openModal('arrearsDetailModal');
 }
 
-// 수납 처리 모달 열기
-function openPaymentModal(contractId) {
+// 수납 처리 모달 열기 (연체 상세에서 호출)
+function openPaymentProcessModal(contractId) {
     const c = contractList.find(x => x.id === contractId);
     if (!c) return;
     
@@ -8974,16 +9005,32 @@ function openFineModal() {
     document.getElementById('fineForm').reset();
     document.getElementById('fine-contract-info').classList.add('hidden');
     document.getElementById('fine-receipt-preview').innerHTML = '';
+    document.getElementById('fine-total-display').textContent = '₩0';
     
     // 오늘 날짜
     const now = new Date();
     const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-    document.getElementById('fine-date').value = koreaTime.toISOString().split('T')[0];
+    const today = koreaTime.toISOString().split('T')[0];
+    document.getElementById('fine-date').value = today;
+    
+    // 기본 납부기한 (7일 후, 14일 후)
+    const sevenDaysLater = new Date(koreaTime.getTime() + (7 * 24 * 60 * 60 * 1000));
+    const fourteenDaysLater = new Date(koreaTime.getTime() + (14 * 24 * 60 * 60 * 1000));
+    document.getElementById('fine-due-in').value = sevenDaysLater.toISOString().split('T')[0];
+    document.getElementById('fine-due-out').value = fourteenDaysLater.toISOString().split('T')[0];
     
     // 계약 목록 로드
     loadFineContractOptions();
     
     openModal('fineModal');
+}
+
+// 과태료 합계 계산
+function calcFineTotals() {
+    const amountIn = parseInt(document.getElementById('fine-amount-in').value) || 0;
+    const amountOut = parseInt(document.getElementById('fine-amount-out').value) || 0;
+    const total = amountIn + amountOut;
+    document.getElementById('fine-total-display').textContent = fmt(total);
 }
 
 function viewFineDetail(id) {
@@ -9092,6 +9139,16 @@ async function submitFine(e) {
     
     const contract = contractList.find(c => c.id === parseInt(contractId));
     
+    // 금액 계산
+    const amountIn = parseInt(document.getElementById('fine-amount-in').value) || 0;
+    const amountOut = parseInt(document.getElementById('fine-amount-out').value) || 0;
+    const totalAmount = amountIn + amountOut;
+    
+    if (totalAmount <= 0) {
+        showToast('금액을 입력하세요', 'error');
+        return;
+    }
+    
     // 영수증 파일 업로드
     const receiptFile = document.getElementById('fine-receipt').files[0];
     let receiptUrl = null;
@@ -9108,7 +9165,11 @@ async function submitFine(e) {
         customer_name: contract ? contract.customer_name : '',
         plate: contract ? contract.plate : '',
         fine_date: document.getElementById('fine-date').value,
-        amount: parseInt(document.getElementById('fine-amount').value) || 0,
+        amount: totalAmount,
+        amount_in_period: amountIn,
+        amount_out_period: amountOut,
+        due_date_in: document.getElementById('fine-due-in').value || null,
+        due_date_out: document.getElementById('fine-due-out').value || null,
         reason: document.getElementById('fine-reason').value,
         status: document.getElementById('fine-paid-status').value,
         paid_date: document.getElementById('fine-paid-date').value || null,
@@ -9144,11 +9205,17 @@ function editFine(id) {
     onFineContractChange();
     
     document.getElementById('fine-date').value = f.fine_date || '';
-    document.getElementById('fine-amount').value = f.amount || 0;
     document.getElementById('fine-reason').value = f.reason || '';
+    document.getElementById('fine-amount-in').value = f.amount_in_period || 0;
+    document.getElementById('fine-amount-out').value = f.amount_out_period || 0;
+    document.getElementById('fine-due-in').value = f.due_date_in || '';
+    document.getElementById('fine-due-out').value = f.due_date_out || '';
     document.getElementById('fine-paid-status').value = f.status || 'unpaid';
     document.getElementById('fine-paid-date').value = f.paid_date || '';
     document.getElementById('fine-memo').value = f.memo || '';
+    
+    // 합계 계산
+    calcFineTotals();
     
     // 기존 영수증 표시
     const previewEl = document.getElementById('fine-receipt-preview');
