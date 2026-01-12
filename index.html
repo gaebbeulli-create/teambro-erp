@@ -215,7 +215,7 @@
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v1.4.2</p>
+                <p class="text-gray-500 text-xs mt-1">v1.5.0</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -298,7 +298,7 @@
                     <div onclick="showSettlementTab('overview')" class="cursor-pointer flex-shrink-0">
                         <div class="flex items-baseline gap-2">
                             <h1 class="text-xl md:text-2xl font-black neon-text">정산관리</h1>
-                            <span class="text-[9px] text-gray-500">v1.4.1</span>
+                            <span class="text-[9px] text-gray-500">v1.5.0</span>
                         </div>
                         <p class="text-lime-400/50 text-[10px] italic">TEAM BRO</p>
                     </div>
@@ -933,7 +933,7 @@
                     <div onclick="showBromotorsTab('overview')" class="cursor-pointer flex-shrink-0">
                         <div class="flex items-baseline gap-2">
                             <h1 class="text-xl md:text-2xl font-black neon-text">브로모터스</h1>
-                            <span class="text-[9px] text-gray-500">v1.4.1</span>
+                            <span class="text-[9px] text-gray-500">v1.5.0</span>
                         </div>
                         <p class="text-lime-400/50 text-[10px] italic">직영수리점</p>
                     </div>
@@ -1079,7 +1079,7 @@
                     <div class="flex gap-2">
                         <button onclick="openBroCardPayModal()" class="btn-secondary btn-sm">💳 카드결제</button>
                         <button onclick="downloadExcel('broWork')" class="btn-secondary btn-sm">📥 엑셀</button>
-                        <button onclick="openModal('workModal')" class="btn-primary btn-sm">+ 작업 등록</button>
+                        <button onclick="openWorkModal()" class="btn-primary btn-sm">+ 작업 등록</button>
                     </div>
                 </div>
                 <div class="glass-card rounded-xl overflow-hidden">
@@ -1488,8 +1488,9 @@
     <!-- ======================= 브로모터스 모달: 작업 등록 ======================= -->
     <div id="workModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:650px">
-            <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-lime-400">🔧 작업 등록</h2><button onclick="closeModal('workModal')" class="text-gray-400 text-2xl">&times;</button></div>
-            <form onsubmit="submitBroWork(event)" class="space-y-4">
+            <div class="flex justify-between mb-4"><h2 id="workModalTitle" class="text-xl font-bold text-lime-400">🔧 작업 등록</h2><button onclick="closeModal('workModal')" class="text-gray-400 text-2xl">&times;</button></div>
+            <form onsubmit="submitBroWork(event)" id="workForm" class="space-y-4">
+                <input type="hidden" id="work-edit-id" value="">
                 <input type="hidden" id="work-customer-id" value="">
                 <!-- 고객 검색 -->
                 <div class="p-3 rounded-lg bg-white/5 border border-white/10">
@@ -1528,17 +1529,53 @@
                 <div class="p-3 rounded-lg bg-white/5 border border-white/10">
                     <div class="text-xs text-orange-400 mb-3">🔧 작업 내용</div>
                     <div><label class="block text-xs text-gray-400 mb-1">작업내용*</label><input name="content" id="work-content" class="input-field" placeholder="엔진오일 교환" required></div>
-                    <div class="grid grid-cols-3 gap-3 mt-3">
-                        <div><label class="block text-xs text-gray-400 mb-1">공임</label><input type="number" name="labor" id="work-labor" class="input-field" value="0" oninput="calcWorkTotal()"></div>
-                        <div><label class="block text-xs text-gray-400 mb-1">부품비</label><input type="number" name="parts_cost" id="work-parts" class="input-field" value="0" oninput="calcWorkTotal()"></div>
-                        <div><label class="block text-xs text-emerald-400 mb-1">합계금액</label><input type="text" id="work-total" class="input-field bg-emerald-400/10 text-emerald-400 font-bold" value="₩0" readonly></div>
+                    
+                    <!-- 부품 검색 및 추가 -->
+                    <div class="mt-3 p-3 rounded-lg bg-blue-400/10 border border-blue-400/30">
+                        <div class="text-xs text-blue-400 mb-2">🔩 부품 추가 (부품관리에서 검색)</div>
+                        <div class="flex gap-2">
+                            <div class="relative flex-1">
+                                <input type="text" id="work-part-search" class="input-field" placeholder="부품명 검색..." oninput="searchWorkParts()">
+                                <div id="work-part-results" class="absolute z-50 w-full bg-black border border-blue-400/30 rounded-lg mt-1 hidden max-h-40 overflow-y-auto"></div>
+                            </div>
+                        </div>
+                        <!-- 추가된 부품 목록 -->
+                        <div id="work-parts-list" class="mt-2 space-y-1"></div>
                     </div>
+                    
+                    <!-- 금액 계산 -->
+                    <div class="grid grid-cols-2 gap-3 mt-3">
+                        <div><label class="block text-xs text-gray-400 mb-1">부품비 (자동계산)</label><input type="number" name="parts_cost" id="work-parts" class="input-field bg-blue-400/10" value="0" readonly></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">공임 (총금액 - 부품비)</label><input type="number" name="labor" id="work-labor" class="input-field" value="0" readonly></div>
+                    </div>
+                    
+                    <!-- 결제금액 입력 -->
+                    <div class="grid grid-cols-2 gap-3 mt-3">
+                        <div>
+                            <label class="block text-xs text-yellow-400 mb-1">💰 결제금액 입력*</label>
+                            <input type="number" id="work-pay-amount" class="input-field border-yellow-400/50" placeholder="총 받을 금액" oninput="calcWorkFromTotal()" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-emerald-400 mb-1">합계</label>
+                            <input type="text" id="work-total" class="input-field bg-emerald-400/10 text-emerald-400 font-bold" value="₩0" readonly>
+                        </div>
+                    </div>
+                    
+                    <!-- 부가세 옵션 -->
+                    <div class="mt-3 flex items-center gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="work-vat-check" class="w-4 h-4 accent-lime-400" onchange="calcWorkFromTotal()">
+                            <span class="text-xs text-gray-300">부가세 별도 (+10%)</span>
+                        </label>
+                        <span id="work-vat-amount" class="text-xs text-yellow-400 hidden">VAT: ₩0</span>
+                    </div>
+                    
                     <div class="mt-3"><label class="block text-xs text-gray-400 mb-1">메모</label><textarea name="memo" id="work-memo" class="input-field" rows="2"></textarea></div>
                 </div>
                 
                 <div class="flex gap-3 pt-2">
                     <button type="button" onclick="closeModal('workModal')" class="btn-secondary flex-1">취소</button>
-                    <button type="submit" class="btn-primary flex-1">등록</button>
+                    <button type="submit" id="workSubmitBtn" class="btn-primary flex-1">등록</button>
                 </div>
             </form>
         </div>
@@ -2593,7 +2630,7 @@ async function deleteFromDB(table, id) {
 }
 
 // ======================= 전역 변수 =======================
-const APP_VERSION = '1.4.2';
+const APP_VERSION = '1.5.0';
 let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
 let currentTab = 'overview'; // 현재 탭
@@ -4535,13 +4572,14 @@ function loadBroWork() {
 async function submitBroWork(e) {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(e.target));
+    const editId = document.getElementById('work-edit-id').value;
     const customerId = document.getElementById('work-customer-id').value;
     
     const now = new Date();
     const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
     const today = koreaTime.toISOString().split('T')[0];
     
-    // 작업 등록
+    // 작업 데이터
     const workData = {
         customer: d.customer,
         phone: d.phone,
@@ -4550,57 +4588,69 @@ async function submitBroWork(e) {
         content: d.content,
         labor: parseInt(d.labor) || 0,
         parts_cost: parseInt(d.parts_cost) || 0,
-        status: 'waiting',
         memo: d.memo || '',
-        date: today,
         customer_id: customerId ? parseInt(customerId) : null
     };
     
-    const result = await insertToDB('bro_works', workData);
-    if (result && result[0]) broWorkList.unshift(result[0]);
-    
-    // 고객 정보 자동 저장/업데이트
-    if (customerId) {
-        // 기존 고객 - 방문수 증가
-        const existingCust = broCustList.find(c => c.id === parseInt(customerId));
-        if (existingCust) {
-            existingCust.visits = (existingCust.visits || 0) + 1;
-            existingCust.last_visit = today;
-            // 차량 정보 업데이트 (새로 입력된 경우)
-            if (d.vehicle && !existingCust.vehicle) existingCust.vehicle = d.vehicle;
-            if (d.plate && !existingCust.plate) existingCust.plate = d.plate;
-            await updateInDB('bro_customers', existingCust.id, { 
-                visits: existingCust.visits, 
-                last_visit: today,
-                vehicle: existingCust.vehicle,
-                plate: existingCust.plate
-            });
-        }
+    if (editId) {
+        // 수정
+        await updateInDB('bro_works', editId, workData);
+        const w = broWorkList.find(x => x.id === parseInt(editId));
+        if (w) Object.assign(w, workData);
+        showToast('✅ 작업이 수정되었습니다');
     } else {
-        // 신규 고객 등록
-        const custData = {
-            name: d.customer,
-            phone: d.phone,
-            vehicle: d.vehicle || '',
-            plate: d.plate || '',
-            visits: 1,
-            last_visit: today
-        };
-        const custResult = await insertToDB('bro_customers', custData);
-        if (custResult && custResult[0]) {
-            broCustList.unshift(custResult[0]);
-            // 작업에 customer_id 업데이트
-            if (result && result[0]) {
-                await updateInDB('bro_works', result[0].id, { customer_id: custResult[0].id });
-                result[0].customer_id = custResult[0].id;
+        // 신규 등록
+        workData.status = 'waiting';
+        workData.date = today;
+        
+        const result = await insertToDB('bro_works', workData);
+        if (result && result[0]) broWorkList.unshift(result[0]);
+        
+        // 고객 정보 자동 저장/업데이트
+        if (customerId) {
+            // 기존 고객 - 방문수 증가
+            const existingCust = broCustList.find(c => c.id === parseInt(customerId));
+            if (existingCust) {
+                existingCust.visits = (existingCust.visits || 0) + 1;
+                existingCust.last_visit = today;
+                // 차량 정보 업데이트 (새로 입력된 경우)
+                if (d.vehicle && !existingCust.vehicle) existingCust.vehicle = d.vehicle;
+                if (d.plate && !existingCust.plate) existingCust.plate = d.plate;
+                await updateInDB('bro_customers', existingCust.id, { 
+                    visits: existingCust.visits, 
+                    last_visit: today,
+                    vehicle: existingCust.vehicle,
+                    plate: existingCust.plate
+                });
             }
+        } else {
+            // 신규 고객 등록
+            const custData = {
+                name: d.customer,
+                phone: d.phone,
+                vehicle: d.vehicle || '',
+                plate: d.plate || '',
+                visits: 1,
+                last_visit: today
+            };
+            const custResult = await insertToDB('bro_customers', custData);
+            if (custResult && custResult[0]) {
+                broCustList.unshift(custResult[0]);
+                // 작업에 customer_id 업데이트
+                if (result && result[0]) {
+                    await updateInDB('bro_works', result[0].id, { customer_id: custResult[0].id });
+                    result[0].customer_id = custResult[0].id;
+                }
+            }
+            showToast('👤 신규 고객이 자동 등록되었습니다');
         }
-        showToast('👤 신규 고객이 자동 등록되었습니다');
+        
+        showToast('✅ 작업이 등록되었습니다');
     }
     
-    showToast('✅ 작업이 등록되었습니다');
     closeModal('workModal');
-    e.target.reset();
+    document.getElementById('workForm').reset();
+    document.getElementById('work-edit-id').value = '';
     document.getElementById('work-customer-id').value = '';
     document.getElementById('customer-info-box').classList.add('hidden');
     document.getElementById('new-customer-box').classList.add('hidden');
@@ -4637,6 +4687,7 @@ function viewWorkDetail(id) {
                 <div class="info-row"><span class="info-label">작업내용</span><span>${w.content}</span></div>
                 <div class="info-row"><span class="info-label">날짜</span><span>${w.date}</span></div>
             </div>
+            ${w.memo ? `<div class="mt-3 p-2 rounded bg-white/5 text-sm text-gray-400">📝 ${w.memo}</div>` : ''}
         </div>
         
         <div class="grid grid-cols-2 gap-3 mb-4">
@@ -4656,18 +4707,93 @@ function viewWorkDetail(id) {
             </div>
         </div>
         
-        <div class="flex gap-3">
+        <div class="flex gap-3 mb-3">
             ${statusBtns}
             ${payBtn}
+        </div>
+        <div class="flex gap-3">
+            <button onclick="deleteBroWork(${w.id})" class="btn-danger flex-1">🗑️ 삭제</button>
             <button onclick="closeModal('workDetailModal')" class="btn-secondary flex-1">닫기</button>
+            <button onclick="editBroWork(${w.id})" class="btn-primary flex-1">✏️ 수정</button>
         </div>
     `;
     openModal('workDetailModal');
 }
 
-function updateWorkStatus(id, status) {
+// 작업 등록 모달 열기
+function openWorkModal() {
+    document.getElementById('workModalTitle').textContent = '🔧 작업 등록';
+    document.getElementById('workSubmitBtn').textContent = '등록';
+    document.getElementById('work-edit-id').value = '';
+    document.getElementById('work-customer-id').value = '';
+    document.getElementById('workForm').reset();
+    document.getElementById('work-total').value = '₩0';
+    document.getElementById('customer-info-box').classList.add('hidden');
+    document.getElementById('new-customer-box').classList.add('hidden');
+    document.getElementById('phone-check-result').innerHTML = '';
+    // 부품 목록 초기화
+    workPartsSelected = [];
+    renderWorkPartsList();
+    document.getElementById('work-pay-amount').value = '';
+    document.getElementById('work-vat-check').checked = false;
+    document.getElementById('work-vat-amount').classList.add('hidden');
+    openModal('workModal');
+}
+
+// 작업 수정
+function editBroWork(id) {
     const w = broWorkList.find(x => x.id === id);
-    if (w) w.status = status;
+    if (!w) return;
+    
+    closeModal('workDetailModal');
+    
+    document.getElementById('workModalTitle').textContent = '🔧 작업 수정';
+    document.getElementById('workSubmitBtn').textContent = '수정';
+    document.getElementById('work-edit-id').value = w.id;
+    document.getElementById('work-customer-id').value = w.customer_id || '';
+    document.getElementById('work-customer').value = w.customer;
+    document.getElementById('work-phone').value = w.phone;
+    document.getElementById('work-vehicle').value = w.vehicle;
+    document.getElementById('work-plate').value = w.plate || '';
+    document.getElementById('work-content').value = w.content;
+    document.getElementById('work-labor').value = w.labor || 0;
+    document.getElementById('work-parts').value = w.parts_cost || 0;
+    document.getElementById('work-memo').value = w.memo || '';
+    document.getElementById('customer-info-box').classList.add('hidden');
+    document.getElementById('new-customer-box').classList.add('hidden');
+    document.getElementById('phone-check-result').innerHTML = '';
+    // 수정 시 기존 금액으로 설정
+    workPartsSelected = [];
+    renderWorkPartsList();
+    const total = (w.labor || 0) + (w.parts_cost || 0);
+    document.getElementById('work-pay-amount').value = total;
+    document.getElementById('work-vat-check').checked = false;
+    document.getElementById('work-vat-amount').classList.add('hidden');
+    document.getElementById('work-total').value = fmt(total);
+    
+    openModal('workModal');
+}
+
+// 작업 삭제
+async function deleteBroWork(id) {
+    const w = broWorkList.find(x => x.id === id);
+    if (!w) return;
+    
+    if (!confirm(`작업 #W${String(id).padStart(3,'0')}을 삭제하시겠습니까?\n\n고객: ${w.customer}\n작업: ${w.content}\n\n⚠️ 이 작업은 되돌릴 수 없습니다.`)) return;
+    
+    await deleteFromDB('bro_works', id);
+    broWorkList = broWorkList.filter(x => x.id !== id);
+    showToast('✅ 작업이 삭제되었습니다');
+    closeModal('workDetailModal');
+    loadBroWork();
+}
+
+async function updateWorkStatus(id, status) {
+    const w = broWorkList.find(x => x.id === id);
+    if (w) {
+        w.status = status;
+        await updateInDB('bro_works', id, { status });
+    }
     showToast('✅ 상태가 변경되었습니다');
     closeModal('workDetailModal');
     loadBroWork();
@@ -5063,7 +5189,151 @@ function checkPhoneDuplicate() {
     }
 }
 
-// 합계금액 계산
+// 작업에 추가된 부품 목록
+let workPartsSelected = [];
+
+// 부품 검색 (작업 등록용)
+function searchWorkParts() {
+    const query = document.getElementById('work-part-search').value.toLowerCase();
+    const resultsDiv = document.getElementById('work-part-results');
+    
+    if (query.length < 1) {
+        resultsDiv.classList.add('hidden');
+        return;
+    }
+    
+    const matches = broPartsList.filter(p => 
+        p.name.toLowerCase().includes(query) || 
+        (p.code && p.code.toLowerCase().includes(query))
+    ).slice(0, 10);
+    
+    if (matches.length === 0) {
+        resultsDiv.innerHTML = '<div class="p-2 text-gray-500 text-sm">검색 결과 없음</div>';
+        resultsDiv.classList.remove('hidden');
+        return;
+    }
+    
+    let html = '';
+    matches.forEach(p => {
+        const stock = p.stock || 0;
+        const stockColor = stock > 0 ? 'text-lime-400' : 'text-red-400';
+        html += `<div onclick="addWorkPart(${p.id})" class="p-2 hover:bg-lime-400/20 cursor-pointer border-b border-white/10">
+            <div class="flex justify-between items-center">
+                <span class="font-bold text-sm">${p.name}</span>
+                <span class="text-blue-400 text-sm">${fmt(p.price || 0)}</span>
+            </div>
+            <div class="text-xs text-gray-400">${p.code || '-'} | 재고: <span class="${stockColor}">${stock}개</span></div>
+        </div>`;
+    });
+    
+    resultsDiv.innerHTML = html;
+    resultsDiv.classList.remove('hidden');
+}
+
+// 부품 추가
+function addWorkPart(partId) {
+    const part = broPartsList.find(p => p.id === partId);
+    if (!part) return;
+    
+    // 이미 추가된 부품인지 확인
+    const existing = workPartsSelected.find(p => p.id === partId);
+    if (existing) {
+        existing.qty += 1;
+    } else {
+        workPartsSelected.push({
+            id: part.id,
+            name: part.name,
+            price: part.price || 0,
+            qty: 1
+        });
+    }
+    
+    document.getElementById('work-part-search').value = '';
+    document.getElementById('work-part-results').classList.add('hidden');
+    renderWorkPartsList();
+    calcWorkFromTotal();
+}
+
+// 부품 수량 변경
+function changeWorkPartQty(partId, delta) {
+    const part = workPartsSelected.find(p => p.id === partId);
+    if (!part) return;
+    
+    part.qty += delta;
+    if (part.qty <= 0) {
+        workPartsSelected = workPartsSelected.filter(p => p.id !== partId);
+    }
+    
+    renderWorkPartsList();
+    calcWorkFromTotal();
+}
+
+// 부품 삭제
+function removeWorkPart(partId) {
+    workPartsSelected = workPartsSelected.filter(p => p.id !== partId);
+    renderWorkPartsList();
+    calcWorkFromTotal();
+}
+
+// 추가된 부품 목록 렌더링
+function renderWorkPartsList() {
+    const listDiv = document.getElementById('work-parts-list');
+    
+    if (workPartsSelected.length === 0) {
+        listDiv.innerHTML = '<div class="text-xs text-gray-500">추가된 부품 없음</div>';
+        return;
+    }
+    
+    let html = '';
+    workPartsSelected.forEach(p => {
+        const total = p.price * p.qty;
+        html += `<div class="flex items-center justify-between p-2 bg-white/5 rounded">
+            <div class="flex-1">
+                <span class="text-sm font-bold">${p.name}</span>
+                <span class="text-xs text-gray-400 ml-2">${fmt(p.price)} × ${p.qty} = ${fmt(total)}</span>
+            </div>
+            <div class="flex items-center gap-1">
+                <button type="button" onclick="changeWorkPartQty(${p.id}, -1)" class="w-6 h-6 rounded bg-red-400/20 text-red-400 text-sm">-</button>
+                <span class="w-6 text-center text-sm">${p.qty}</span>
+                <button type="button" onclick="changeWorkPartQty(${p.id}, 1)" class="w-6 h-6 rounded bg-lime-400/20 text-lime-400 text-sm">+</button>
+                <button type="button" onclick="removeWorkPart(${p.id})" class="ml-2 text-red-400 text-xs">✕</button>
+            </div>
+        </div>`;
+    });
+    
+    listDiv.innerHTML = html;
+}
+
+// 결제금액 입력 시 공임 자동 계산
+function calcWorkFromTotal() {
+    const payAmount = parseInt(document.getElementById('work-pay-amount').value) || 0;
+    const vatCheck = document.getElementById('work-vat-check').checked;
+    const vatAmountEl = document.getElementById('work-vat-amount');
+    
+    // 부품비 합계
+    const partsCost = workPartsSelected.reduce((sum, p) => sum + (p.price * p.qty), 0);
+    document.getElementById('work-parts').value = partsCost;
+    
+    // 부가세 계산
+    let finalAmount = payAmount;
+    if (vatCheck && payAmount > 0) {
+        const vat = Math.round(payAmount * 0.1);
+        finalAmount = payAmount + vat;
+        vatAmountEl.textContent = `VAT: ${fmt(vat)}`;
+        vatAmountEl.classList.remove('hidden');
+    } else {
+        vatAmountEl.classList.add('hidden');
+    }
+    
+    // 공임 = 결제금액(+VAT) - 부품비
+    const labor = Math.max(0, finalAmount - partsCost);
+    document.getElementById('work-labor').value = labor;
+    
+    // 합계 표시
+    document.getElementById('work-total').value = fmt(finalAmount);
+}
+
+// 합계금액 계산 (기존 호환)
 function calcWorkTotal() {
     const labor = parseInt(document.getElementById('work-labor').value) || 0;
     const parts = parseInt(document.getElementById('work-parts').value) || 0;
