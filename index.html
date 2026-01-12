@@ -215,7 +215,7 @@
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v1.15</p>
+                <p class="text-gray-500 text-xs mt-1">v1.16</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -2959,7 +2959,7 @@ async function deleteFromDB(table, id) {
 }
 
 // ======================= 전역 변수 =======================
-const APP_VERSION = '1.15';
+const APP_VERSION = '1.16';
 let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
 let currentTab = 'overview'; // 현재 탭
@@ -3047,13 +3047,16 @@ async function handleLogin(e) {
             document.getElementById('s-userName').textContent = user.name;
             document.getElementById('s-userRole').textContent = roleBadge(user.role)[1];
             renderStaffList();
-            loadOverview();
             initDates();
+            // 정산관리 대시보드 로드
+            loadSettlementDashboard();
         } else {
             document.getElementById('bromotorsSystem').classList.remove('hidden');
             document.getElementById('b-userName').textContent = user.name;
             document.getElementById('b-userRole').textContent = roleBadge(user.role)[1];
             initDates();
+            // 브로모터스 대시보드 로드
+            loadBroDashboard();
         }
         
         showToast(`${user.name}님 환영합니다!`);
@@ -5164,6 +5167,26 @@ function deleteCustomer(id) {
 }
 
 // ======================= 정산관리: 통합현황 =======================
+// 정산관리 대시보드 전체 로드
+function loadSettlementDashboard() {
+    // 연체 자동 계산
+    calculateAllArrears();
+    
+    // 대시보드 요약 로드
+    loadOverview();
+    
+    // 계약 목록 로드
+    loadContracts();
+    
+    // 차량 목록 로드
+    loadVehicles();
+    
+    // 고객 목록 로드
+    loadCustomers();
+    
+    console.log('✅ 정산관리 대시보드 로드 완료');
+}
+
 function loadOverview() {
     // 한국시간 기준
     const now = new Date();
@@ -7517,6 +7540,16 @@ function loadBroDashboard() {
         stockHtml += `<div class="text-center py-2"><button onclick="openBroLowStockModal()" class="text-orange-400 text-xs hover:underline">+ ${lowStockParts.length - 4}건 더보기</button></div>`;
     }
     document.getElementById('b-low-stock-list').innerHTML = stockHtml || '<div class="text-gray-500 text-sm text-center py-4">재고 부족 없음</div>';
+    
+    // 다른 탭 데이터도 미리 로드
+    loadBroWorks();
+    loadBroParts();
+    loadBroCashbook();
+    loadBroCustomers();
+    loadAccidentList();
+    loadPurchaseList();
+    
+    console.log('✅ 브로모터스 대시보드 로드 완료');
 }
 
 // 대시보드 기간 설정
@@ -9320,12 +9353,14 @@ async function restoreSession() {
             document.getElementById('s-userRole').textContent = roleBadge(user.role)[1];
             renderStaffList();
             initDates();
+            loadSettlementDashboard(); // 대시보드 로드
             showSettlementTab(savedTab, true);
         } else {
             document.getElementById('bromotorsSystem').classList.remove('hidden');
             document.getElementById('b-userName').textContent = user.name;
             document.getElementById('b-userRole').textContent = roleBadge(user.role)[1];
             initDates();
+            loadBroDashboard(); // 대시보드 로드
             showBromotorsTab(savedTab, true);
         }
         
