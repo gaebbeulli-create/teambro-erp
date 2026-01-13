@@ -215,7 +215,7 @@
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v1.26</p>
+                <p class="text-gray-500 text-xs mt-1">v1.28</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -2170,12 +2170,12 @@
     <div id="paymentProcessModal" class="modal-overlay hidden" style="z-index: 9999;">
         <div class="modal-content" style="max-width:500px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-emerald-400">💰 수납 처리</h2><button onclick="closeModal('paymentProcessModal')" class="text-gray-400 text-2xl">&times;</button></div>
-            <div id="payment-info" class="mb-4"></div>
+            <div id="pp-info" class="mb-4"></div>
             <form onsubmit="processPayment(event)" class="space-y-4">
-                <input type="hidden" id="payment-contract-id">
+                <input type="hidden" id="pp-contract-id">
                 <div class="grid grid-cols-2 gap-3">
-                    <div><label class="block text-xs text-lime-400 mb-1">수납일*</label><input type="date" name="pay_date" id="payment-date" class="input-field" required></div>
-                    <div><label class="block text-xs text-lime-400 mb-1">수납금액*</label><input type="number" name="pay_amount" id="payment-amount" class="input-field" required></div>
+                    <div><label class="block text-xs text-lime-400 mb-1">수납일*</label><input type="date" name="pay_date" id="pp-date" class="input-field" required></div>
+                    <div><label class="block text-xs text-lime-400 mb-1">수납금액*</label><input type="number" name="pay_amount" id="pp-amount" class="input-field" required></div>
                 </div>
                 <div><label class="block text-xs text-lime-400 mb-1">수납방법*</label>
                     <select name="pay_method" class="input-field" required>
@@ -2289,14 +2289,6 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: 과태료 상세 ======================= -->
-    <div id="fineDetailModal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width:500px">
-            <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-red-400">🚨 과태료 상세</h2><button onclick="closeModal('fineDetailModal')" class="text-gray-400 text-2xl">&times;</button></div>
-            <div id="fine-detail-content"></div>
-        </div>
-    </div>
-
     <!-- ======================= 정산관리 모달: 빠른 수납 ======================= -->
     <div id="quickPaymentModal" class="modal-overlay hidden" style="z-index: 9999;">
         <div class="modal-content" style="max-width:400px">
@@ -2360,20 +2352,20 @@
         <div class="modal-content" style="max-width:400px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-emerald-400">💰 납입 등록</h2><button onclick="closeModal('paymentModal')" class="text-gray-400 text-2xl">&times;</button></div>
             <form onsubmit="submitPayment(event)" id="paymentForm" class="space-y-4">
-                <input type="hidden" id="payment-contract-id">
+                <input type="hidden" id="pm-contract-id">
                 
                 <div class="p-3 rounded-lg bg-white/5 border border-white/10">
                     <div class="text-xs text-gray-400 mb-1">계약 정보</div>
-                    <div class="font-bold text-lime-400" id="payment-contract-info">-</div>
+                    <div class="font-bold text-lime-400" id="pm-contract-info">-</div>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-3">
-                    <div><label class="block text-xs text-gray-400 mb-1">납입일*</label><input type="date" id="payment-date" class="input-field" required></div>
-                    <div><label class="block text-xs text-gray-400 mb-1">금액*</label><input type="number" id="payment-amount" class="input-field" required></div>
+                    <div><label class="block text-xs text-gray-400 mb-1">납입일*</label><input type="date" id="pm-date" class="input-field" required></div>
+                    <div><label class="block text-xs text-gray-400 mb-1">금액*</label><input type="number" id="pm-amount" class="input-field" required></div>
                 </div>
                 
                 <div><label class="block text-xs text-gray-400 mb-1">납입 유형</label>
-                    <select id="payment-type" class="input-field">
+                    <select id="pm-type" class="input-field">
                         <option value="월납">월납</option>
                         <option value="일납">일납</option>
                         <option value="보증금">보증금</option>
@@ -2382,7 +2374,7 @@
                     </select>
                 </div>
                 
-                <div><label class="block text-xs text-gray-400 mb-1">메모</label><input id="payment-memo" class="input-field" placeholder="메모..."></div>
+                <div><label class="block text-xs text-gray-400 mb-1">메모</label><input id="pm-memo" class="input-field" placeholder="메모..."></div>
                 
                 <div class="flex gap-3 pt-2">
                     <button type="button" onclick="closeModal('paymentModal')" class="btn-secondary flex-1">취소</button>
@@ -3077,13 +3069,15 @@ async function handleLogin(e) {
         const user = users[0];
         currentUser = user;
         
-        // 세션 저장 (localStorage)
-        sessionStorage.setItem('teambro_session', JSON.stringify({
+        // 세션 저장
+        const sessionData = {
             userId: user.id,
             system: currentSystem,
             tab: 'overview',
             timestamp: Date.now()
-        }));
+        };
+        sessionStorage.setItem('teambro_session', JSON.stringify(sessionData));
+        console.log('💾 세션 저장 완료:', sessionData);
         
         // 모든 데이터 로드
         await loadAllData();
@@ -4298,14 +4292,14 @@ function openPaymentModal(contractId) {
     const c = contractList.find(x => x.id === contractId);
     if (!c) return;
     
-    document.getElementById('payment-contract-id').value = contractId;
-    document.getElementById('payment-contract-info').textContent = `${c.customer_name} - ${c.plate}`;
-    document.getElementById('payment-amount').value = c.monthly || 0;
+    document.getElementById('pm-contract-id').value = contractId;
+    document.getElementById('pm-contract-info').textContent = `${c.customer_name} - ${c.plate}`;
+    document.getElementById('pm-amount').value = c.monthly || 0;
     
     // 오늘 날짜
     const now = new Date();
     const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-    document.getElementById('payment-date').value = koreaTime.toISOString().split('T')[0];
+    document.getElementById('pm-date').value = koreaTime.toISOString().split('T')[0];
     
     openModal('paymentModal');
 }
@@ -4314,16 +4308,16 @@ async function submitPayment(e) {
     e.preventDefault();
     showToast('저장 중...', 'info');
     
-    const contractId = parseInt(document.getElementById('payment-contract-id').value);
-    const amount = parseInt(document.getElementById('payment-amount').value) || 0;
+    const contractId = parseInt(document.getElementById('pm-contract-id').value);
+    const amount = parseInt(document.getElementById('pm-amount').value) || 0;
     
     const paymentData = {
         contract_id: contractId,
-        payment_date: document.getElementById('payment-date').value,
+        payment_date: document.getElementById('pm-date').value,
         amount: amount,
-        payment_type: document.getElementById('payment-type').value,
+        payment_type: document.getElementById('pm-type').value,
         status: 'paid', // 수동 등록은 완료 상태
-        memo: document.getElementById('payment-memo').value || null
+        memo: document.getElementById('pm-memo').value || null
     };
     
     const result = await insertToDB('contract_payments', paymentData);
@@ -5547,11 +5541,11 @@ function openPaymentProcessModal(contractId) {
     
     closeModal('arrearsDetailModal');
     
-    document.getElementById('payment-contract-id').value = contractId;
-    document.getElementById('payment-date').value = new Date().toISOString().split('T')[0];
-    document.getElementById('payment-amount').value = c.arrears;
+    document.getElementById('pp-contract-id').value = contractId;
+    document.getElementById('pp-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('pp-amount').value = c.arrears;
     
-    document.getElementById('payment-info').innerHTML = `
+    document.getElementById('pp-info').innerHTML = `
         <div class="p-4 rounded-lg bg-white/5 border border-white/10">
             <div class="grid grid-cols-2 gap-4">
                 <div class="info-row"><span class="info-label">고객명</span><span class="font-bold">${c.customer_name}</span></div>
@@ -5568,9 +5562,9 @@ function openPaymentProcessModal(contractId) {
 // 수납 처리 실행
 function processPayment(e) {
     e.preventDefault();
-    const contractId = parseInt(document.getElementById('payment-contract-id').value);
-    const amount = parseInt(document.getElementById('payment-amount').value) || 0;
-    const date = document.getElementById('payment-date').value;
+    const contractId = parseInt(document.getElementById('pp-contract-id').value);
+    const amount = parseInt(document.getElementById('pp-amount').value) || 0;
+    const date = document.getElementById('pp-date').value;
     const method = e.target.pay_method.value;
     const memo = e.target.pay_memo.value;
     
@@ -9626,30 +9620,42 @@ function restoreFromHash() {
 
 // ======================= 세션 복원 =======================
 async function restoreSession() {
+    console.log('🔄 세션 복원 시도...');
     const sessionData = sessionStorage.getItem('teambro_session');
-    if (!sessionData) return false;
+    
+    if (!sessionData) {
+        console.log('❌ 저장된 세션 없음');
+        return false;
+    }
     
     try {
         const session = JSON.parse(sessionData);
+        console.log('📋 세션 데이터:', session);
         
         // 세션 만료 체크 (24시간)
         const sessionAge = Date.now() - session.timestamp;
         if (sessionAge > 24 * 60 * 60 * 1000) {
+            console.log('❌ 세션 만료 (24시간 초과)');
             sessionStorage.removeItem('teambro_session');
             return false;
         }
         
         // 사용자 정보 로드
+        console.log('👤 사용자 정보 로드 중...', session.userId);
         const users = await supabaseCall('staff', 'GET', null, `?id=eq.${session.userId}`);
+        
         if (!users || users.length === 0) {
+            console.log('❌ 사용자 정보 없음');
             sessionStorage.removeItem('teambro_session');
             return false;
         }
         
         const user = users[0];
+        console.log('✅ 사용자 찾음:', user.name);
         
         // 비활성 사용자 체크
         if (user.status !== 'active') {
+            console.log('❌ 비활성 사용자');
             sessionStorage.removeItem('teambro_session');
             return false;
         }
