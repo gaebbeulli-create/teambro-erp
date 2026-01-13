@@ -3735,36 +3735,52 @@ function calculateAllArrears() {
     const now = new Date();
     const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
     const today = koreaTime.toISOString().split('T')[0];
-    const todayDate = new Date(today);
+    const todayDate = new Date(today + 'T00:00:00');
     
     contractList.forEach(c => {
         // 종료/해지된 계약은 제외
-        if (c.status === 'completed' || c.status === 'cancelled') return;
+        if (c.status === 'completed' || c.status === 'cancelled') {
+            c.arrears = 0;
+            return;
+        }
         
         // 시작일이 없으면 제외
-        if (!c.start_date) return;
+        if (!c.start_date) {
+            c.arrears = 0;
+            return;
+        }
         
-        const startDate = new Date(c.start_date);
+        const startDate = new Date(c.start_date + 'T00:00:00');
+        
+        // 시작일이 오늘보다 미래면 연체 없음
+        if (startDate > todayDate) {
+            c.arrears = 0;
+            return;
+        }
+        
         const cycle = c.payment_cycle || 'monthly';
         let totalDue = 0;
         
         if (cycle === 'daily') {
-            // 일정산: 시작일부터 오늘까지 일 수 × 납입금
+            // 일정산: 시작일 = 1건 (당일 포함)
+            // 예: 시작일 1/13, 오늘 1/13 → 1건
+            // 예: 시작일 1/13, 오늘 1/14 → 2건
             const diffTime = todayDate.getTime() - startDate.getTime();
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-            totalDue = Math.max(0, diffDays) * (c.monthly || 0);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // 당일 포함
+            totalDue = diffDays * (c.monthly || 0);
         } else if (cycle === 'weekly') {
-            // 주정산: 시작일부터 오늘까지 주 수 × 납입금
+            // 주정산: 시작일부터 첫 주 = 1건
             const diffTime = todayDate.getTime() - startDate.getTime();
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-            const diffWeeks = Math.floor(diffDays / 7);
-            totalDue = Math.max(0, diffWeeks) * (c.monthly || 0);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // 당일 포함
+            const diffWeeks = Math.ceil(diffDays / 7); // 올림으로 첫 주 포함
+            totalDue = diffWeeks * (c.monthly || 0);
         } else {
-            // 월결제: 납입일 기준
+            // 월정산: 납입일 기준
             const paymentDay = c.payment_day || startDate.getDate();
             const monthsElapsed = (todayDate.getFullYear() - startDate.getFullYear()) * 12 
                 + (todayDate.getMonth() - startDate.getMonth());
             const currentDay = todayDate.getDate();
+            // 당일이 납입일이거나 지났으면 이번달 포함
             const additionalMonth = currentDay >= paymentDay ? 1 : 0;
             totalDue = (monthsElapsed + additionalMonth) * (c.monthly || 0);
         }
@@ -3776,6 +3792,11 @@ function calculateAllArrears() {
         
         // 연체 = 납부해야 할 금액 - 실제 납부 금액
         c.arrears = Math.max(0, totalDue - totalPaid);
+        
+        // 디버그 로그 (첫 계약만)
+        if (contractList.indexOf(c) === 0) {
+            console.log(`연체계산 [${c.customer_name}]: 시작일=${c.start_date}, 주기=${cycle}, 총발생=${totalDue}, 납부=${totalPaid}, 연체=${c.arrears}`);
+        }
     });
 }
 
