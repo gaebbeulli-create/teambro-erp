@@ -215,7 +215,7 @@
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v1.22</p>
+                <p class="text-gray-500 text-xs mt-1">v1.26</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -1294,6 +1294,7 @@
                                 <option value="부품판매">부품판매</option>
                             </optgroup>
                             <optgroup label="운영비">
+                                <option value="부품구입">부품구입</option>
                                 <option value="임대료">임대료</option>
                                 <option value="전기요금">전기요금</option>
                                 <option value="수도요금">수도요금</option>
@@ -1662,7 +1663,7 @@
                             <option value="수도요금">수도요금</option>
                             <option value="가스요금">가스요금</option>
                             <option value="인터넷/통신">인터넷/통신</option>
-                            <option value="부품구매">부품구매</option>
+                            <option value="부품구입">부품구입</option>
                             <option value="소모품">소모품</option>
                         </optgroup>
                         <optgroup label="👷 인건비">
@@ -2663,6 +2664,25 @@
                     <div class="mt-3"><label class="block text-xs text-gray-400 mb-1">정비 내역</label><textarea name="maintenance_history" id="veh-maint-history" class="input-field" rows="2" placeholder="예: 2024-01-15 엔진오일 교환, 2024-02-20 타이어 교체"></textarea></div>
                 </div>
                 
+                <!-- 서류 첨부 -->
+                <div class="p-3 rounded-lg bg-purple-400/10 border border-purple-400/30">
+                    <div class="text-xs text-purple-400 mb-3">📎 서류 첨부</div>
+                    <div id="veh-doc-notice" class="hidden mb-3 p-2 rounded bg-yellow-400/10 border border-yellow-400/30">
+                        <div class="text-xs text-yellow-400">⚠️ 기존 파일이 있습니다. 새 파일 선택 시 교체됩니다.</div>
+                        <div id="veh-existing-docs" class="mt-2 text-xs text-gray-400"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">차량등록증</label>
+                            <input type="file" id="veh-reg-file" class="input-field text-xs" accept=".pdf,.jpg,.jpeg,.png">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">보험증서</label>
+                            <input type="file" id="veh-ins-file" class="input-field text-xs" accept=".pdf,.jpg,.jpeg,.png">
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- 기타 -->
                 <div class="p-3 rounded-lg bg-white/5 border border-white/10">
                     <div class="text-xs text-gray-400 mb-3">📝 기타</div>
@@ -2988,7 +3008,7 @@ async function deleteFromDB(table, id) {
 }
 
 // ======================= 전역 변수 =======================
-const APP_VERSION = '1.22';
+const APP_VERSION = '1.26';
 let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
 let currentTab = 'overview'; // 현재 탭
@@ -3058,7 +3078,7 @@ async function handleLogin(e) {
         currentUser = user;
         
         // 세션 저장 (localStorage)
-        localStorage.setItem('teambro_session', JSON.stringify({
+        sessionStorage.setItem('teambro_session', JSON.stringify({
             userId: user.id,
             system: currentSystem,
             tab: 'overview',
@@ -3167,13 +3187,18 @@ function initDates() {
 
 function handleLogout() {
     currentUser = null;
-    localStorage.removeItem('teambro_session');
+    sessionStorage.removeItem('teambro_session');
     location.reload();
 }
 
+// 페이지 종료/나가기 시 자동 로그아웃
+window.addEventListener('beforeunload', function() {
+    sessionStorage.removeItem('teambro_session');
+});
+
 // 세션에 현재 탭 저장
 function updateSessionTab(system, tab) {
-    const sessionData = localStorage.getItem('teambro_session');
+    const sessionData = sessionStorage.getItem('teambro_session');
     if (!sessionData) return;
     
     try {
@@ -3181,7 +3206,7 @@ function updateSessionTab(system, tab) {
         session.system = system;
         session.tab = tab;
         session.timestamp = Date.now();
-        localStorage.setItem('teambro_session', JSON.stringify(session));
+        sessionStorage.setItem('teambro_session', JSON.stringify(session));
     } catch (e) {
         console.error('세션 업데이트 실패:', e);
     }
@@ -4720,6 +4745,9 @@ function openVehicleModal() {
     document.getElementById('vehicleSubmitBtn').textContent = '등록';
     document.getElementById('vehicle-edit-id').value = '';
     document.getElementById('vehicleForm').reset();
+    document.getElementById('veh-doc-notice').classList.add('hidden');
+    document.getElementById('veh-reg-file').value = '';
+    document.getElementById('veh-ins-file').value = '';
     
     // 현재 선택된 탭에 맞게 차량유형 기본값 설정
     let defaultType = 'motorcycle';
@@ -4932,6 +4960,16 @@ function viewVehicleDetail(id) {
         </div>` : ''}
         
         ${v.memo ? `<div class="p-4 rounded-lg bg-white/5 border border-white/10 mb-4"><div class="text-xs text-lime-400 mb-2">📝 메모</div><div class="text-sm">${v.memo}</div></div>` : ''}
+        
+        ${(v.reg_doc_url || v.insurance_doc_url) ? `
+        <div class="p-4 rounded-lg bg-purple-400/10 border border-purple-400/30 mb-4">
+            <div class="text-xs text-purple-400 mb-2">📎 첨부 서류</div>
+            <div class="flex gap-3">
+                ${v.reg_doc_url ? `<a href="${v.reg_doc_url}" target="_blank" class="px-3 py-2 rounded bg-purple-500/20 text-purple-400 text-sm hover:bg-purple-500/30">📄 차량등록증</a>` : ''}
+                ${v.insurance_doc_url ? `<a href="${v.insurance_doc_url}" target="_blank" class="px-3 py-2 rounded bg-blue-500/20 text-blue-400 text-sm hover:bg-blue-500/30">📄 보험증서</a>` : ''}
+            </div>
+        </div>` : ''}
+        
         <div class="flex gap-3 mb-3">${actionBtns}</div>
         <div class="flex gap-3">
             <button onclick="deleteVehicle(${v.id})" class="btn-danger flex-1">삭제</button>
@@ -4991,6 +5029,25 @@ function editVehicle(id) {
     const typeRadio = document.querySelector(`input[name="vehicle_type"][value="${v.vehicle_type || 'motorcycle'}"]`);
     if (typeRadio) typeRadio.checked = true;
     
+    // 기존 서류 표시
+    const hasDoc = v.reg_doc_url || v.insurance_doc_url;
+    const docNotice = document.getElementById('veh-doc-notice');
+    const existingDocs = document.getElementById('veh-existing-docs');
+    
+    if (hasDoc) {
+        docNotice.classList.remove('hidden');
+        let docsHtml = '';
+        if (v.reg_doc_url) docsHtml += `<a href="${v.reg_doc_url}" target="_blank" class="text-purple-400 hover:underline">📎 차량등록증</a> `;
+        if (v.insurance_doc_url) docsHtml += `<a href="${v.insurance_doc_url}" target="_blank" class="text-blue-400 hover:underline">📎 보험증서</a>`;
+        existingDocs.innerHTML = docsHtml;
+    } else {
+        docNotice.classList.add('hidden');
+    }
+    
+    // 파일 입력 초기화
+    document.getElementById('veh-reg-file').value = '';
+    document.getElementById('veh-ins-file').value = '';
+    
     openModal('vehicleModal');
 }
 
@@ -5001,6 +5058,26 @@ async function submitVehicle(e) {
     try {
         const editId = document.getElementById('vehicle-edit-id').value;
         const d = Object.fromEntries(new FormData(e.target));
+        
+        // 파일 업로드 처리
+        const regFile = document.getElementById('veh-reg-file').files[0];
+        const insFile = document.getElementById('veh-ins-file').files[0];
+        
+        let regUrl = null;
+        let insUrl = null;
+        
+        if (regFile) {
+            showToast('차량등록증 업로드 중...', 'info');
+            regUrl = await uploadFile(regFile, 'vehicle_docs');
+        }
+        
+        if (insFile) {
+            showToast('보험증서 업로드 중...', 'info');
+            insUrl = await uploadFile(insFile, 'vehicle_docs');
+        }
+        
+        // 기존 URL 유지 (수정 시 새 파일 없으면)
+        const existingVehicle = editId ? vehicleList.find(v => v.id === parseInt(editId)) : null;
         
         const vehicleData = {
             plate: d.plate,
@@ -5020,7 +5097,9 @@ async function submitVehicle(e) {
             purchase_date: d.purchase_date || null,
             purchase_price: parseInt(d.purchase_price) || 0,
             memo: d.memo || '',
-            vehicle_type: d.vehicle_type || 'motorcycle'
+            vehicle_type: d.vehicle_type || 'motorcycle',
+            reg_doc_url: regUrl || (existingVehicle ? existingVehicle.reg_doc_url : null),
+            insurance_doc_url: insUrl || (existingVehicle ? existingVehicle.insurance_doc_url : null)
         };
         
         if (editId) {
@@ -5051,6 +5130,7 @@ async function submitVehicle(e) {
         document.getElementById('vehicle-edit-id').value = '';
         document.getElementById('vehicleModalTitle').textContent = '🚗 차량 등록';
         document.getElementById('vehicleSubmitBtn').textContent = '등록';
+        document.getElementById('veh-doc-notice').classList.add('hidden');
         loadVehicles();
     } catch (err) {
         console.error('차량 저장 오류:', err);
@@ -7231,37 +7311,63 @@ function editParts(id) {
     openPartsModal(id);
 }
 
-function submitBroParts(e) {
+async function submitBroParts(e) {
     e.preventDefault();
     const editId = document.getElementById('parts-edit-id').value;
     const d = Object.fromEntries(new FormData(e.target));
     
+    const partData = {
+        name: d.name,
+        category: d.category,
+        stock: parseInt(d.stock) || 0,
+        price: parseInt(d.price) || 0,
+        min_stock: parseInt(d.min_stock) || 5
+    };
+    
     if (editId) {
         // 수정 모드
+        await updateInDB('bro_parts', editId, partData);
         const p = broPartsList.find(x => x.id === parseInt(editId));
-        if (p) {
-            p.name = d.name;
-            p.category = d.category;
-            p.stock = parseInt(d.stock) || 0;
-            p.price = parseInt(d.price) || 0;
-            p.min_stock = parseInt(d.min_stock) || 5;
-        }
+        if (p) Object.assign(p, partData);
         showToast('✅ 부품이 수정되었습니다');
     } else {
-        // 등록 모드
-        broPartsList.push({
-            id: Math.max(...broPartsList.map(p => p.id), 0) + 1,
-            name: d.name,
-            category: d.category,
-            stock: parseInt(d.stock) || 0,
-            price: parseInt(d.price) || 0,
-            min_stock: parseInt(d.min_stock) || 5
-        });
-        showToast('✅ 부품이 등록되었습니다');
+        // 등록 모드 - DB에 저장
+        const result = await insertToDB('bro_parts', partData);
+        if (result && result[0]) {
+            broPartsList.push(result[0]);
+            
+            // 금전출납부에 지출 자동 추가 (재고 * 단가)
+            const totalCost = partData.stock * partData.price;
+            if (totalCost > 0) {
+                const now = new Date();
+                const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+                const today = koreaTime.toISOString().split('T')[0];
+                
+                const cashbookData = {
+                    date: today,
+                    type: 'expense',
+                    category: '부품구입',
+                    amount: totalCost,
+                    description: `[부품입고] ${partData.name} ${partData.stock}개 × ${fmt(partData.price)}`,
+                    memo: '부품 등록 시 자동 생성'
+                };
+                
+                const cbResult = await insertToDB('bro_cashbook', cashbookData);
+                if (cbResult && cbResult[0]) {
+                    broCashbookList.unshift(cbResult[0]);
+                }
+                
+                showToast(`✅ 부품 등록 + 금전출납부 지출 ${fmt(totalCost)} 추가`);
+            } else {
+                showToast('✅ 부품이 등록되었습니다');
+            }
+        }
     }
     
     closeModal('partsModal');
     loadBroParts();
+    loadBroCashbook();
+    loadBroDashboard();
 }
 
 // ======================= 브로모터스: 고객관리 =======================
@@ -9499,7 +9605,7 @@ function restoreFromHash() {
 
 // ======================= 세션 복원 =======================
 async function restoreSession() {
-    const sessionData = localStorage.getItem('teambro_session');
+    const sessionData = sessionStorage.getItem('teambro_session');
     if (!sessionData) return false;
     
     try {
@@ -9508,14 +9614,14 @@ async function restoreSession() {
         // 세션 만료 체크 (24시간)
         const sessionAge = Date.now() - session.timestamp;
         if (sessionAge > 24 * 60 * 60 * 1000) {
-            localStorage.removeItem('teambro_session');
+            sessionStorage.removeItem('teambro_session');
             return false;
         }
         
         // 사용자 정보 로드
         const users = await supabaseCall('staff', 'GET', null, `?id=eq.${session.userId}`);
         if (!users || users.length === 0) {
-            localStorage.removeItem('teambro_session');
+            sessionStorage.removeItem('teambro_session');
             return false;
         }
         
@@ -9523,7 +9629,7 @@ async function restoreSession() {
         
         // 비활성 사용자 체크
         if (user.status !== 'active') {
-            localStorage.removeItem('teambro_session');
+            sessionStorage.removeItem('teambro_session');
             return false;
         }
         
@@ -9556,13 +9662,13 @@ async function restoreSession() {
         
         // 세션 타임스탬프 갱신
         session.timestamp = Date.now();
-        localStorage.setItem('teambro_session', JSON.stringify(session));
+        sessionStorage.setItem('teambro_session', JSON.stringify(session));
         
         showToast(`${user.name}님, 다시 오셨군요!`);
         return true;
     } catch (e) {
         console.error('세션 복원 실패:', e);
-        localStorage.removeItem('teambro_session');
+        sessionStorage.removeItem('teambro_session');
         return false;
     }
 }
