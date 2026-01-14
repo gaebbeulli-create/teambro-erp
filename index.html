@@ -3918,10 +3918,10 @@ function viewContractDetail(id) {
     // 연체 계산 정보 (시작일 기준)
     let arrearsInfo = null;
     if (c.start_date && c.status === 'active') {
-        const startDate = new Date(c.start_date);
+        const startDate = new Date(c.start_date + 'T00:00:00');
         const now = new Date();
         const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-        const todayDate = new Date(koreaTime.toISOString().split('T')[0]);
+        const todayDate = new Date(koreaTime.toISOString().split('T')[0] + 'T00:00:00');
         const cycle = c.payment_cycle || 'monthly';
         
         let cycleLabel = '';
@@ -3929,17 +3929,23 @@ function viewContractDetail(id) {
         let periodLabel = '';
         let totalDue = 0;
         
-        if (cycle === 'daily') {
+        // 시작일이 미래면 아직 납부 예정 없음
+        if (startDate > todayDate) {
+            periodCount = 0;
+            periodLabel = cycle === 'daily' ? '일' : cycle === 'weekly' ? '주' : '개월';
+            cycleLabel = cycle === 'daily' ? '📅 일정산 (매일)' : cycle === 'weekly' ? '📆 주정산 (7일)' : '🗓️ 월결제';
+            totalDue = 0;
+        } else if (cycle === 'daily') {
             const diffTime = todayDate.getTime() - startDate.getTime();
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 당일 포함
             periodCount = Math.max(0, diffDays);
             periodLabel = '일';
             cycleLabel = '📅 일정산 (매일)';
             totalDue = periodCount * (c.monthly || 0);
         } else if (cycle === 'weekly') {
             const diffTime = todayDate.getTime() - startDate.getTime();
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-            periodCount = Math.floor(diffDays / 7);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 당일 포함
+            periodCount = Math.ceil(diffDays / 7); // 올림으로 첫 주 포함
             periodLabel = '주';
             cycleLabel = '📆 주정산 (7일)';
             totalDue = Math.max(0, periodCount) * (c.monthly || 0);
@@ -7339,6 +7345,8 @@ async function submitBroParts(e) {
         min_stock: parseInt(d.min_stock) || 5
     };
     
+    console.log('📦 부품 데이터:', partData);
+    
     if (editId) {
         // 수정 모드
         await updateInDB('bro_parts', editId, partData);
@@ -7348,11 +7356,15 @@ async function submitBroParts(e) {
     } else {
         // 등록 모드 - DB에 저장
         const result = await insertToDB('bro_parts', partData);
+        console.log('📦 부품 등록 결과:', result);
+        
         if (result && result[0]) {
             broPartsList.push(result[0]);
             
             // 금전출납부에 지출 자동 추가 (재고 * 단가)
             const totalCost = partData.stock * partData.price;
+            console.log('💰 총 비용:', totalCost);
+            
             if (totalCost > 0) {
                 const now = new Date();
                 const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
@@ -7367,15 +7379,22 @@ async function submitBroParts(e) {
                     memo: '부품 등록 시 자동 생성'
                 };
                 
+                console.log('📝 금전출납부 데이터:', cashbookData);
+                
                 const cbResult = await insertToDB('bro_cashbook', cashbookData);
+                console.log('📝 금전출납부 등록 결과:', cbResult);
+                
                 if (cbResult && cbResult[0]) {
                     broCashbookList.unshift(cbResult[0]);
+                    showToast(`✅ 부품 등록 + 금전출납부 지출 ${fmt(totalCost)} 추가`);
+                } else {
+                    showToast('✅ 부품 등록 (금전출납부 연동 실패)');
                 }
-                
-                showToast(`✅ 부품 등록 + 금전출납부 지출 ${fmt(totalCost)} 추가`);
             } else {
                 showToast('✅ 부품이 등록되었습니다');
             }
+        } else {
+            showToast('❌ 부품 등록 실패');
         }
     }
     
@@ -8529,23 +8548,25 @@ function loadLedger() {
     if (filterStart) list = list.filter(l => l.date >= filterStart);
     if (filterEnd) list = list.filter(l => l.date <= filterEnd);
     
-    // 이번달 수납 (원장 기준)
-    const thisMonthReceipts = ledgerList.filter(l => l.type === 'receipt' && l.date >= thisMonthStart && l.date <= today);
-    const monthReceipt = thisMonthReceipts.reduce((s, l) => s + l.receipt, 0);
+    // 이번달 수납 (contract_payments 기준)
+    const thisMonthPayments = contractPaymentList.filter(p => 
+        p.status === 'paid' && p.payment_date >= thisMonthStart && p.payment_date <= today
+    );
+    const monthReceipt = thisMonthPayments.reduce((s, p) => s + (p.amount || 0), 0);
     
     // 이번달 예상 수익 (활성 계약 기준)
     const activeContracts = contractList.filter(c => c.status === 'active');
-    const expectedMonthly = activeContracts.reduce((s, c) => s + c.monthly, 0);
+    const expectedMonthly = activeContracts.reduce((s, c) => s + (c.monthly || 0), 0);
     
     // 수납률 = 실제수납 / 예상수익 (%)
     const monthRate = expectedMonthly > 0 ? Math.round((monthReceipt / expectedMonthly) * 100) : 0;
     
     // 총 미수금 (계약 기준)
-    const contractsWithArrears = contractList.filter(c => c.arrears > 0);
-    const totalArrears = contractsWithArrears.reduce((s, c) => s + c.arrears, 0);
+    const contractsWithArrears = contractList.filter(c => (c.arrears || 0) > 0);
+    const totalArrears = contractsWithArrears.reduce((s, c) => s + (c.arrears || 0), 0);
     
     document.getElementById('ledger-receipt').textContent = fmt(monthReceipt);
-    document.getElementById('ledger-receipt-count').textContent = thisMonthReceipts.length + '건';
+    document.getElementById('ledger-receipt-count').textContent = thisMonthPayments.length + '건';
     document.getElementById('ledger-arrears').textContent = fmt(totalArrears);
     document.getElementById('ledger-arrears-count').textContent = contractsWithArrears.length + '건';
     document.getElementById('ledger-rate').textContent = monthRate + '%';
@@ -8665,30 +8686,35 @@ function openMonthlyReceiptModal() {
     const thisMonthStart = today.substring(0, 7) + '-01';
     const monthName = today.substring(0, 7).replace('-', '년 ') + '월';
     
-    // 이번달 수납 내역
-    const thisMonthReceipts = ledgerList.filter(l => l.type === 'receipt' && l.date >= thisMonthStart && l.date <= today);
-    const totalReceipt = thisMonthReceipts.reduce((s, l) => s + l.receipt, 0);
+    // 이번달 수납 내역 (contract_payments 기준)
+    const thisMonthPayments = contractPaymentList.filter(p => 
+        p.status === 'paid' && p.payment_date >= thisMonthStart && p.payment_date <= today
+    );
+    const totalReceipt = thisMonthPayments.reduce((s, p) => s + (p.amount || 0), 0);
     
     // 고객별 수납 집계
     let customerStats = {};
-    thisMonthReceipts.forEach(l => {
-        if (!customerStats[l.customer_name]) {
-            customerStats[l.customer_name] = { name: l.customer_name, amount: 0, count: 0, lastDate: l.date };
+    thisMonthPayments.forEach(p => {
+        const contract = contractList.find(c => c.id === p.contract_id);
+        const customerName = contract ? contract.customer_name : '알수없음';
+        
+        if (!customerStats[customerName]) {
+            customerStats[customerName] = { name: customerName, amount: 0, count: 0, lastDate: p.payment_date };
         }
-        customerStats[l.customer_name].amount += l.receipt;
-        customerStats[l.customer_name].count++;
-        if (l.date > customerStats[l.customer_name].lastDate) {
-            customerStats[l.customer_name].lastDate = l.date;
+        customerStats[customerName].amount += (p.amount || 0);
+        customerStats[customerName].count++;
+        if (p.payment_date > customerStats[customerName].lastDate) {
+            customerStats[customerName].lastDate = p.payment_date;
         }
     });
     
     const customerList = Object.values(customerStats).sort((a, b) => b.amount - a.amount);
     
-    // 결제 방법별 집계
+    // 결제 유형별 집계
     let methodStats = {};
-    thisMonthReceipts.forEach(l => {
-        const method = l.method || '기타';
-        methodStats[method] = (methodStats[method] || 0) + l.receipt;
+    thisMonthPayments.forEach(p => {
+        const method = p.payment_type || '기타';
+        methodStats[method] = (methodStats[method] || 0) + (p.amount || 0);
     });
     
     let tableRows = '';
@@ -8721,7 +8747,7 @@ function openMonthlyReceiptModal() {
             </div>
             <div class="p-4 rounded-xl bg-blue-400/10 border border-blue-400/30 text-center">
                 <div class="text-xs text-blue-400 mb-1">수납 건수</div>
-                <div class="text-2xl font-black text-blue-400">${thisMonthReceipts.length}건</div>
+                <div class="text-2xl font-black text-blue-400">${thisMonthPayments.length}건</div>
             </div>
         </div>
         
