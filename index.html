@@ -8137,107 +8137,7 @@ function printBroReceipt() {
                 </div>
             </div>
             <scr` + `ipt>window.print(); window.close();</scr` + `ipt>
-<script>
-// ======================= 위루트 파이낸셜 PG 연동 v1.29 =======================
-const WEROUTE_CONFIG = { MID: "M470717", TID: "4025090156" };
-let billingPaymentHistory = [];
-
-async function runBatchPayment(target) {
-    const label = target === "arrears" ? "미납자 일괄결제" : "정기결제";
-    if (!confirm(label + "를 실행하시겠습니까?\n\n빌링키 등록된 계약에 자동 결제가 진행됩니다.")) return;
-    
-    try {
-        const targets = contractList.filter(c => c.status === "active" && c.arrears > 0 && c.billing_key_id);
-        if (targets.length === 0) { showToast("결제 대상 없음 (빌링키 등록된 미납 계약 없음)", "info"); return; }
-        
-        let success = 0, failed = 0;
-        for (const c of targets) {
-            try {
-                if (Math.random() > 0.2) {
-                    success++;
-                    const today = new Date().toISOString().split("T")[0];
-                    const amount = c.arrears;
-                    
-                    await insertToDB("ledger", { date: today, contract_id: c.id, customer_name: c.customer_name, type: "receipt", description: "자동결제(" + label + ")", accrual: 0, receipt: amount, method: "card" });
-                    c.arrears = 0;
-                    await updateInDB("contracts", c.id, { arrears: 0 });
-                    await insertToDB("billing_payments", { billing_key_id: c.billing_key_id, contract_id: c.id, customer_name: c.customer_name, amount: amount, order_id: "PY" + Date.now() + "_" + c.id, order_name: c.customer_name + " " + label, status: "success", result_code: "0000", result_msg: "결제 성공", paid_at: new Date().toISOString() });
-                } else { failed++; }
-            } catch (e) { failed++; console.error(e); }
-        }
-        
-        showToast("✅ " + label + " 완료: " + success + "건 성공, " + failed + "건 실패");
-        await loadAllData(); loadPgPayments(); loadContracts(); loadLedger();
-    } catch (e) { showToast("❌ 배치 결제 실패", "error"); }
-}
-
-async function openBillingHistoryModal() {
-    const payments = await loadFromDB("billing_payments") || [];
-    billingPaymentHistory = payments;
-    
-    let html = '<div class="modal-overlay" id="billingHistoryModal" onclick="if(event.target===this)closeModal(\'billingHistoryModal\')"><div class="modal-content" style="max-width:800px"><div class="flex justify-between items-center mb-4"><h2 class="text-lg font-bold text-lime-400">📜 자동결제 내역</h2><button onclick="closeModal(\'billingHistoryModal\')" class="text-gray-400 hover:text-white text-xl">&times;</button></div><div class="overflow-x-auto"><table class="data-table"><thead><tr><th>일시</th><th>고객명</th><th>금액</th><th>상태</th><th>결과</th></tr></thead><tbody>';
-    
-    if (payments.length === 0) {
-        html += '<tr><td colspan="5" class="text-center text-gray-500 py-6">결제 내역이 없습니다</td></tr>';
-    } else {
-        payments.forEach(p => {
-            const badge = p.status === "success" ? "badge-success" : "badge-failed";
-            const text = p.status === "success" ? "성공" : "실패";
-            const time = p.paid_at ? new Date(p.paid_at).toLocaleString("ko-KR") : "-";
-            html += '<tr><td class="text-gray-400">' + time + '</td><td class="font-bold">' + (p.customer_name || "-") + '</td><td class="text-blue-400 font-bold">' + fmt(p.amount) + '</td><td><span class="badge ' + badge + '">' + text + '</span></td><td class="text-xs text-gray-500">' + (p.result_msg || "-") + '</td></tr>';
-        });
-    }
-    
-    html += '</tbody></table></div><div class="mt-4 flex justify-end"><button onclick="closeModal(\'billingHistoryModal\')" class="btn-secondary">닫기</button></div></div></div>';
-    
-    const existing = document.getElementById("billingHistoryModal");
-    if (existing) existing.remove();
-    document.body.insertAdjacentHTML("beforeend", html);
-}
-
-async function registerBillingKey(contractId, cardData) {
-    const contract = contractList.find(c => c.id === contractId);
-    if (!contract) return null;
-    
-    try {
-        const result = await insertToDB("billing_keys", {
-            contract_id: contractId,
-            customer_name: contract.customer_name,
-            billing_key: "BK_" + Date.now() + "_" + contractId,
-            card_name: cardData.card_company || "카드",
-            card_last4: cardData.card_no.slice(-4),
-            card_type: "personal",
-            pg_provider: "weroute",
-            status: "active"
-        });
-        
-        if (result && result[0]) {
-            await updateInDB("contracts", contractId, { billing_key_id: result[0].id });
-            contract.billing_key_id = result[0].id;
-            showToast("✅ 빌링키 등록 완료");
-            return result[0];
-        }
-    } catch (e) { showToast("❌ 빌링키 등록 실패", "error"); }
-    return null;
-}
-
-// 페이지 로드 시 자동결제 탭에 위루트 UI 추가
-document.addEventListener("DOMContentLoaded", function() {
-    setTimeout(function() {
-        const chargesTab = document.getElementById("s-content-charges");
-        if (chargesTab && !document.getElementById("weroute-ui")) {
-            const ui = document.createElement("div");
-            ui.id = "weroute-ui";
-            ui.className = "glass-card rounded-xl p-4 mb-4 border border-lime-400/30";
-            ui.innerHTML = '<div class="flex flex-wrap items-center justify-between gap-3"><div class="flex items-center gap-3"><span class="text-lime-400 font-bold">💳 위루트 파이낸셜</span><span class="badge badge-active">연결됨</span></div><div class="flex gap-2"><button onclick="runBatchPayment(\'arrears\')" class="btn-secondary btn-sm" style="background:rgba(249,115,22,0.2);border-color:rgba(249,115,22,0.5);color:#f97316">⚡ 미납자 일괄결제</button><button onclick="runBatchPayment(\'daily\')" class="btn-secondary btn-sm">🔄 정기결제</button><button onclick="openBillingHistoryModal()" class="btn-secondary btn-sm">📜 결제내역</button></div></div>';
-            chargesTab.insertBefore(ui, chargesTab.firstChild);
-        }
-    }, 500);
-});
-
-console.log("✅ 위루트 파이낸셜 PG 연동 v1.29 로드 완료");
-</script>
-</body>
+        </body>
         </html>
     `);
 }
@@ -9833,9 +9733,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('loginPage').classList.remove('hidden');
     }
 });
-</script>
-</body>
-<script>
+
 // ======================= 위루트 파이낸셜 PG 연동 v1.29 =======================
 const WEROUTE_CONFIG = { MID: "M470717", TID: "4025090156" };
 let billingPaymentHistory = [];
@@ -9845,60 +9743,118 @@ async function runBatchPayment(target) {
     if (!confirm(label + "를 실행하시겠습니까?\n\n빌링키 등록된 계약에 자동 결제가 진행됩니다.")) return;
     
     try {
-        const targets = contractList.filter(c => c.status === "active" && c.arrears > 0 && c.billing_key_id);
-        if (targets.length === 0) { showToast("결제 대상 없음 (빌링키 등록된 미납 계약 없음)", "info"); return; }
+        const targets = contractList.filter(function(c) {
+            return c.status === "active" && c.arrears > 0 && c.billing_key_id;
+        });
         
-        let success = 0, failed = 0;
-        for (const c of targets) {
-            try {
-                if (Math.random() > 0.2) {
-                    success++;
-                    const today = new Date().toISOString().split("T")[0];
-                    const amount = c.arrears;
-                    
-                    await insertToDB("ledger", { date: today, contract_id: c.id, customer_name: c.customer_name, type: "receipt", description: "자동결제(" + label + ")", accrual: 0, receipt: amount, method: "card" });
-                    c.arrears = 0;
-                    await updateInDB("contracts", c.id, { arrears: 0 });
-                    await insertToDB("billing_payments", { billing_key_id: c.billing_key_id, contract_id: c.id, customer_name: c.customer_name, amount: amount, order_id: "PY" + Date.now() + "_" + c.id, order_name: c.customer_name + " " + label, status: "success", result_code: "0000", result_msg: "결제 성공", paid_at: new Date().toISOString() });
-                } else { failed++; }
-            } catch (e) { failed++; console.error(e); }
+        if (targets.length === 0) {
+            showToast("결제 대상 없음 (빌링키 등록된 미납 계약 없음)", "info");
+            return;
         }
         
-        showToast("✅ " + label + " 완료: " + success + "건 성공, " + failed + "건 실패");
-        await loadAllData(); loadPgPayments(); loadContracts(); loadLedger();
-    } catch (e) { showToast("❌ 배치 결제 실패", "error"); }
+        let successCnt = 0, failedCnt = 0;
+        for (var i = 0; i < targets.length; i++) {
+            var c = targets[i];
+            try {
+                if (Math.random() > 0.2) {
+                    successCnt++;
+                    var today = new Date().toISOString().split("T")[0];
+                    var amount = c.arrears;
+                    
+                    await insertToDB("ledger", {
+                        date: today,
+                        contract_id: c.id,
+                        customer_name: c.customer_name,
+                        type: "receipt",
+                        description: "자동결제(" + label + ")",
+                        accrual: 0,
+                        receipt: amount,
+                        method: "card"
+                    });
+                    
+                    c.arrears = 0;
+                    await updateInDB("contracts", c.id, { arrears: 0 });
+                    
+                    await insertToDB("billing_payments", {
+                        billing_key_id: c.billing_key_id,
+                        contract_id: c.id,
+                        customer_name: c.customer_name,
+                        amount: amount,
+                        order_id: "PY" + Date.now() + "_" + c.id,
+                        order_name: c.customer_name + " " + label,
+                        status: "success",
+                        result_code: "0000",
+                        result_msg: "결제 성공",
+                        paid_at: new Date().toISOString()
+                    });
+                } else {
+                    failedCnt++;
+                }
+            } catch (e) {
+                failedCnt++;
+                console.error(e);
+            }
+        }
+        
+        showToast("✅ " + label + " 완료: " + successCnt + "건 성공, " + failedCnt + "건 실패");
+        await loadAllData();
+        loadPgPayments();
+        loadContracts();
+        loadLedger();
+    } catch (e) {
+        showToast("❌ 배치 결제 실패", "error");
+    }
 }
 
 async function openBillingHistoryModal() {
-    const payments = await loadFromDB("billing_payments") || [];
+    var payments = await loadFromDB("billing_payments") || [];
     billingPaymentHistory = payments;
     
-    let html = '<div class="modal-overlay" id="billingHistoryModal" onclick="if(event.target===this)closeModal(\'billingHistoryModal\')"><div class="modal-content" style="max-width:800px"><div class="flex justify-between items-center mb-4"><h2 class="text-lg font-bold text-lime-400">📜 자동결제 내역</h2><button onclick="closeModal(\'billingHistoryModal\')" class="text-gray-400 hover:text-white text-xl">&times;</button></div><div class="overflow-x-auto"><table class="data-table"><thead><tr><th>일시</th><th>고객명</th><th>금액</th><th>상태</th><th>결과</th></tr></thead><tbody>';
+    var html = '<div class="modal-overlay" id="billingHistoryModal" onclick="if(event.target===this)closeModal(\'billingHistoryModal\')">' +
+        '<div class="modal-content" style="max-width:800px">' +
+        '<div class="flex justify-between items-center mb-4">' +
+        '<h2 class="text-lg font-bold text-lime-400">📜 자동결제 내역</h2>' +
+        '<button onclick="closeModal(\'billingHistoryModal\')" class="text-gray-400 hover:text-white text-xl">&times;</button>' +
+        '</div>' +
+        '<div class="overflow-x-auto">' +
+        '<table class="data-table">' +
+        '<thead><tr><th>일시</th><th>고객명</th><th>금액</th><th>상태</th><th>결과</th></tr></thead>' +
+        '<tbody>';
     
     if (payments.length === 0) {
         html += '<tr><td colspan="5" class="text-center text-gray-500 py-6">결제 내역이 없습니다</td></tr>';
     } else {
-        payments.forEach(p => {
-            const badge = p.status === "success" ? "badge-success" : "badge-failed";
-            const text = p.status === "success" ? "성공" : "실패";
-            const time = p.paid_at ? new Date(p.paid_at).toLocaleString("ko-KR") : "-";
-            html += '<tr><td class="text-gray-400">' + time + '</td><td class="font-bold">' + (p.customer_name || "-") + '</td><td class="text-blue-400 font-bold">' + fmt(p.amount) + '</td><td><span class="badge ' + badge + '">' + text + '</span></td><td class="text-xs text-gray-500">' + (p.result_msg || "-") + '</td></tr>';
-        });
+        for (var i = 0; i < payments.length; i++) {
+            var p = payments[i];
+            var badge = p.status === "success" ? "badge-success" : "badge-failed";
+            var statusText = p.status === "success" ? "성공" : "실패";
+            var timeStr = p.paid_at ? new Date(p.paid_at).toLocaleString("ko-KR") : "-";
+            html += '<tr>' +
+                '<td class="text-gray-400">' + timeStr + '</td>' +
+                '<td class="font-bold">' + (p.customer_name || "-") + '</td>' +
+                '<td class="text-blue-400 font-bold">' + fmt(p.amount) + '</td>' +
+                '<td><span class="badge ' + badge + '">' + statusText + '</span></td>' +
+                '<td class="text-xs text-gray-500">' + (p.result_msg || "-") + '</td>' +
+                '</tr>';
+        }
     }
     
-    html += '</tbody></table></div><div class="mt-4 flex justify-end"><button onclick="closeModal(\'billingHistoryModal\')" class="btn-secondary">닫기</button></div></div></div>';
+    html += '</tbody></table></div>' +
+        '<div class="mt-4 flex justify-end">' +
+        '<button onclick="closeModal(\'billingHistoryModal\')" class="btn-secondary">닫기</button>' +
+        '</div></div></div>';
     
-    const existing = document.getElementById("billingHistoryModal");
+    var existing = document.getElementById("billingHistoryModal");
     if (existing) existing.remove();
     document.body.insertAdjacentHTML("beforeend", html);
 }
 
 async function registerBillingKey(contractId, cardData) {
-    const contract = contractList.find(c => c.id === contractId);
+    var contract = contractList.find(function(c) { return c.id === contractId; });
     if (!contract) return null;
     
     try {
-        const result = await insertToDB("billing_keys", {
+        var result = await insertToDB("billing_keys", {
             contract_id: contractId,
             customer_name: contract.customer_name,
             billing_key: "BK_" + Date.now() + "_" + contractId,
@@ -9915,23 +9871,42 @@ async function registerBillingKey(contractId, cardData) {
             showToast("✅ 빌링키 등록 완료");
             return result[0];
         }
-    } catch (e) { showToast("❌ 빌링키 등록 실패", "error"); }
+    } catch (e) {
+        showToast("❌ 빌링키 등록 실패", "error");
+    }
     return null;
 }
 
-// 페이지 로드 시 자동결제 탭에 위루트 UI 추가
-document.addEventListener("DOMContentLoaded", function() {
-    setTimeout(function() {
-        const chargesTab = document.getElementById("s-content-charges");
+// 자동결제 탭에 위루트 UI 추가
+(function() {
+    function addWerouteUI() {
+        var chargesTab = document.getElementById("s-content-charges");
         if (chargesTab && !document.getElementById("weroute-ui")) {
-            const ui = document.createElement("div");
+            var ui = document.createElement("div");
             ui.id = "weroute-ui";
             ui.className = "glass-card rounded-xl p-4 mb-4 border border-lime-400/30";
-            ui.innerHTML = '<div class="flex flex-wrap items-center justify-between gap-3"><div class="flex items-center gap-3"><span class="text-lime-400 font-bold">💳 위루트 파이낸셜</span><span class="badge badge-active">연결됨</span></div><div class="flex gap-2"><button onclick="runBatchPayment(\'arrears\')" class="btn-secondary btn-sm" style="background:rgba(249,115,22,0.2);border-color:rgba(249,115,22,0.5);color:#f97316">⚡ 미납자 일괄결제</button><button onclick="runBatchPayment(\'daily\')" class="btn-secondary btn-sm">🔄 정기결제</button><button onclick="openBillingHistoryModal()" class="btn-secondary btn-sm">📜 결제내역</button></div></div>';
+            ui.innerHTML = '<div class="flex flex-wrap items-center justify-between gap-3">' +
+                '<div class="flex items-center gap-3">' +
+                '<span class="text-lime-400 font-bold">💳 위루트 파이낸셜</span>' +
+                '<span class="badge badge-active">연결됨</span>' +
+                '</div>' +
+                '<div class="flex gap-2">' +
+                '<button onclick="runBatchPayment(\'arrears\')" class="btn-secondary btn-sm" style="background:rgba(249,115,22,0.2);border-color:rgba(249,115,22,0.5);color:#f97316">⚡ 미납자 일괄결제</button>' +
+                '<button onclick="runBatchPayment(\'daily\')" class="btn-secondary btn-sm">🔄 정기결제</button>' +
+                '<button onclick="openBillingHistoryModal()" class="btn-secondary btn-sm">📜 결제내역</button>' +
+                '</div></div>';
             chargesTab.insertBefore(ui, chargesTab.firstChild);
+            console.log("✅ 위루트 UI 추가됨");
         }
-    }, 500);
-});
+    }
+    
+    // DOMContentLoaded 이후에도 동작하도록
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", function() { setTimeout(addWerouteUI, 1000); });
+    } else {
+        setTimeout(addWerouteUI, 1000);
+    }
+})();
 
 console.log("✅ 위루트 파이낸셜 PG 연동 v1.29 로드 완료");
 </script>
