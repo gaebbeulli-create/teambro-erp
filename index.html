@@ -215,7 +215,7 @@
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v1.29</p>
+                <p class="text-gray-500 text-xs mt-1">v1.28</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -3145,9 +3145,6 @@ async function loadAllData() {
     fineList = fines || [];
     contractPaymentList = contractPayments || [];
     
-    // 연체일 계산 (미수금 있는 계약에 대해)
-    calculateDelinquentDays();
-    
     // recentPayments는 ledger에서 추출
     recentPayments = ledgerList.filter(l => l.type === 'receipt').slice(0, 5).map((l, i) => ({
         id: i + 1,
@@ -3156,84 +3153,6 @@ async function loadAllData() {
         date: l.date,
         time: '09:00'
     }));
-}
-
-// 연체일 계산 함수
-function calculateDelinquentDays() {
-    const now = new Date();
-    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-    const today = koreaTime.toISOString().split('T')[0];
-    const todayDate = new Date(today + 'T00:00:00');
-    
-    contractList.forEach(c => {
-        // 미수금이 없으면 연체일 0
-        if (!c.arrears || c.arrears <= 0) {
-            c.delinquent_days = 0;
-            return;
-        }
-        
-        // 시작일이 없으면 제외
-        if (!c.start_date) {
-            c.delinquent_days = 0;
-            return;
-        }
-        
-        const startDate = new Date(c.start_date + 'T00:00:00');
-        const cycle = c.payment_cycle || 'monthly';
-        
-        const paidPayments = contractPaymentList.filter(p => 
-            p.contract_id === c.id && p.status === 'paid'
-        ).sort((a, b) => (b.payment_date || '').localeCompare(a.payment_date || ''));
-        
-        let lastPaymentDate = paidPayments.length > 0 ? paidPayments[0].payment_date : null;
-        let overdueStartDate;
-        
-        if (cycle === 'daily') {
-            if (lastPaymentDate) {
-                const lastDate = new Date(lastPaymentDate + 'T00:00:00');
-                lastDate.setDate(lastDate.getDate() + 1);
-                overdueStartDate = lastDate.toISOString().split('T')[0];
-            } else {
-                overdueStartDate = c.start_date;
-            }
-        } else if (cycle === 'weekly') {
-            if (lastPaymentDate) {
-                const lastDate = new Date(lastPaymentDate + 'T00:00:00');
-                lastDate.setDate(lastDate.getDate() + 7);
-                overdueStartDate = lastDate.toISOString().split('T')[0];
-            } else {
-                overdueStartDate = c.start_date;
-            }
-        } else {
-            const paymentDay = c.payment_day || startDate.getDate();
-            
-            if (lastPaymentDate) {
-                const [y, m] = lastPaymentDate.substring(0, 7).split('-').map(Number);
-                const nextMonth = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
-                overdueStartDate = `${nextMonth}-${String(paymentDay).padStart(2, '0')}`;
-            } else {
-                const startY = startDate.getFullYear();
-                const startM = startDate.getMonth() + 1;
-                const startD = startDate.getDate();
-                
-                if (startD <= paymentDay) {
-                    overdueStartDate = `${startY}-${String(startM).padStart(2, '0')}-${String(paymentDay).padStart(2, '0')}`;
-                } else {
-                    const nextM = startM === 12 ? 1 : startM + 1;
-                    const nextY = startM === 12 ? startY + 1 : startY;
-                    overdueStartDate = `${nextY}-${String(nextM).padStart(2, '0')}-${String(paymentDay).padStart(2, '0')}`;
-                }
-            }
-        }
-        
-        if (overdueStartDate && today >= overdueStartDate) {
-            const overdueDateObj = new Date(overdueStartDate + 'T00:00:00');
-            const diffTime = todayDate.getTime() - overdueDateObj.getTime();
-            c.delinquent_days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-        } else {
-            c.delinquent_days = 0;
-        }
-    });
 }
 
 // 날짜 초기화 함수
@@ -3265,10 +3184,6 @@ function handleLogout() {
     sessionStorage.removeItem('teambro_session');
     location.reload();
 }
-
-// 참고: 이전에는 beforeunload에서 세션을 삭제했으나,
-// 새로고침 시에도 세션이 삭제되는 문제가 있어 제거함.
-// 세션은 24시간 만료 또는 브라우저 종료 시 자동 삭제됨 (sessionStorage 특성)
 
 // 세션에 현재 탭 저장
 function updateSessionTab(system, tab) {
@@ -3815,14 +3730,12 @@ function calculateAllArrears() {
         // 종료/해지된 계약은 제외
         if (c.status === 'completed' || c.status === 'cancelled') {
             c.arrears = 0;
-            c.delinquent_days = 0;
             return;
         }
         
         // 시작일이 없으면 제외
         if (!c.start_date) {
             c.arrears = 0;
-            c.delinquent_days = 0;
             return;
         }
         
@@ -3831,7 +3744,6 @@ function calculateAllArrears() {
         // 시작일이 오늘보다 미래면 연체 없음
         if (startDate > todayDate) {
             c.arrears = 0;
-            c.delinquent_days = 0;
             return;
         }
         
@@ -3870,76 +3782,9 @@ function calculateAllArrears() {
         // 연체 = 납부해야 할 금액 - 실제 납부 금액
         c.arrears = Math.max(0, totalDue - totalPaid);
         
-        // 연체일수 계산 (미수금이 있는 경우만)
-        if (c.arrears > 0) {
-            // 일정산: 마지막으로 납부한 날 다음날부터 연체
-            // 주정산: 마지막으로 납부한 주 다음주부터 연체  
-            // 월정산: 마지막으로 납부한 달 납부예정일부터 연체
-            
-            const paidPayments = contractPaymentList.filter(p => 
-                p.contract_id === c.id && p.status === 'paid'
-            ).sort((a, b) => (b.payment_date || '').localeCompare(a.payment_date || ''));
-            
-            let lastPaymentDate = paidPayments.length > 0 ? paidPayments[0].payment_date : null;
-            let overdueStartDate;
-            
-            if (cycle === 'daily') {
-                // 일정산: 마지막 납부일 다음날 또는 계약시작일
-                if (lastPaymentDate) {
-                    const lastDate = new Date(lastPaymentDate + 'T00:00:00');
-                    lastDate.setDate(lastDate.getDate() + 1);
-                    overdueStartDate = lastDate.toISOString().split('T')[0];
-                } else {
-                    overdueStartDate = c.start_date;
-                }
-            } else if (cycle === 'weekly') {
-                // 주정산: 마지막 납부일 + 7일 또는 계약시작일
-                if (lastPaymentDate) {
-                    const lastDate = new Date(lastPaymentDate + 'T00:00:00');
-                    lastDate.setDate(lastDate.getDate() + 7);
-                    overdueStartDate = lastDate.toISOString().split('T')[0];
-                } else {
-                    overdueStartDate = c.start_date;
-                }
-            } else {
-                // 월정산: 마지막 납부 월의 다음달 납부예정일 또는 첫 납부예정일
-                const paymentDay = c.payment_day || startDate.getDate();
-                
-                if (lastPaymentDate) {
-                    const [y, m] = lastPaymentDate.substring(0, 7).split('-').map(Number);
-                    const nextMonth = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
-                    overdueStartDate = `${nextMonth}-${String(paymentDay).padStart(2, '0')}`;
-                } else {
-                    // 첫 납부예정일
-                    const startY = startDate.getFullYear();
-                    const startM = startDate.getMonth() + 1;
-                    const startD = startDate.getDate();
-                    
-                    if (startD <= paymentDay) {
-                        overdueStartDate = `${startY}-${String(startM).padStart(2, '0')}-${String(paymentDay).padStart(2, '0')}`;
-                    } else {
-                        const nextM = startM === 12 ? 1 : startM + 1;
-                        const nextY = startM === 12 ? startY + 1 : startY;
-                        overdueStartDate = `${nextY}-${String(nextM).padStart(2, '0')}-${String(paymentDay).padStart(2, '0')}`;
-                    }
-                }
-            }
-            
-            // 연체일 계산
-            if (overdueStartDate && today >= overdueStartDate) {
-                const overdueDateObj = new Date(overdueStartDate + 'T00:00:00');
-                const diffTime = todayDate.getTime() - overdueDateObj.getTime();
-                c.delinquent_days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // 당일 포함
-            } else {
-                c.delinquent_days = 0;
-            }
-        } else {
-            c.delinquent_days = 0;
-        }
-        
-        // 디버그 로그 (모든 연체 계약)
-        if (c.arrears > 0) {
-            console.log(`연체계산 [${c.customer_name}]: 시작일=${c.start_date}, 주기=${cycle}, 총발생=${totalDue}, 납부=${totalPaid}, 연체=${c.arrears}, 연체일=${c.delinquent_days}`);
+        // 디버그 로그 (첫 계약만)
+        if (contractList.indexOf(c) === 0) {
+            console.log(`연체계산 [${c.customer_name}]: 시작일=${c.start_date}, 주기=${cycle}, 총발생=${totalDue}, 납부=${totalPaid}, 연체=${c.arrears}`);
         }
     });
 }
@@ -8704,11 +8549,6 @@ function loadLedger() {
     );
     const monthReceipt = thisMonthPayments.reduce((s, p) => s + (p.amount || 0), 0);
     
-    // 이번달 수납 내역 (ledger 기준 - 그래프용)
-    const thisMonthReceipts = ledgerList.filter(l => 
-        l.type === 'receipt' && l.date >= thisMonthStart && l.date <= today
-    );
-    
     // 이번달 예상 수익 (활성 계약 기준)
     const activeContracts = contractList.filter(c => c.status === 'active');
     const expectedMonthly = activeContracts.reduce((s, c) => s + (c.monthly || 0), 0);
@@ -8929,9 +8769,6 @@ function openMonthlyReceiptModal() {
 
 // 미수금 필터 (원장 테이블에서 미수금 있는 계약만 보기)
 function filterLedgerUnpaid() {
-    // 연체일 재계산 (최신 데이터 반영)
-    calculateDelinquentDays();
-    
     // 미수금 있는 계약 목록
     const unpaidContracts = contractList.filter(c => c.arrears > 0);
     
@@ -8987,36 +8824,27 @@ function filterLedgerUnpaid() {
 
 // 수납률 상세 모달
 function openCollectionRateModal() {
-    // 연체일 재계산 (최신 데이터 반영)
-    calculateDelinquentDays();
-    
-    const totalAccrual = ledgerList.reduce((s, l) => s + (l.accrual || 0), 0);
-    const totalReceipt = ledgerList.reduce((s, l) => s + (l.receipt || 0), 0);
+    const totalAccrual = ledgerList.reduce((s, l) => s + l.accrual, 0);
+    const totalReceipt = ledgerList.reduce((s, l) => s + l.receipt, 0);
     const arrears = totalAccrual - totalReceipt;
     const rate = totalAccrual > 0 ? Math.round((totalReceipt / totalAccrual) * 100) : 0;
     
-    // 계약별 수납률 계산 (연체일 포함)
+    // 계약별 수납률 계산
     let contractStats = [];
     contractList.forEach(c => {
         const cLedger = ledgerList.filter(l => l.contract_id === c.id);
-        const cAccrual = cLedger.reduce((s, l) => s + (l.accrual || 0), 0);
-        const cReceipt = cLedger.reduce((s, l) => s + (l.receipt || 0), 0);
-        const cArrears = c.arrears || (cAccrual - cReceipt); // 계약의 arrears 또는 계산값
+        const cAccrual = cLedger.reduce((s, l) => s + l.accrual, 0);
+        const cReceipt = cLedger.reduce((s, l) => s + l.receipt, 0);
         const cRate = cAccrual > 0 ? Math.round((cReceipt / cAccrual) * 100) : 100;
-        
-        // 발생액이 있거나 미수금이 있는 계약만 표시
-        if (cAccrual > 0 || cArrears > 0) {
-            contractStats.push({
-                id: c.id,
-                name: c.customer_name,
-                vehicle: c.vehicle || '-',
-                accrual: cAccrual,
-                receipt: cReceipt,
-                arrears: cArrears,
-                rate: cRate,
-                delinquent_days: c.delinquent_days || 0
-            });
-        }
+        contractStats.push({
+            id: c.id,
+            name: c.customer_name,
+            vehicle: c.vehicle,
+            accrual: cAccrual,
+            receipt: cReceipt,
+            arrears: cAccrual - cReceipt,
+            rate: cRate
+        });
     });
     
     // 수납률 낮은 순 정렬
@@ -9026,14 +8854,12 @@ function openCollectionRateModal() {
     contractStats.forEach(s => {
         const rateColor = s.rate >= 100 ? 'text-emerald-400' : s.rate >= 80 ? 'text-blue-400' : s.rate >= 50 ? 'text-yellow-400' : 'text-red-400';
         const barWidth = Math.min(s.rate, 100);
-        const daysColor = s.delinquent_days >= 60 ? 'text-red-400' : s.delinquent_days >= 30 ? 'text-orange-400' : s.delinquent_days > 0 ? 'text-yellow-400' : 'text-gray-500';
         tableRows += `<tr>
             <td class="font-bold">${s.name}</td>
             <td class="text-gray-400">${s.vehicle}</td>
             <td class="text-orange-400">${fmt(s.accrual)}</td>
             <td class="text-emerald-400">${fmt(s.receipt)}</td>
             <td class="${s.arrears > 0 ? 'text-red-400' : 'text-gray-500'}">${s.arrears > 0 ? fmt(s.arrears) : '-'}</td>
-            <td class="${daysColor} font-bold">${s.delinquent_days > 0 ? s.delinquent_days + '일' : '-'}</td>
             <td>
                 <div class="flex items-center gap-2">
                     <div class="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
@@ -9066,10 +8892,10 @@ function openCollectionRateModal() {
         </div>
         
         <div class="text-sm text-lime-400 font-bold mb-3">📋 계약별 수납률 (낮은 순)</div>
-        <div class="glass-card rounded-xl overflow-hidden mb-4" style="max-height:400px; overflow-y:auto;">
+        <div class="glass-card rounded-xl overflow-hidden mb-4">
             <table class="data-table">
-                <thead><tr><th>고객명</th><th>차량</th><th>발생</th><th>수납</th><th>미수금</th><th>연체일</th><th>수납률</th></tr></thead>
-                <tbody>${tableRows || '<tr><td colspan="7" class="text-center text-gray-500 py-4">데이터 없음</td></tr>'}</tbody>
+                <thead><tr><th>고객명</th><th>차량</th><th>발생</th><th>수납</th><th>미수금</th><th>수납률</th></tr></thead>
+                <tbody>${tableRows || '<tr><td colspan="6" class="text-center text-gray-500 py-4">데이터 없음</td></tr>'}</tbody>
             </table>
         </div>
         
@@ -9669,9 +9495,6 @@ function filterDelinquent(period) {
 }
 
 function loadDelinquent() {
-    // 연체일 재계산
-    calculateDelinquentDays();
-    
     const periodFilter = document.getElementById('del-period').value;
     const sortBy = document.getElementById('del-sort').value;
     const search = document.getElementById('del-search').value.toLowerCase();
