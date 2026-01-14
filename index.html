@@ -8549,6 +8549,11 @@ function loadLedger() {
     );
     const monthReceipt = thisMonthPayments.reduce((s, p) => s + (p.amount || 0), 0);
     
+    // 이번달 수납 내역 (ledger 기준) - 그래프용
+    const thisMonthReceipts = ledgerList.filter(l => 
+        l.type === 'receipt' && l.date >= thisMonthStart && l.date <= today
+    );
+    
     // 이번달 예상 수익 (활성 계약 기준)
     const activeContracts = contractList.filter(c => c.status === 'active');
     const expectedMonthly = activeContracts.reduce((s, c) => s + (c.monthly || 0), 0);
