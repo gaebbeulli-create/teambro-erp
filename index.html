@@ -9495,6 +9495,9 @@ function filterDelinquent(period) {
 }
 
 function loadDelinquent() {
+    // 연체금액 및 연체일수 재계산
+    calculateAllArrears();
+    
     const periodFilter = document.getElementById('del-period').value;
     const sortBy = document.getElementById('del-sort').value;
     const search = document.getElementById('del-search').value.toLowerCase();
