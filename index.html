@@ -215,7 +215,7 @@
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v1.28</p>
+                <p class="text-gray-500 text-xs mt-1">v1.29</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -3145,6 +3145,9 @@ async function loadAllData() {
     fineList = fines || [];
     contractPaymentList = contractPayments || [];
     
+    // 연체일 계산 (미수금 있는 계약에 대해)
+    calculateDelinquentDays();
+    
     // recentPayments는 ledger에서 추출
     recentPayments = ledgerList.filter(l => l.type === 'receipt').slice(0, 5).map((l, i) => ({
         id: i + 1,
@@ -3153,6 +3156,71 @@ async function loadAllData() {
         date: l.date,
         time: '09:00'
     }));
+}
+
+// 연체일 계산 함수
+function calculateDelinquentDays() {
+    const now = new Date();
+    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    const today = koreaTime.toISOString().split('T')[0];
+    
+    contractList.forEach(c => {
+        // 미수금이 없으면 연체일 0
+        if (!c.arrears || c.arrears <= 0) {
+            c.delinquent_days = 0;
+            return;
+        }
+        
+        // 연체일 계산 방법:
+        // 1. 납부일(payment_day)이 있으면 해당 일자 기준
+        // 2. 없으면 계약 시작일(start_date) 기준으로 매월 청구일 계산
+        
+        const paymentDay = c.payment_day || 1; // 기본 매월 1일
+        
+        // 이번달 납부 예정일
+        const thisMonth = today.substring(0, 7);
+        let dueDate = `${thisMonth}-${String(paymentDay).padStart(2, '0')}`;
+        
+        // 오늘이 납부일 이전이면 지난달 납부일이 기준
+        if (today < dueDate) {
+            const lastMonth = new Date(koreaTime);
+            lastMonth.setMonth(lastMonth.getMonth() - 1);
+            const lastMonthStr = lastMonth.toISOString().split('T')[0].substring(0, 7);
+            dueDate = `${lastMonthStr}-${String(paymentDay).padStart(2, '0')}`;
+        }
+        
+        // 마지막 수납일 확인
+        const contractPayments = contractPaymentList.filter(p => 
+            p.contract_id === c.id && p.status === 'paid'
+        ).sort((a, b) => b.payment_date.localeCompare(a.payment_date));
+        
+        const lastPaymentDate = contractPayments.length > 0 ? contractPayments[0].payment_date : null;
+        
+        // 연체 시작일 결정
+        // - 마지막 수납일이 있고 납부예정일 이후면: 마지막 수납일 다음 납부예정일부터
+        // - 마지막 수납일이 없거나 납부예정일 이전이면: 납부예정일부터
+        let overdueStartDate;
+        
+        if (lastPaymentDate && lastPaymentDate >= dueDate) {
+            // 마지막 수납이 이번 납부예정일 이후 → 아직 연체 아님 또는 다음 달부터 연체
+            const nextMonth = new Date(koreaTime);
+            nextMonth.setMonth(nextMonth.getMonth() + 1);
+            const nextMonthStr = nextMonth.toISOString().split('T')[0].substring(0, 7);
+            overdueStartDate = `${nextMonthStr}-${String(paymentDay).padStart(2, '0')}`;
+        } else {
+            overdueStartDate = dueDate;
+        }
+        
+        // 연체일 계산 (오늘 - 연체시작일)
+        if (today > overdueStartDate) {
+            const start = new Date(overdueStartDate);
+            const end = new Date(today);
+            const diffTime = end - start;
+            c.delinquent_days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        } else {
+            c.delinquent_days = 0;
+        }
+    });
 }
 
 // 날짜 초기화 함수
@@ -8554,6 +8622,11 @@ function loadLedger() {
     );
     const monthReceipt = thisMonthPayments.reduce((s, p) => s + (p.amount || 0), 0);
     
+    // 이번달 수납 내역 (ledger 기준 - 그래프용)
+    const thisMonthReceipts = ledgerList.filter(l => 
+        l.type === 'receipt' && l.date >= thisMonthStart && l.date <= today
+    );
+    
     // 이번달 예상 수익 (활성 계약 기준)
     const activeContracts = contractList.filter(c => c.status === 'active');
     const expectedMonthly = activeContracts.reduce((s, c) => s + (c.monthly || 0), 0);
@@ -8774,6 +8847,9 @@ function openMonthlyReceiptModal() {
 
 // 미수금 필터 (원장 테이블에서 미수금 있는 계약만 보기)
 function filterLedgerUnpaid() {
+    // 연체일 재계산 (최신 데이터 반영)
+    calculateDelinquentDays();
+    
     // 미수금 있는 계약 목록
     const unpaidContracts = contractList.filter(c => c.arrears > 0);
     
@@ -8829,27 +8905,36 @@ function filterLedgerUnpaid() {
 
 // 수납률 상세 모달
 function openCollectionRateModal() {
-    const totalAccrual = ledgerList.reduce((s, l) => s + l.accrual, 0);
-    const totalReceipt = ledgerList.reduce((s, l) => s + l.receipt, 0);
+    // 연체일 재계산 (최신 데이터 반영)
+    calculateDelinquentDays();
+    
+    const totalAccrual = ledgerList.reduce((s, l) => s + (l.accrual || 0), 0);
+    const totalReceipt = ledgerList.reduce((s, l) => s + (l.receipt || 0), 0);
     const arrears = totalAccrual - totalReceipt;
     const rate = totalAccrual > 0 ? Math.round((totalReceipt / totalAccrual) * 100) : 0;
     
-    // 계약별 수납률 계산
+    // 계약별 수납률 계산 (연체일 포함)
     let contractStats = [];
     contractList.forEach(c => {
         const cLedger = ledgerList.filter(l => l.contract_id === c.id);
-        const cAccrual = cLedger.reduce((s, l) => s + l.accrual, 0);
-        const cReceipt = cLedger.reduce((s, l) => s + l.receipt, 0);
+        const cAccrual = cLedger.reduce((s, l) => s + (l.accrual || 0), 0);
+        const cReceipt = cLedger.reduce((s, l) => s + (l.receipt || 0), 0);
+        const cArrears = c.arrears || (cAccrual - cReceipt); // 계약의 arrears 또는 계산값
         const cRate = cAccrual > 0 ? Math.round((cReceipt / cAccrual) * 100) : 100;
-        contractStats.push({
-            id: c.id,
-            name: c.customer_name,
-            vehicle: c.vehicle,
-            accrual: cAccrual,
-            receipt: cReceipt,
-            arrears: cAccrual - cReceipt,
-            rate: cRate
-        });
+        
+        // 발생액이 있거나 미수금이 있는 계약만 표시
+        if (cAccrual > 0 || cArrears > 0) {
+            contractStats.push({
+                id: c.id,
+                name: c.customer_name,
+                vehicle: c.vehicle || '-',
+                accrual: cAccrual,
+                receipt: cReceipt,
+                arrears: cArrears,
+                rate: cRate,
+                delinquent_days: c.delinquent_days || 0
+            });
+        }
     });
     
     // 수납률 낮은 순 정렬
@@ -8859,12 +8944,14 @@ function openCollectionRateModal() {
     contractStats.forEach(s => {
         const rateColor = s.rate >= 100 ? 'text-emerald-400' : s.rate >= 80 ? 'text-blue-400' : s.rate >= 50 ? 'text-yellow-400' : 'text-red-400';
         const barWidth = Math.min(s.rate, 100);
+        const daysColor = s.delinquent_days >= 60 ? 'text-red-400' : s.delinquent_days >= 30 ? 'text-orange-400' : s.delinquent_days > 0 ? 'text-yellow-400' : 'text-gray-500';
         tableRows += `<tr>
             <td class="font-bold">${s.name}</td>
             <td class="text-gray-400">${s.vehicle}</td>
             <td class="text-orange-400">${fmt(s.accrual)}</td>
             <td class="text-emerald-400">${fmt(s.receipt)}</td>
             <td class="${s.arrears > 0 ? 'text-red-400' : 'text-gray-500'}">${s.arrears > 0 ? fmt(s.arrears) : '-'}</td>
+            <td class="${daysColor} font-bold">${s.delinquent_days > 0 ? s.delinquent_days + '일' : '-'}</td>
             <td>
                 <div class="flex items-center gap-2">
                     <div class="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
@@ -8897,10 +8984,10 @@ function openCollectionRateModal() {
         </div>
         
         <div class="text-sm text-lime-400 font-bold mb-3">📋 계약별 수납률 (낮은 순)</div>
-        <div class="glass-card rounded-xl overflow-hidden mb-4">
+        <div class="glass-card rounded-xl overflow-hidden mb-4" style="max-height:400px; overflow-y:auto;">
             <table class="data-table">
-                <thead><tr><th>고객명</th><th>차량</th><th>발생</th><th>수납</th><th>미수금</th><th>수납률</th></tr></thead>
-                <tbody>${tableRows || '<tr><td colspan="6" class="text-center text-gray-500 py-4">데이터 없음</td></tr>'}</tbody>
+                <thead><tr><th>고객명</th><th>차량</th><th>발생</th><th>수납</th><th>미수금</th><th>연체일</th><th>수납률</th></tr></thead>
+                <tbody>${tableRows || '<tr><td colspan="7" class="text-center text-gray-500 py-4">데이터 없음</td></tr>'}</tbody>
             </table>
         </div>
         
