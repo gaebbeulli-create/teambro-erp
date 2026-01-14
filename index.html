@@ -3782,9 +3782,31 @@ function calculateAllArrears() {
         // 연체 = 납부해야 할 금액 - 실제 납부 금액
         c.arrears = Math.max(0, totalDue - totalPaid);
         
+        // 연체일수 계산: 마지막 납부일로부터 경과일 또는 시작일로부터 경과일
+        if (c.arrears > 0) {
+            // 마지막 납부 기록 찾기
+            const paidPayments = contractPaymentList
+                .filter(p => p.contract_id === c.id && p.status === 'paid')
+                .sort((a, b) => b.payment_date.localeCompare(a.payment_date));
+            
+            let lastPaidDate;
+            if (paidPayments.length > 0) {
+                // 마지막 납부일 기준
+                lastPaidDate = new Date(paidPayments[0].payment_date + 'T00:00:00');
+            } else {
+                // 납부 기록 없으면 시작일 기준
+                lastPaidDate = startDate;
+            }
+            
+            const diffTime = todayDate.getTime() - lastPaidDate.getTime();
+            c.delinquent_days = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+        } else {
+            c.delinquent_days = 0;
+        }
+        
         // 디버그 로그 (첫 계약만)
         if (contractList.indexOf(c) === 0) {
-            console.log(`연체계산 [${c.customer_name}]: 시작일=${c.start_date}, 주기=${cycle}, 총발생=${totalDue}, 납부=${totalPaid}, 연체=${c.arrears}`);
+            console.log(`연체계산 [${c.customer_name}]: 시작일=${c.start_date}, 주기=${cycle}, 총발생=${totalDue}, 납부=${totalPaid}, 연체=${c.arrears}, 연체일수=${c.delinquent_days}`);
         }
     });
 }
@@ -4718,12 +4740,48 @@ async function submitContract(e) {
 }
 
 async function deleteContract(id) {
-    if (!confirm('정말 이 계약을 삭제하시겠습니까?')) return;
-    await deleteFromDB('contracts', id);
-    contractList = contractList.filter(c => c.id !== id);
-    showToast('✅ 계약이 삭제되었습니다');
-    closeModal('contractDetailModal');
-    loadContracts();
+    if (!confirm('정말 이 계약을 삭제하시겠습니까?\n\n관련된 납부내역, 원장, 자동결제 정보도 함께 삭제됩니다.')) return;
+    
+    try {
+        // 1. 연관된 contract_payments 먼저 삭제
+        const payments = contractPaymentList.filter(p => p.contract_id === id);
+        for (const p of payments) {
+            await deleteFromDB('contract_payments', p.id);
+        }
+        contractPaymentList = contractPaymentList.filter(p => p.contract_id !== id);
+        
+        // 2. 연관된 ledger 삭제
+        const ledgers = ledgerList.filter(l => l.contract_id === id);
+        for (const l of ledgers) {
+            await deleteFromDB('ledger', l.id);
+        }
+        ledgerList = ledgerList.filter(l => l.contract_id !== id);
+        
+        // 3. 연관된 billing_keys 삭제 (있으면)
+        try {
+            const contract = contractList.find(c => c.id === id);
+            if (contract && contract.billing_key_id) {
+                await deleteFromDB('billing_keys', contract.billing_key_id);
+            }
+        } catch (e) { console.log('billing_keys 삭제 스킵'); }
+        
+        // 4. 연관된 billing_payments 삭제 (있으면)
+        try {
+            await supabaseCall('billing_payments', 'DELETE', null, `contract_id=eq.${id}`);
+        } catch (e) { console.log('billing_payments 삭제 스킵'); }
+        
+        // 5. 계약 삭제
+        await deleteFromDB('contracts', id);
+        contractList = contractList.filter(c => c.id !== id);
+        
+        showToast('✅ 계약이 삭제되었습니다');
+        closeModal('contractDetailModal');
+        loadContracts();
+        loadLedger();
+    } catch (e) {
+        console.error('계약 삭제 오류:', e);
+        showToast('❌ 계약 삭제 실패: ' + e.message, 'error');
+    }
 }
 
 // ======================= 정산관리: 차량관리 =======================
