@@ -3171,49 +3171,41 @@ function calculateDelinquentDays() {
             return;
         }
         
-        // 연체일 계산 방법:
-        // 1. 납부일(payment_day)이 있으면 해당 일자 기준
-        // 2. 없으면 계약 시작일(start_date) 기준으로 매월 청구일 계산
+        // 연체 기준일 결정 (우선순위)
+        // 1. 마지막 수납일 (ledger에서 가장 최근 receipt)
+        // 2. 계약 시작일 (start_date)
+        // 3. 오늘 (fallback)
         
-        const paymentDay = c.payment_day || 1; // 기본 매월 1일
+        let baseDate = null;
         
-        // 이번달 납부 예정일
-        const thisMonth = today.substring(0, 7);
-        let dueDate = `${thisMonth}-${String(paymentDay).padStart(2, '0')}`;
+        // 1. ledger에서 해당 계약의 마지막 수납일 찾기
+        const contractReceipts = ledgerList.filter(l => 
+            l.contract_id === c.id && l.type === 'receipt'
+        ).sort((a, b) => b.date.localeCompare(a.date));
         
-        // 오늘이 납부일 이전이면 지난달 납부일이 기준
-        if (today < dueDate) {
-            const lastMonth = new Date(koreaTime);
-            lastMonth.setMonth(lastMonth.getMonth() - 1);
-            const lastMonthStr = lastMonth.toISOString().split('T')[0].substring(0, 7);
-            dueDate = `${lastMonthStr}-${String(paymentDay).padStart(2, '0')}`;
+        if (contractReceipts.length > 0) {
+            baseDate = contractReceipts[0].date;
         }
         
-        // 마지막 수납일 확인
-        const contractPayments = contractPaymentList.filter(p => 
-            p.contract_id === c.id && p.status === 'paid'
-        ).sort((a, b) => b.payment_date.localeCompare(a.payment_date));
-        
-        const lastPaymentDate = contractPayments.length > 0 ? contractPayments[0].payment_date : null;
-        
-        // 연체 시작일 결정
-        // - 마지막 수납일이 있고 납부예정일 이후면: 마지막 수납일 다음 납부예정일부터
-        // - 마지막 수납일이 없거나 납부예정일 이전이면: 납부예정일부터
-        let overdueStartDate;
-        
-        if (lastPaymentDate && lastPaymentDate >= dueDate) {
-            // 마지막 수납이 이번 납부예정일 이후 → 아직 연체 아님 또는 다음 달부터 연체
-            const nextMonth = new Date(koreaTime);
-            nextMonth.setMonth(nextMonth.getMonth() + 1);
-            const nextMonthStr = nextMonth.toISOString().split('T')[0].substring(0, 7);
-            overdueStartDate = `${nextMonthStr}-${String(paymentDay).padStart(2, '0')}`;
-        } else {
-            overdueStartDate = dueDate;
+        // 2. contract_payments에서도 확인
+        if (!baseDate) {
+            const paidPayments = contractPaymentList.filter(p => 
+                p.contract_id === c.id && p.status === 'paid'
+            ).sort((a, b) => (b.payment_date || '').localeCompare(a.payment_date || ''));
+            
+            if (paidPayments.length > 0 && paidPayments[0].payment_date) {
+                baseDate = paidPayments[0].payment_date;
+            }
         }
         
-        // 연체일 계산 (오늘 - 연체시작일)
-        if (today > overdueStartDate) {
-            const start = new Date(overdueStartDate);
+        // 3. 계약 시작일 사용
+        if (!baseDate && c.start_date) {
+            baseDate = c.start_date;
+        }
+        
+        // 4. 연체일 계산
+        if (baseDate && baseDate < today) {
+            const start = new Date(baseDate);
             const end = new Date(today);
             const diffTime = end - start;
             c.delinquent_days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -3803,12 +3795,14 @@ function calculateAllArrears() {
         // 종료/해지된 계약은 제외
         if (c.status === 'completed' || c.status === 'cancelled') {
             c.arrears = 0;
+            c.delinquent_days = 0;
             return;
         }
         
         // 시작일이 없으면 제외
         if (!c.start_date) {
             c.arrears = 0;
+            c.delinquent_days = 0;
             return;
         }
         
@@ -3817,6 +3811,7 @@ function calculateAllArrears() {
         // 시작일이 오늘보다 미래면 연체 없음
         if (startDate > todayDate) {
             c.arrears = 0;
+            c.delinquent_days = 0;
             return;
         }
         
@@ -3855,9 +3850,45 @@ function calculateAllArrears() {
         // 연체 = 납부해야 할 금액 - 실제 납부 금액
         c.arrears = Math.max(0, totalDue - totalPaid);
         
+        // 연체일수 계산 (미수금이 있는 경우만)
+        if (c.arrears > 0) {
+            // 마지막 수납일 찾기 (ledger 기준)
+            const contractReceipts = ledgerList.filter(l => 
+                l.contract_id === c.id && l.type === 'receipt'
+            ).sort((a, b) => b.date.localeCompare(a.date));
+            
+            // contract_payments에서도 확인
+            const paidPayments = contractPaymentList.filter(p => 
+                p.contract_id === c.id && p.status === 'paid'
+            ).sort((a, b) => (b.payment_date || '').localeCompare(a.payment_date || ''));
+            
+            let lastPaymentDate = null;
+            if (contractReceipts.length > 0) {
+                lastPaymentDate = contractReceipts[0].date;
+            }
+            if (paidPayments.length > 0 && paidPayments[0].payment_date) {
+                if (!lastPaymentDate || paidPayments[0].payment_date > lastPaymentDate) {
+                    lastPaymentDate = paidPayments[0].payment_date;
+                }
+            }
+            
+            // 연체 기준일: 마지막 수납일 또는 계약 시작일
+            const baseDate = lastPaymentDate || c.start_date;
+            
+            if (baseDate && baseDate < today) {
+                const baseDateObj = new Date(baseDate + 'T00:00:00');
+                const diffTime = todayDate.getTime() - baseDateObj.getTime();
+                c.delinquent_days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            } else {
+                c.delinquent_days = 0;
+            }
+        } else {
+            c.delinquent_days = 0;
+        }
+        
         // 디버그 로그 (첫 계약만)
         if (contractList.indexOf(c) === 0) {
-            console.log(`연체계산 [${c.customer_name}]: 시작일=${c.start_date}, 주기=${cycle}, 총발생=${totalDue}, 납부=${totalPaid}, 연체=${c.arrears}`);
+            console.log(`연체계산 [${c.customer_name}]: 시작일=${c.start_date}, 주기=${cycle}, 총발생=${totalDue}, 납부=${totalPaid}, 연체=${c.arrears}, 연체일=${c.delinquent_days}`);
         }
     });
 }
@@ -9587,6 +9618,9 @@ function filterDelinquent(period) {
 }
 
 function loadDelinquent() {
+    // 연체일 재계산
+    calculateDelinquentDays();
+    
     const periodFilter = document.getElementById('del-period').value;
     const sortBy = document.getElementById('del-sort').value;
     const search = document.getElementById('del-search').value.toLowerCase();
