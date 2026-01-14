@@ -3163,6 +3163,7 @@ function calculateDelinquentDays() {
     const now = new Date();
     const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
     const today = koreaTime.toISOString().split('T')[0];
+    const todayDate = new Date(today + 'T00:00:00');
     
     contractList.forEach(c => {
         // 미수금이 없으면 연체일 0
@@ -3171,44 +3172,64 @@ function calculateDelinquentDays() {
             return;
         }
         
-        // 연체 기준일 결정 (우선순위)
-        // 1. 마지막 수납일 (ledger에서 가장 최근 receipt)
-        // 2. 계약 시작일 (start_date)
-        // 3. 오늘 (fallback)
-        
-        let baseDate = null;
-        
-        // 1. ledger에서 해당 계약의 마지막 수납일 찾기
-        const contractReceipts = ledgerList.filter(l => 
-            l.contract_id === c.id && l.type === 'receipt'
-        ).sort((a, b) => b.date.localeCompare(a.date));
-        
-        if (contractReceipts.length > 0) {
-            baseDate = contractReceipts[0].date;
+        // 시작일이 없으면 제외
+        if (!c.start_date) {
+            c.delinquent_days = 0;
+            return;
         }
         
-        // 2. contract_payments에서도 확인
-        if (!baseDate) {
-            const paidPayments = contractPaymentList.filter(p => 
-                p.contract_id === c.id && p.status === 'paid'
-            ).sort((a, b) => (b.payment_date || '').localeCompare(a.payment_date || ''));
+        const startDate = new Date(c.start_date + 'T00:00:00');
+        const cycle = c.payment_cycle || 'monthly';
+        
+        const paidPayments = contractPaymentList.filter(p => 
+            p.contract_id === c.id && p.status === 'paid'
+        ).sort((a, b) => (b.payment_date || '').localeCompare(a.payment_date || ''));
+        
+        let lastPaymentDate = paidPayments.length > 0 ? paidPayments[0].payment_date : null;
+        let overdueStartDate;
+        
+        if (cycle === 'daily') {
+            if (lastPaymentDate) {
+                const lastDate = new Date(lastPaymentDate + 'T00:00:00');
+                lastDate.setDate(lastDate.getDate() + 1);
+                overdueStartDate = lastDate.toISOString().split('T')[0];
+            } else {
+                overdueStartDate = c.start_date;
+            }
+        } else if (cycle === 'weekly') {
+            if (lastPaymentDate) {
+                const lastDate = new Date(lastPaymentDate + 'T00:00:00');
+                lastDate.setDate(lastDate.getDate() + 7);
+                overdueStartDate = lastDate.toISOString().split('T')[0];
+            } else {
+                overdueStartDate = c.start_date;
+            }
+        } else {
+            const paymentDay = c.payment_day || startDate.getDate();
             
-            if (paidPayments.length > 0 && paidPayments[0].payment_date) {
-                baseDate = paidPayments[0].payment_date;
+            if (lastPaymentDate) {
+                const [y, m] = lastPaymentDate.substring(0, 7).split('-').map(Number);
+                const nextMonth = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
+                overdueStartDate = `${nextMonth}-${String(paymentDay).padStart(2, '0')}`;
+            } else {
+                const startY = startDate.getFullYear();
+                const startM = startDate.getMonth() + 1;
+                const startD = startDate.getDate();
+                
+                if (startD <= paymentDay) {
+                    overdueStartDate = `${startY}-${String(startM).padStart(2, '0')}-${String(paymentDay).padStart(2, '0')}`;
+                } else {
+                    const nextM = startM === 12 ? 1 : startM + 1;
+                    const nextY = startM === 12 ? startY + 1 : startY;
+                    overdueStartDate = `${nextY}-${String(nextM).padStart(2, '0')}-${String(paymentDay).padStart(2, '0')}`;
+                }
             }
         }
         
-        // 3. 계약 시작일 사용
-        if (!baseDate && c.start_date) {
-            baseDate = c.start_date;
-        }
-        
-        // 4. 연체일 계산
-        if (baseDate && baseDate < today) {
-            const start = new Date(baseDate);
-            const end = new Date(today);
-            const diffTime = end - start;
-            c.delinquent_days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (overdueStartDate && today >= overdueStartDate) {
+            const overdueDateObj = new Date(overdueStartDate + 'T00:00:00');
+            const diffTime = todayDate.getTime() - overdueDateObj.getTime();
+            c.delinquent_days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
         } else {
             c.delinquent_days = 0;
         }
@@ -3245,10 +3266,9 @@ function handleLogout() {
     location.reload();
 }
 
-// 페이지 종료/나가기 시 자동 로그아웃
-window.addEventListener('beforeunload', function() {
-    sessionStorage.removeItem('teambro_session');
-});
+// 참고: 이전에는 beforeunload에서 세션을 삭제했으나,
+// 새로고침 시에도 세션이 삭제되는 문제가 있어 제거함.
+// 세션은 24시간 만료 또는 브라우저 종료 시 자동 삭제됨 (sessionStorage 특성)
 
 // 세션에 현재 탭 저장
 function updateSessionTab(system, tab) {
@@ -3852,33 +3872,64 @@ function calculateAllArrears() {
         
         // 연체일수 계산 (미수금이 있는 경우만)
         if (c.arrears > 0) {
-            // 마지막 수납일 찾기 (ledger 기준)
-            const contractReceipts = ledgerList.filter(l => 
-                l.contract_id === c.id && l.type === 'receipt'
-            ).sort((a, b) => b.date.localeCompare(a.date));
+            // 일정산: 마지막으로 납부한 날 다음날부터 연체
+            // 주정산: 마지막으로 납부한 주 다음주부터 연체  
+            // 월정산: 마지막으로 납부한 달 납부예정일부터 연체
             
-            // contract_payments에서도 확인
             const paidPayments = contractPaymentList.filter(p => 
                 p.contract_id === c.id && p.status === 'paid'
             ).sort((a, b) => (b.payment_date || '').localeCompare(a.payment_date || ''));
             
-            let lastPaymentDate = null;
-            if (contractReceipts.length > 0) {
-                lastPaymentDate = contractReceipts[0].date;
-            }
-            if (paidPayments.length > 0 && paidPayments[0].payment_date) {
-                if (!lastPaymentDate || paidPayments[0].payment_date > lastPaymentDate) {
-                    lastPaymentDate = paidPayments[0].payment_date;
+            let lastPaymentDate = paidPayments.length > 0 ? paidPayments[0].payment_date : null;
+            let overdueStartDate;
+            
+            if (cycle === 'daily') {
+                // 일정산: 마지막 납부일 다음날 또는 계약시작일
+                if (lastPaymentDate) {
+                    const lastDate = new Date(lastPaymentDate + 'T00:00:00');
+                    lastDate.setDate(lastDate.getDate() + 1);
+                    overdueStartDate = lastDate.toISOString().split('T')[0];
+                } else {
+                    overdueStartDate = c.start_date;
+                }
+            } else if (cycle === 'weekly') {
+                // 주정산: 마지막 납부일 + 7일 또는 계약시작일
+                if (lastPaymentDate) {
+                    const lastDate = new Date(lastPaymentDate + 'T00:00:00');
+                    lastDate.setDate(lastDate.getDate() + 7);
+                    overdueStartDate = lastDate.toISOString().split('T')[0];
+                } else {
+                    overdueStartDate = c.start_date;
+                }
+            } else {
+                // 월정산: 마지막 납부 월의 다음달 납부예정일 또는 첫 납부예정일
+                const paymentDay = c.payment_day || startDate.getDate();
+                
+                if (lastPaymentDate) {
+                    const [y, m] = lastPaymentDate.substring(0, 7).split('-').map(Number);
+                    const nextMonth = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
+                    overdueStartDate = `${nextMonth}-${String(paymentDay).padStart(2, '0')}`;
+                } else {
+                    // 첫 납부예정일
+                    const startY = startDate.getFullYear();
+                    const startM = startDate.getMonth() + 1;
+                    const startD = startDate.getDate();
+                    
+                    if (startD <= paymentDay) {
+                        overdueStartDate = `${startY}-${String(startM).padStart(2, '0')}-${String(paymentDay).padStart(2, '0')}`;
+                    } else {
+                        const nextM = startM === 12 ? 1 : startM + 1;
+                        const nextY = startM === 12 ? startY + 1 : startY;
+                        overdueStartDate = `${nextY}-${String(nextM).padStart(2, '0')}-${String(paymentDay).padStart(2, '0')}`;
+                    }
                 }
             }
             
-            // 연체 기준일: 마지막 수납일 또는 계약 시작일
-            const baseDate = lastPaymentDate || c.start_date;
-            
-            if (baseDate && baseDate < today) {
-                const baseDateObj = new Date(baseDate + 'T00:00:00');
-                const diffTime = todayDate.getTime() - baseDateObj.getTime();
-                c.delinquent_days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            // 연체일 계산
+            if (overdueStartDate && today >= overdueStartDate) {
+                const overdueDateObj = new Date(overdueStartDate + 'T00:00:00');
+                const diffTime = todayDate.getTime() - overdueDateObj.getTime();
+                c.delinquent_days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // 당일 포함
             } else {
                 c.delinquent_days = 0;
             }
@@ -3886,8 +3937,8 @@ function calculateAllArrears() {
             c.delinquent_days = 0;
         }
         
-        // 디버그 로그 (첫 계약만)
-        if (contractList.indexOf(c) === 0) {
+        // 디버그 로그 (모든 연체 계약)
+        if (c.arrears > 0) {
             console.log(`연체계산 [${c.customer_name}]: 시작일=${c.start_date}, 주기=${cycle}, 총발생=${totalDue}, 납부=${totalPaid}, 연체=${c.arrears}, 연체일=${c.delinquent_days}`);
         }
     });
