@@ -8585,10 +8585,15 @@ function loadLedger() {
     );
     const monthReceipt = thisMonthPayments.reduce((s, p) => s + (p.amount || 0), 0);
     
-    // 이번달 수납 내역 (원장 기준 - 그래프용)
-    const thisMonthReceipts = ledgerList.filter(l => 
-        l.type === 'receipt' && l.date >= thisMonthStart && l.date <= today
-    );
+    // 이번달 수납 내역 (contract_payments 기준 - 그래프용)
+    const thisMonthReceipts = thisMonthPayments.map(p => {
+        const contract = contractList.find(c => c.id === p.contract_id);
+        return {
+            ...p,
+            receipt: p.amount || 0,
+            method: p.method || '이체'
+        };
+    });
     
     console.log('📊 이번달 수납:', { thisMonthStart, today, payments: thisMonthPayments.length, monthReceipt, receipts: thisMonthReceipts.length });
     
@@ -8596,7 +8601,7 @@ function loadLedger() {
     const activeContracts = contractList.filter(c => c.status === 'active');
     const expectedMonthly = activeContracts.reduce((s, c) => s + (c.monthly || 0), 0);
     
-    // 수납률 = 실제수납 / 예상수익 (%)
+    // 수납률 = 실제수납 / 예상수익 (%) - 최대 100%로 제한하지 않음
     const monthRate = expectedMonthly > 0 ? Math.round((monthReceipt / expectedMonthly) * 100) : 0;
     
     // 총 미수금 (계약 기준)
@@ -8867,18 +8872,83 @@ function filterLedgerUnpaid() {
 
 // 수납률 상세 모달
 function openCollectionRateModal() {
-    const totalAccrual = ledgerList.reduce((s, l) => s + l.accrual, 0);
-    const totalReceipt = ledgerList.reduce((s, l) => s + l.receipt, 0);
+    // contract_payments 기준으로 계산
+    const totalAccrual = contractList.reduce((s, c) => {
+        // 계약 시작일부터 오늘까지 발생한 총 금액
+        if (!c.start_date || c.status === 'completed' || c.status === 'cancelled') return s;
+        const cycle = c.payment_cycle || 'monthly';
+        const monthly = c.monthly || 0;
+        
+        const now = new Date();
+        const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+        const today = koreaTime.toISOString().split('T')[0];
+        const startDate = new Date(c.start_date + 'T00:00:00');
+        const todayDate = new Date(today + 'T00:00:00');
+        
+        if (startDate > todayDate) return s;
+        
+        let due = 0;
+        if (cycle === 'daily') {
+            const diffDays = Math.floor((todayDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+            due = diffDays * monthly;
+        } else if (cycle === 'weekly') {
+            const diffDays = Math.floor((todayDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+            due = Math.ceil(diffDays / 7) * monthly;
+        } else {
+            const paymentDay = c.payment_day || startDate.getDate();
+            const monthsElapsed = (todayDate.getFullYear() - startDate.getFullYear()) * 12 + (todayDate.getMonth() - startDate.getMonth());
+            const additionalMonth = todayDate.getDate() >= paymentDay ? 1 : 0;
+            due = (monthsElapsed + additionalMonth) * monthly;
+        }
+        return s + due;
+    }, 0);
+    
+    const totalReceipt = contractPaymentList
+        .filter(p => p.status === 'paid')
+        .reduce((s, p) => s + (p.amount || 0), 0);
     const arrears = totalAccrual - totalReceipt;
     const rate = totalAccrual > 0 ? Math.round((totalReceipt / totalAccrual) * 100) : 0;
     
     // 계약별 수납률 계산
     let contractStats = [];
     contractList.forEach(c => {
-        const cLedger = ledgerList.filter(l => l.contract_id === c.id);
-        const cAccrual = cLedger.reduce((s, l) => s + l.accrual, 0);
-        const cReceipt = cLedger.reduce((s, l) => s + l.receipt, 0);
+        if (c.status === 'completed' || c.status === 'cancelled') return;
+        
+        // 해당 계약의 총 발생액 계산
+        let cAccrual = 0;
+        if (c.start_date) {
+            const cycle = c.payment_cycle || 'monthly';
+            const monthly = c.monthly || 0;
+            
+            const now = new Date();
+            const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+            const today = koreaTime.toISOString().split('T')[0];
+            const startDate = new Date(c.start_date + 'T00:00:00');
+            const todayDate = new Date(today + 'T00:00:00');
+            
+            if (startDate <= todayDate) {
+                if (cycle === 'daily') {
+                    const diffDays = Math.floor((todayDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                    cAccrual = diffDays * monthly;
+                } else if (cycle === 'weekly') {
+                    const diffDays = Math.floor((todayDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                    cAccrual = Math.ceil(diffDays / 7) * monthly;
+                } else {
+                    const paymentDay = c.payment_day || startDate.getDate();
+                    const monthsElapsed = (todayDate.getFullYear() - startDate.getFullYear()) * 12 + (todayDate.getMonth() - startDate.getMonth());
+                    const additionalMonth = todayDate.getDate() >= paymentDay ? 1 : 0;
+                    cAccrual = (monthsElapsed + additionalMonth) * monthly;
+                }
+            }
+        }
+        
+        // 해당 계약의 총 수납액
+        const cReceipt = contractPaymentList
+            .filter(p => p.contract_id === c.id && p.status === 'paid')
+            .reduce((s, p) => s + (p.amount || 0), 0);
+        
         const cRate = cAccrual > 0 ? Math.round((cReceipt / cAccrual) * 100) : 100;
+        
         contractStats.push({
             id: c.id,
             name: c.customer_name,
