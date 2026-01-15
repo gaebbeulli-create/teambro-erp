@@ -8427,7 +8427,7 @@ async function executeManualPayment(e) {
             memo: memo || '카드결제'
         };
         
-        const savedPayment = await saveToDB('contract_payments', paymentData);
+        const savedPayment = await insertToDB('contract_payments', paymentData);
         if (savedPayment) {
             contractPaymentList.unshift(savedPayment);
         }
@@ -8444,7 +8444,7 @@ async function executeManualPayment(e) {
             method: 'PG'
         };
         
-        const savedLedger = await saveToDB('ledger', ledgerData);
+        const savedLedger = await insertToDB('ledger', ledgerData);
         if (savedLedger) {
             ledgerList.unshift({...savedLedger, desc: savedLedger.description});
         }
