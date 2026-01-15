@@ -8401,7 +8401,7 @@ function openManualPayModal(pgId) {
 }
 
 // 수동 결제 실행
-function executeManualPayment(e) {
+async function executeManualPayment(e) {
     e.preventDefault();
     const pgId = parseInt(document.getElementById('manual-pay-pg-id').value);
     const amount = parseInt(document.getElementById('manual-pay-amount').value) || 0;
@@ -8409,61 +8409,58 @@ function executeManualPayment(e) {
     const memo = e.target.memo ? e.target.memo.value : '';
     
     const p = pgPaymentsList.find(x => x.id === pgId);
-    if (!p) return;
+    if (!p) {
+        showToast('❌ 카드 정보를 찾을 수 없습니다');
+        return;
+    }
     
     const contract = contractList.find(c => c.id === p.contract_id);
     
-    // 결제 처리
-    p.last_pay = date;
-    p.last_status = 'success';
-    
-    // 결제 이력 추가
-    paymentHistory.unshift({
-        id: Math.max(...paymentHistory.map(h => h.id), 0) + 1,
-        pg_id: pgId,
-        contract_id: p.contract_id,
-        amount: amount,
-        date: date,
-        time: new Date().toTimeString().slice(0, 5),
-        status: 'success',
-        method: 'PG'
-    });
-    
-    // 원장에 수납 기록
-    ledgerList.unshift({
-        id: Math.max(...ledgerList.map(l => l.id), 0) + 1,
-        date: date,
-        contract_id: p.contract_id,
-        customer_name: p.customer_name,
-        type: 'receipt',
-        desc: `카드결제${memo ? ' - ' + memo : ''}`,
-        accrual: 0,
-        receipt: amount,
-        method: 'PG'
-    });
-    
-    // 계약 미납금 차감
-    if (contract) {
-        contract.arrears = Math.max(0, contract.arrears - amount);
-        if (contract.arrears === 0) {
-            contract.status = 'active';
-            contract.delinquent_days = 0;
+    try {
+        // 1. contract_payments에 결제 기록 저장
+        const paymentData = {
+            contract_id: p.contract_id,
+            amount: amount,
+            payment_date: date,
+            method: 'PG',
+            status: 'paid',
+            memo: memo || '카드결제'
+        };
+        
+        const savedPayment = await saveToDB('contract_payments', paymentData);
+        if (savedPayment) {
+            contractPaymentList.unshift(savedPayment);
         }
+        
+        // 2. 원장에 수납 기록 저장
+        const ledgerData = {
+            date: date,
+            contract_id: p.contract_id,
+            customer_name: p.customer_name,
+            type: 'receipt',
+            description: `카드결제${memo ? ' - ' + memo : ''}`,
+            accrual: 0,
+            receipt: amount,
+            method: 'PG'
+        };
+        
+        const savedLedger = await saveToDB('ledger', ledgerData);
+        if (savedLedger) {
+            ledgerList.unshift({...savedLedger, desc: savedLedger.description});
+        }
+        
+        // 3. 연체 재계산
+        calculateAllArrears();
+        
+        showToast(`✅ ${p.customer_name}님 ${fmt(amount)} 결제 완료`);
+        closeModal('manualPayModal');
+        loadPgPayments();
+        loadOverview();
+        
+    } catch (error) {
+        console.error('결제 처리 실패:', error);
+        showToast('❌ 결제 처리 실패: ' + error.message);
     }
-    
-    // 최근결제 내역에 추가
-    recentPayments.unshift({
-        id: Math.max(...recentPayments.map(r => r.id), 0) + 1,
-        customer_name: p.customer_name,
-        amount: amount,
-        date: date,
-        time: new Date().toTimeString().slice(0, 5)
-    });
-    
-    showToast(`✅ ${p.customer_name}님 ${fmt(amount)} 결제 완료`);
-    closeModal('manualPayModal');
-    loadPgPayments();
-    loadOverview();
 }
 
 // 카드 상태 토글
