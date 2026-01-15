@@ -753,13 +753,8 @@
                                 <div>
                                     <label class="block text-xs text-lime-400 mb-1">PG사 선택*</label>
                                     <select id="pg-provider" class="input-field" onchange="onPgProviderChange(this.value)">
-                                        <option value="nicepay">나이스페이 (NicePay)</option>
-                                        <option value="inicis">KG이니시스</option>
-                                        <option value="toss">토스페이먼츠</option>
-                                        <option value="kakao">카카오페이</option>
-                                        <option value="danal">다날</option>
-                                        <option value="settle">세틀뱅크</option>
-                                        <option value="kcp">NHN KCP</option>
+                                        <option value="weroute">위루트파이낸셜</option>
+                                        <option value="ghpay">GHPAY (건흥페이먼츠)</option>
                                     </select>
                                 </div>
                                 
@@ -892,29 +887,20 @@
                             <div class="glass-card rounded-xl p-6">
                                 <h3 class="font-bold text-purple-400 text-lg mb-4">📚 API 문서</h3>
                                 <div class="space-y-3">
-                                    <div class="p-3 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-purple-400/50" onclick="openPgDocs('nicepay')">
+                                    <div class="p-3 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-purple-400/50" onclick="openPgDocs('weroute')">
                                         <div class="flex justify-between items-center">
                                             <div>
-                                                <div class="font-bold text-sm">나이스페이 API 문서</div>
-                                                <div class="text-xs text-gray-400">developers.nicepay.co.kr</div>
+                                                <div class="font-bold text-sm">위루트파이낸셜 API 문서</div>
+                                                <div class="text-xs text-gray-400">api.weroutefincorp.com/docs</div>
                                             </div>
                                             <span class="text-purple-400">→</span>
                                         </div>
                                     </div>
-                                    <div class="p-3 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-purple-400/50" onclick="openPgDocs('inicis')">
+                                    <div class="p-3 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-purple-400/50" onclick="openPgDocs('ghpay')">
                                         <div class="flex justify-between items-center">
                                             <div>
-                                                <div class="font-bold text-sm">KG이니시스 API 문서</div>
-                                                <div class="text-xs text-gray-400">manual.inicis.com</div>
-                                            </div>
-                                            <span class="text-purple-400">→</span>
-                                        </div>
-                                    </div>
-                                    <div class="p-3 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-purple-400/50" onclick="openPgDocs('toss')">
-                                        <div class="flex justify-between items-center">
-                                            <div>
-                                                <div class="font-bold text-sm">토스페이먼츠 API 문서</div>
-                                                <div class="text-xs text-gray-400">docs.tosspayments.com</div>
+                                                <div class="font-bold text-sm">GHPAY (건흥페이먼츠) API 문서</div>
+                                                <div class="text-xs text-gray-400">api.ghpayments.kr</div>
                                             </div>
                                             <span class="text-purple-400">→</span>
                                         </div>
@@ -3266,13 +3252,13 @@ function showSettingTab(name, el) {
 
 // ======================= PG 설정 =======================
 let pgSettings = {
-    provider: 'nicepay',
+    provider: 'weroute',
     mid: '',
     merchantKey: '',
     secretKey: '',
-    apiUrl: 'https://api.nicepay.co.kr/v1/payments',
-    cancelUrl: 'https://api.nicepay.co.kr/v1/payments/cancel',
-    billingUrl: 'https://api.nicepay.co.kr/v1/subscribe/regist',
+    apiUrl: 'https://api.weroutefincorp.com/api/v2/pay/bill-key/hand',
+    cancelUrl: 'https://api.weroutefincorp.com/api/v2/cancel',
+    billingUrl: 'https://api.weroutefincorp.com/api/v2/bill-key',
     mode: 'test',
     timeout: 30,
     billingEnabled: true,
@@ -3286,54 +3272,19 @@ let pgSettings = {
 };
 
 const pgProviderInfo = {
-    nicepay: {
-        name: '나이스페이',
-        apiUrl: 'https://api.nicepay.co.kr/v1/payments',
-        cancelUrl: 'https://api.nicepay.co.kr/v1/payments/cancel',
-        billingUrl: 'https://api.nicepay.co.kr/v1/subscribe/regist',
-        docsUrl: 'https://developers.nicepay.co.kr'
+    weroute: {
+        name: '위루트파이낸셜',
+        apiUrl: 'https://api.weroutefincorp.com/api/v2/pay/bill-key/hand',
+        cancelUrl: 'https://api.weroutefincorp.com/api/v2/cancel',
+        billingUrl: 'https://api.weroutefincorp.com/api/v2/bill-key',
+        docsUrl: 'https://api.weroutefincorp.com/docs/index.html'
     },
-    inicis: {
-        name: 'KG이니시스',
-        apiUrl: 'https://iniapi.inicis.com/api/v1/pay',
-        cancelUrl: 'https://iniapi.inicis.com/api/v1/cancel',
-        billingUrl: 'https://iniapi.inicis.com/api/v1/billing',
-        docsUrl: 'https://manual.inicis.com'
-    },
-    toss: {
-        name: '토스페이먼츠',
-        apiUrl: 'https://api.tosspayments.com/v1/payments',
-        cancelUrl: 'https://api.tosspayments.com/v1/payments/cancel',
-        billingUrl: 'https://api.tosspayments.com/v1/billing/authorizations',
-        docsUrl: 'https://docs.tosspayments.com'
-    },
-    kakao: {
-        name: '카카오페이',
-        apiUrl: 'https://kapi.kakao.com/v1/payment/ready',
-        cancelUrl: 'https://kapi.kakao.com/v1/payment/cancel',
-        billingUrl: 'https://kapi.kakao.com/v1/payment/subscription',
-        docsUrl: 'https://developers.kakao.com/docs/latest/ko/kakaopay'
-    },
-    danal: {
-        name: '다날',
-        apiUrl: 'https://api.danal.co.kr/payment',
-        cancelUrl: 'https://api.danal.co.kr/payment/cancel',
-        billingUrl: 'https://api.danal.co.kr/billing',
-        docsUrl: 'https://developers.danal.co.kr'
-    },
-    settle: {
-        name: '세틀뱅크',
-        apiUrl: 'https://api.settlebank.co.kr/v1/payment',
-        cancelUrl: 'https://api.settlebank.co.kr/v1/cancel',
-        billingUrl: 'https://api.settlebank.co.kr/v1/billing',
-        docsUrl: 'https://developers.settlebank.co.kr'
-    },
-    kcp: {
-        name: 'NHN KCP',
-        apiUrl: 'https://api.kcp.co.kr/v1/payment',
-        cancelUrl: 'https://api.kcp.co.kr/v1/cancel',
-        billingUrl: 'https://api.kcp.co.kr/v1/batch',
-        docsUrl: 'https://developer.kcp.co.kr'
+    ghpay: {
+        name: 'GHPAY (건흥페이먼츠)',
+        apiUrl: 'https://api.ghpayments.kr/api/billing/pay',
+        cancelUrl: 'https://api.ghpayments.kr/api/refund',
+        billingUrl: 'https://api.ghpayments.kr/api/billing/reg',
+        docsUrl: 'https://api.ghpayments.kr'
     }
 };
 
