@@ -8494,14 +8494,33 @@ async function executeManualPayment(e) {
     
     const p = pgPaymentsList.find(x => x.id === pgId);
     if (!p) {
-        showToast('❌ 카드 정보를 찾을 수 없습니다');
+        showToast('❌ 카드 정보를 찾을 수 없습니다', 'error');
         return;
     }
     
     const contract = contractList.find(c => c.id === p.contract_id);
     
     try {
-        // 1. contract_payments에 결제 기록 저장
+        // 1. 빌링키가 있으면 실제 PG 결제 호출
+        if (p.billing_key) {
+            console.log('🔄 위루트 PG 결제 시작...', { billing_key: p.billing_key, amount });
+            const pgResult = await processWeroutePayment({
+                billing_key: p.billing_key,
+                amount: amount,
+                order_name: (contract ? contract.customer_name : p.customer_name) + ' 리스료',
+                contract_id: p.contract_id
+            });
+            
+            if (!pgResult.success) {
+                showToast('❌ PG 결제 실패: ' + (pgResult.message || ''), 'error');
+                return;
+            }
+            console.log('✅ PG 결제 성공:', pgResult);
+        } else {
+            console.log('⚠️ 빌링키 없음 - DB 기록만 진행');
+        }
+        
+        // 2. contract_payments에 결제 기록 저장
         const paymentData = {
             contract_id: p.contract_id,
             amount: amount,
@@ -8516,7 +8535,7 @@ async function executeManualPayment(e) {
             contractPaymentList.unshift(savedPayment);
         }
         
-        // 2. 원장에 수납 기록 저장
+        // 3. 원장에 수납 기록 저장
         const ledgerData = {
             date: date,
             contract_id: p.contract_id,
@@ -8533,7 +8552,13 @@ async function executeManualPayment(e) {
             ledgerList.unshift({...savedLedger, desc: savedLedger.description});
         }
         
-        // 3. 연체 재계산
+        // 4. pg_payments 상태 업데이트
+        await updateInDB('pg_payments', pgId, { 
+            last_payment_date: date, 
+            last_payment_status: 'success' 
+        });
+        
+        // 5. 연체 재계산
         calculateAllArrears();
         
         showToast(`✅ ${p.customer_name}님 ${fmt(amount)} 결제 완료`);
@@ -8543,7 +8568,7 @@ async function executeManualPayment(e) {
         
     } catch (error) {
         console.error('결제 처리 실패:', error);
-        showToast('❌ 결제 처리 실패: ' + error.message);
+        showToast('❌ 결제 처리 실패: ' + error.message, 'error');
     }
 }
 
