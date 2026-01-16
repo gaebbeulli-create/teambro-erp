@@ -3105,7 +3105,7 @@ async function loadAllData() {
         loadFromDB('contracts'),
         loadFromDB('vehicles'),
         loadFromDB('ledger'),
-        loadFromDB('pg_payments'),
+        loadFromDB('pg_cards'),
         loadFromDB('bro_works'),
         loadFromDB('bro_cashbook'),
         loadFromDB('bro_parts'),
@@ -8246,13 +8246,12 @@ function onPgContractChange(select) {
     }
 }
 
-function submitPgCard(e) {
+async function submitPgCard(e) {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(e.target));
     const contract = contractList.find(c => c.id === parseInt(d.contract_id));
     
     const newPg = {
-        id: Math.max(...pgPaymentsList.map(p => p.id), 0) + 1,
         contract_id: parseInt(d.contract_id),
         customer_name: contract ? contract.customer_name : '',
         // 카드 소유자 정보
@@ -8267,10 +8266,9 @@ function submitPgCard(e) {
         // 결제 설정
         pay_type: d.pay_type,
         amount: parseInt(d.amount) || 0,
-        last_pay: '-',
+        last_pay: null,
         last_status: 'scheduled',
-        card_status: d.card_status || 'active',
-        created_at: new Date().toISOString().split('T')[0]
+        card_status: d.card_status || 'active'
     };
     
     if (d.pay_type === 'daily') newPg.pay_hour = parseInt(d.pay_hour) || 9;
@@ -8278,12 +8276,19 @@ function submitPgCard(e) {
     else if (d.pay_type === 'monthly') newPg.pay_day = parseInt(d.pay_day) || 1;
     else if (d.pay_type === 'custom') newPg.pay_date = d.pay_date || '';
     
-    pgPaymentsList.push(newPg);
-    
-    showToast('✅ 카드가 등록되었습니다');
-    closeModal('pgModal');
-    e.target.reset();
-    loadPgPayments();
+    try {
+        const result = await insertToDB('pg_cards', newPg);
+        if (result) {
+            pgPaymentsList.push(result);
+            showToast('✅ 카드가 등록되었습니다');
+            closeModal('pgModal');
+            e.target.reset();
+            loadPgPayments();
+        }
+    } catch (error) {
+        console.error('카드 등록 실패:', error);
+        showToast('❌ 카드 등록 실패: ' + error.message);
+    }
 }
 
 // PG 카드 상세보기
@@ -8475,12 +8480,18 @@ function toggleCardStatus(id) {
 }
 
 // 카드 삭제
-function deletePgCard(id) {
+async function deletePgCard(id) {
     if (!confirm('정말 이 카드를 삭제하시겠습니까?')) return;
-    pgPaymentsList = pgPaymentsList.filter(p => p.id !== id);
-    showToast('✅ 카드가 삭제되었습니다');
-    closeModal('pgDetailModal');
-    loadPgPayments();
+    try {
+        await deleteFromDB('pg_cards', id);
+        pgPaymentsList = pgPaymentsList.filter(p => p.id !== id);
+        showToast('✅ 카드가 삭제되었습니다');
+        closeModal('pgDetailModal');
+        loadPgPayments();
+    } catch (error) {
+        console.error('카드 삭제 실패:', error);
+        showToast('❌ 카드 삭제 실패');
+    }
 }
 
 // ======================= 정산관리: 원장 =======================
