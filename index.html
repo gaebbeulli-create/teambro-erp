@@ -2985,8 +2985,99 @@ async function deleteFromDB(table, id) {
     return await supabaseCall(table, 'DELETE', null, `?id=eq.${id}`);
 }
 
+// ======================= 위루트 PG Edge Function =======================
+const WEROUTE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/weroute-payment`;
+
+async function callWerouteFunction(action, params = {}) {
+    console.log('🔄 위루트 PG 호출:', action, params);
+    try {
+        const response = await fetch(WEROUTE_FUNCTION_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            },
+            body: JSON.stringify({ action, ...params })
+        });
+        const result = await response.json();
+        console.log('📥 위루트 PG 응답:', result);
+        if (!response.ok) {
+            throw new Error(result.error || result.message || '요청 실패');
+        }
+        return result;
+    } catch (error) {
+        console.error('❌ 위루트 PG 오류:', error);
+        throw error;
+    }
+}
+
+async function testWerouteConnection() {
+    showToast('🔄 위루트 PG 연결 테스트 중...');
+    try {
+        const result = await callWerouteFunction('test_connection');
+        if (result.success) {
+            showToast(`✅ 위루트 PG 연결 성공! MID: ${result.mid}`);
+            console.log('PG 연결 정보:', result);
+        } else {
+            showToast('❌ 연결 실패: ' + (result.message || '알 수 없는 오류'), 'error');
+        }
+        return result;
+    } catch (error) {
+        showToast('❌ 연결 실패: ' + error.message, 'error');
+        return { success: false, error: error.message };
+    }
+}
+
+async function issueWerouteBillingKey(cardData) {
+    showToast('🔄 카드 등록 중...');
+    try {
+        const result = await callWerouteFunction('issue_billing_key', cardData);
+        if (result.success) {
+            showToast('✅ 카드 등록 완료!');
+        } else {
+            showToast('❌ 카드 등록 실패: ' + (result.message || ''), 'error');
+        }
+        return result;
+    } catch (error) {
+        showToast('❌ 카드 등록 실패: ' + error.message, 'error');
+        return { success: false, error: error.message };
+    }
+}
+
+async function processWeroutePayment(paymentData) {
+    showToast('🔄 결제 처리 중...');
+    try {
+        const result = await callWerouteFunction('billing_payment', paymentData);
+        if (result.success) {
+            showToast(`✅ 결제 완료! 승인번호: ${result.approval_no || 'N/A'}`);
+        } else {
+            showToast('❌ 결제 실패: ' + (result.message || ''), 'error');
+        }
+        return result;
+    } catch (error) {
+        showToast('❌ 결제 실패: ' + error.message, 'error');
+        return { success: false, error: error.message };
+    }
+}
+
+async function cancelWeroutePayment(cancelData) {
+    showToast('🔄 결제 취소 중...');
+    try {
+        const result = await callWerouteFunction('cancel_payment', cancelData);
+        if (result.success) {
+            showToast('✅ 결제 취소 완료!');
+        } else {
+            showToast('❌ 취소 실패: ' + (result.message || ''), 'error');
+        }
+        return result;
+    } catch (error) {
+        showToast('❌ 취소 실패: ' + error.message, 'error');
+        return { success: false, error: error.message };
+    }
+}
+
 // ======================= 전역 변수 =======================
-const APP_VERSION = '1.26';
+const APP_VERSION = '1.27';
 let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
 let currentTab = 'overview'; // 현재 탭
@@ -3366,20 +3457,8 @@ function updatePgStatusBadge() {
 }
 
 function testPgConnection() {
-    const mid = document.getElementById('pg-mid').value;
-    const merchantKey = document.getElementById('pg-merchant-key').value;
-    
-    if (!mid || !merchantKey) {
-        showToast('❌ 가맹점 ID와 상점 키를 입력해주세요', 'error');
-        return;
-    }
-    
-    // 테스트 연결 시뮬레이션
-    showToast('🔄 연결 테스트 중...');
-    setTimeout(() => {
-        // 실제로는 API 호출하여 확인
-        showToast('✅ PG 연결 테스트 성공!');
-    }, 1500);
+    // 위루트 PG Edge Function 연결 테스트
+    testWerouteConnection();
 }
 
 function openPgDocs(provider) {
