@@ -3105,7 +3105,7 @@ async function loadAllData() {
         loadFromDB('contracts'),
         loadFromDB('vehicles'),
         loadFromDB('ledger'),
-        loadFromDB('pg_cards'),
+        loadFromDB('pg_payments'),
         loadFromDB('bro_works'),
         loadFromDB('bro_cashbook'),
         loadFromDB('bro_parts'),
@@ -8277,7 +8277,7 @@ async function submitPgCard(e) {
     else if (d.pay_type === 'custom') newPg.pay_date = d.pay_date || '';
     
     try {
-        const result = await insertToDB('pg_cards', newPg);
+        const result = await insertToDB('pg_payments', newPg);
         if (result) {
             pgPaymentsList.push(result);
             showToast('✅ 카드가 등록되었습니다');
@@ -8483,7 +8483,7 @@ function toggleCardStatus(id) {
 async function deletePgCard(id) {
     if (!confirm('정말 이 카드를 삭제하시겠습니까?')) return;
     try {
-        await deleteFromDB('pg_cards', id);
+        await deleteFromDB('pg_payments', id);
         pgPaymentsList = pgPaymentsList.filter(p => p.id !== id);
         showToast('✅ 카드가 삭제되었습니다');
         closeModal('pgDetailModal');
