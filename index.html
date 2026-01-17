@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-title" content="TEAM BRO">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#000000">
-    <meta name="description" content="TEAM BRO 통합 ERP - 정산관리 & 브로모터스">
+    <meta name="description" content="TEAM BRO 통합 ERP - 브로컴퍼니 & 브로모터스">
     
     <!-- 앱 아이콘 -->
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23000' width='100' height='100' rx='20'/><text x='50' y='65' font-size='40' text-anchor='middle' fill='%2339FF14'>TB</text></svg>">
@@ -234,7 +234,7 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div id="card-settlement" class="system-card glass-card rounded-xl p-4 text-center" onclick="selectSystem('settlement')">
                                 <div class="text-3xl mb-2">💰</div>
-                                <div class="font-bold">정산관리</div>
+                                <div class="font-bold">브로컴퍼니</div>
                                 <div class="text-xs text-gray-400 mt-1">렌트·리스 정산</div>
                             </div>
                             <div id="card-bromotors" class="system-card glass-card rounded-xl p-4 text-center" onclick="selectSystem('bromotors')">
@@ -256,7 +256,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 시스템 ======================= -->
+    <!-- ======================= 브로컴퍼니 시스템 ======================= -->
     <div id="settlementSystem" class="hidden">
         <!-- 헤더 -->
         <div class="relative z-10 border-b border-lime-500/30" style="background: linear-gradient(180deg, rgba(57,255,20,0.1) 0%, rgba(0,0,0,0.8) 100%)">
@@ -266,7 +266,7 @@
                     <!-- 로고 -->
                     <div onclick="showSettlementTab('overview')" class="cursor-pointer flex-shrink-0">
                         <div class="flex items-baseline gap-2">
-                            <h1 class="text-xl md:text-2xl font-black neon-text">정산관리</h1>
+                            <h1 class="text-xl md:text-2xl font-black neon-text">브로컴퍼니</h1>
                             <span class="text-[9px] text-gray-500">v1.6.0</span>
                         </div>
                         <p class="text-lime-400/50 text-[10px] italic">TEAM BRO</p>
@@ -725,7 +725,7 @@
                 <!-- 직원 관리 -->
                 <div id="setting-staff" class="setting-content">
                     <div class="glass-card rounded-xl p-4 mb-4 flex justify-between items-center">
-                        <div><h3 class="font-bold text-lime-400 text-lg">직원 관리</h3><p class="text-gray-400 text-sm mt-1">통합 ERP 시스템 직원을 관리합니다. (정산관리 + 브로모터스)</p></div>
+                        <div><h3 class="font-bold text-lime-400 text-lg">직원 관리</h3><p class="text-gray-400 text-sm mt-1">통합 ERP 시스템 직원을 관리합니다. (브로컴퍼니 + 브로모터스)</p></div>
                         <button onclick="openStaffModal()" class="btn-primary">+ 직원 등록</button>
                     </div>
                     <div class="glass-card rounded-xl overflow-hidden">
@@ -979,8 +979,8 @@
                             <div class="text-[10px] text-lime-400/70">오늘 날짜</div>
                             <div class="text-xs md:text-sm font-bold text-lime-400" id="b-today-date"></div>
                         </div>
-                        <!-- 정산관리 버튼 -->
-                        <button onclick="switchSystem()" class="px-2 py-1 md:px-3 md:py-2 rounded-lg bg-lime-500/10 border border-lime-500/30 text-lime-400 text-[10px] md:text-xs font-bold">💰 정산관리</button>
+                        <!-- 브로컴퍼니 버튼 -->
+                        <button onclick="switchSystem()" class="px-2 py-1 md:px-3 md:py-2 rounded-lg bg-lime-500/10 border border-lime-500/30 text-lime-400 text-[10px] md:text-xs font-bold">💰 브로컴퍼니</button>
                         <!-- 사용자 정보 -->
                         <div class="px-2 py-1 md:px-3 md:py-2 rounded-lg glass-card text-right">
                             <div class="text-[10px] text-lime-400/70" id="b-userRole">관리자</div>
@@ -1415,7 +1415,7 @@
             <div id="b-content-settings" class="b-tab-content hidden">
                 <div class="glass-card rounded-xl p-6">
                     <div class="text-lime-400 font-bold mb-4">⚙️ 설정</div>
-                    <div class="text-gray-400 text-sm">직원 관리는 <span class="text-lime-400 cursor-pointer" onclick="goToSettlementSettings()">정산관리 → 설정</span>에서 통합 관리합니다.</div>
+                    <div class="text-gray-400 text-sm">직원 관리는 <span class="text-lime-400 cursor-pointer" onclick="goToSettlementSettings()">브로컴퍼니 → 설정</span>에서 통합 관리합니다.</div>
                 </div>
             </div>
         </div>
@@ -2171,7 +2171,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: 미납 고객 목록 ======================= -->
+    <!-- ======================= 브로컴퍼니 모달: 미납 고객 목록 ======================= -->
     <div id="arrearsModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:700px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-orange-400">⚠️ 미납 고객 목록</h2><button onclick="closeModal('arrearsModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2190,7 +2190,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: 미수금 상세 ======================= -->
+    <!-- ======================= 브로컴퍼니 모달: 미수금 상세 ======================= -->
     <div id="arrearsDetailModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:700px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-orange-400">📋 미수금 상세</h2><button onclick="closeModal('arrearsDetailModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2198,7 +2198,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: 수납 처리 ======================= -->
+    <!-- ======================= 브로컴퍼니 모달: 수납 처리 ======================= -->
     <div id="paymentProcessModal" class="modal-overlay hidden" style="z-index: 9999;">
         <div class="modal-content" style="max-width:500px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-emerald-400">💰 수납 처리</h2><button onclick="closeModal('paymentProcessModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2225,7 +2225,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: 최근 결제 내역 ======================= -->
+    <!-- ======================= 브로컴퍼니 모달: 최근 결제 내역 ======================= -->
     <div id="recentPaymentsModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:700px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-emerald-400">💳 최근 결제 내역</h2><button onclick="closeModal('recentPaymentsModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2233,7 +2233,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: 과태료 상세 ======================= -->
+    <!-- ======================= 브로컴퍼니 모달: 과태료 상세 ======================= -->
     <div id="fineDetailModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:500px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-red-400">🚨 과태료 상세</h2><button onclick="closeModal('fineDetailModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2241,7 +2241,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: 과태료 등록 ======================= -->
+    <!-- ======================= 브로컴퍼니 모달: 과태료 등록 ======================= -->
     <div id="fineModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:550px; max-height:90vh; overflow-y:auto;">
             <div class="flex justify-between mb-4"><h2 id="fineModalTitle" class="text-xl font-bold text-red-400">🚨 과태료 등록</h2><button onclick="closeModal('fineModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2321,7 +2321,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: 빠른 수납 ======================= -->
+    <!-- ======================= 브로컴퍼니 모달: 빠른 수납 ======================= -->
     <div id="quickPaymentModal" class="modal-overlay hidden" style="z-index: 9999;">
         <div class="modal-content" style="max-width:400px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-emerald-400">💰 빠른 수납</h2><button onclick="closeModal('quickPaymentModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2379,7 +2379,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: 납입 등록 ======================= -->
+    <!-- ======================= 브로컴퍼니 모달: 납입 등록 ======================= -->
     <div id="paymentModal" class="modal-overlay hidden" style="z-index: 9999;">
         <div class="modal-content" style="max-width:400px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-emerald-400">💰 납입 등록</h2><button onclick="closeModal('paymentModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2416,7 +2416,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: 계약 등록 ======================= -->
+    <!-- ======================= 브로컴퍼니 모달: 계약 등록 ======================= -->
     <div id="contractModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:800px; max-height:90vh; overflow-y:auto;">
             <div class="flex justify-between mb-4"><h2 id="contractModalTitle" class="text-xl font-bold text-lime-400">📋 계약 등록</h2><button onclick="closeModal('contractModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2596,7 +2596,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: 계약 상세 ======================= -->
+    <!-- ======================= 브로컴퍼니 모달: 계약 상세 ======================= -->
     <div id="contractDetailModal" class="modal-overlay hidden" style="z-index: 200;">
         <div class="modal-content" style="max-width:600px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-lime-400">📋 계약 상세</h2><button onclick="closeModal('contractDetailModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2604,7 +2604,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: 차량 등록 ======================= -->
+    <!-- ======================= 브로컴퍼니 모달: 차량 등록 ======================= -->
     <div id="vehicleModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:650px; max-height:90vh; overflow-y:auto;">
             <div class="flex justify-between mb-4"><h2 id="vehicleModalTitle" class="text-xl font-bold text-lime-400">🚗 차량 등록</h2><button onclick="closeModal('vehicleModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2725,7 +2725,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: 차량 상세 ======================= -->
+    <!-- ======================= 브로컴퍼니 모달: 차량 상세 ======================= -->
     <div id="vehicleDetailModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:600px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-lime-400">🚗 차량 상세</h2><button onclick="closeModal('vehicleDetailModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2733,7 +2733,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: PG 카드 등록 ======================= -->
+    <!-- ======================= 브로컴퍼니 모달: PG 카드 등록 ======================= -->
     <div id="pgModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:600px">
             <div class="flex justify-between mb-4"><h2 id="pgModalTitle" class="text-xl font-bold text-lime-400">💳 자동결제 카드 등록</h2><button onclick="closeModal('pgModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2861,7 +2861,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: PG 카드 상세 ======================= -->
+    <!-- ======================= 브로컴퍼니 모달: PG 카드 상세 ======================= -->
     <div id="pgDetailModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:600px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-lime-400">💳 카드 상세 정보</h2><button onclick="closeModal('pgDetailModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2869,7 +2869,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: 수동 결제 ======================= -->
+    <!-- ======================= 브로컴퍼니 모달: 수동 결제 ======================= -->
     <div id="manualPayModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:500px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-emerald-400">💰 수동 결제 실행</h2><button onclick="closeModal('manualPayModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2889,7 +2889,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: 원장 내역 등록 ======================= -->
+    <!-- ======================= 브로컴퍼니 모달: 원장 내역 등록 ======================= -->
     <div id="ledgerModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:550px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-lime-400">📝 원장 내역 등록</h2><button onclick="closeModal('ledgerModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2938,7 +2938,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: 이번달 수납 상세 ======================= -->
+    <!-- ======================= 브로컴퍼니 모달: 이번달 수납 상세 ======================= -->
     <div id="monthlyReceiptModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:600px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-emerald-400">✅ 이번달 수납 현황</h2><button onclick="closeModal('monthlyReceiptModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2946,7 +2946,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: 월 정산금액 상세 ======================= -->
+    <!-- ======================= 브로컴퍼니 모달: 월 정산금액 상세 ======================= -->
     <div id="monthlyRevenueModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:700px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-emerald-400">💰 월 정산금액 현황</h2><button onclick="closeModal('monthlyRevenueModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2954,7 +2954,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: 미수금 목록 ======================= -->
+    <!-- ======================= 브로컴퍼니 모달: 미수금 목록 ======================= -->
     <div id="unpaidListModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:700px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-orange-400">⚠️ 미수금 현황</h2><button onclick="closeModal('unpaidListModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2962,7 +2962,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: 수납률 상세 ======================= -->
+    <!-- ======================= 브로컴퍼니 모달: 수납률 상세 ======================= -->
     <div id="collectionRateModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:700px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-purple-400">📊 수납률 상세 분석</h2><button onclick="closeModal('collectionRateModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2970,7 +2970,7 @@
         </div>
     </div>
 
-    <!-- ======================= 정산관리 모달: 연체 관리 ======================= -->
+    <!-- ======================= 브로컴퍼니 모달: 연체 관리 ======================= -->
     <div id="delActionModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:500px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-orange-400">📞 연체 관리</h2><button onclick="closeModal('delActionModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -3214,7 +3214,7 @@ async function handleLogin(e) {
             document.getElementById('s-userRole').textContent = roleBadge(user.role)[1];
             renderStaffList();
             initDates();
-            // 정산관리 대시보드 로드
+            // 브로컴퍼니 대시보드 로드
             loadSettlementDashboard();
         } else {
             document.getElementById('bromotorsSystem').classList.remove('hidden');
@@ -3350,7 +3350,7 @@ function goToSettlementSettings() {
     showSettlementTab('settings');
 }
 
-// ======================= 정산관리 탭 =======================
+// ======================= 브로컴퍼니 탭 =======================
 function showSettlementTab(name, skipHistory = false) {
     document.querySelectorAll('[id^="s-tab-"]').forEach(b => { b.classList.remove('tab-active'); b.classList.add('text-gray-500'); });
     document.getElementById('s-tab-' + name).classList.add('tab-active');
@@ -3710,7 +3710,7 @@ async function deleteStaff(id) {
     renderStaffList();
 }
 
-// ======================= 정산관리: 계약관리 =======================
+// ======================= 브로컴퍼니: 계약관리 =======================
 function filterContracts(status) {
     document.getElementById('contract-status').value = status;
     loadContracts();
@@ -4836,7 +4836,7 @@ async function deleteContract(id) {
     }
 }
 
-// ======================= 정산관리: 차량관리 =======================
+// ======================= 브로컴퍼니: 차량관리 =======================
 const vStatusBadge = s => ({ '입고': ['badge-active', '입고(대기)'], '출고': ['badge-completed', '출고(계약중)'], '반납': ['badge-pending', '반납(점검)'], '정비': ['badge-delinquent', '정비중'], '폐차': ['badge-staff', '폐차/매각'] }[s] || ['', '']);
 
 // 차량 유형 탭
@@ -4946,7 +4946,7 @@ function loadVehicles() {
     document.getElementById('vehicle-tbody').innerHTML = h || '<tr><td colspan="8" class="text-center text-gray-500 py-6">차량 없음</td></tr>';
 }
 
-// 매입차량 상세보기 (정산관리에서)
+// 매입차량 상세보기 (브로컴퍼니에서)
 function viewPurchaseVehicle(purchaseId) {
     const p = purchaseList.find(x => x.id === purchaseId);
     if (!p) return;
@@ -4993,7 +4993,7 @@ function viewPurchaseVehicle(purchaseId) {
 // 브로모터스 매입차량 탭으로 이동
 function goToBromotorsPurchase() {
     closeModal('vehicleDetailModal');
-    // 정산관리 숨기고 브로모터스 표시
+    // 브로컴퍼니 숨기고 브로모터스 표시
     document.getElementById('settlementSystem').classList.add('hidden');
     document.getElementById('bromotorsSystem').classList.remove('hidden');
     document.getElementById('b-userName').textContent = currentUser.name;
@@ -5425,8 +5425,8 @@ function deleteCustomer(id) {
     loadCustomers();
 }
 
-// ======================= 정산관리: 통합현황 =======================
-// 정산관리 대시보드 전체 로드
+// ======================= 브로컴퍼니: 통합현황 =======================
+// 브로컴퍼니 대시보드 전체 로드
 function loadSettlementDashboard() {
     // 연체 자동 계산
     calculateAllArrears();
@@ -5446,7 +5446,7 @@ function loadSettlementDashboard() {
     // 과태료 목록 로드
     loadFines();
     
-    console.log('✅ 정산관리 대시보드 로드 완료');
+    console.log('✅ 브로컴퍼니 대시보드 로드 완료');
 }
 
 function loadOverview() {
@@ -8446,7 +8446,7 @@ function printBroReceipt() {
 
 // 작업 테이블에 결제 버튼 추가를 위한 loadBroWork 수정 필요
 
-// ======================= 정산관리: 자동결제(PG) =======================
+// ======================= 브로컴퍼니: 자동결제(PG) =======================
 const payTypeLabel = t => ({ daily: '일일결제', weekly: '주일결제', monthly: '월결제', custom: '날짜지정' }[t] || '');
 const weekdayLabel = d => ['', '월', '화', '수', '목', '금', '토', '일'][d] || '';
 
@@ -8869,7 +8869,7 @@ async function deletePgCard(id) {
     }
 }
 
-// ======================= 정산관리: 원장 =======================
+// ======================= 브로컴퍼니: 원장 =======================
 function filterLedger(type) {
     if (type === 'arrears') {
         // 미수금만 표시 (잔액이 남아있는 고객)
@@ -9412,7 +9412,7 @@ async function submitLedgerEntry(e) {
     loadLedger();
 }
 
-// ======================= 정산관리: 과태료 관리 =======================
+// ======================= 브로컴퍼니: 과태료 관리 =======================
 // 과태료 기간 설정
 let finePeriodType = '1m';
 
@@ -9935,7 +9935,7 @@ async function payFine(id) {
     loadFines();
 }
 
-// ======================= 정산관리: 연체관리 =======================
+// ======================= 브로컴퍼니: 연체관리 =======================
 function filterDelinquent(period) {
     document.getElementById('del-period').value = period;
     loadDelinquent();
