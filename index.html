@@ -1053,8 +1053,13 @@
                     </div>
                 </div>
                 
-                <!-- 사고차/매입차량 현황 -->
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <!-- 외상/사고차/매입차량 현황 -->
+                <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                    <div class="glass-card rounded-xl p-4 border-l-4 border-rose-500 stat-card cursor-pointer hover:border-rose-500" onclick="openCreditListModal()">
+                        <div class="text-rose-500 text-xs mb-1">📝 미수금(외상)</div>
+                        <div class="text-2xl font-black text-rose-400" id="b-credit-total">₩0</div>
+                        <div class="text-xs text-gray-500 mt-1" id="b-credit-count">0건</div>
+                    </div>
                     <div class="glass-card rounded-xl p-4 border-l-4 border-orange-400 stat-card cursor-pointer hover:border-orange-400" onclick="showBromotorsTab('accident')">
                         <div class="text-orange-400 text-xs mb-1">🚨 사고차 수익</div>
                         <div class="text-2xl font-black" id="b-accident-profit">₩0</div>
@@ -1117,9 +1122,11 @@
                         <button onclick="openWorkModal()" class="btn-primary btn-sm">+ 작업 등록</button>
                     </div>
                 </div>
+                <!-- 외상 요약 박스 -->
+                <div id="credit-summary-box"></div>
                 <div class="glass-card rounded-xl overflow-hidden">
                     <table class="data-table">
-                        <thead><tr><th>접수번호</th><th>날짜</th><th>고객</th><th>차량</th><th>작업내용</th><th>공임</th><th>부품</th><th>합계</th><th>상태</th><th>결제</th></tr></thead>
+                        <thead><tr><th>접수번호</th><th>날짜</th><th>고객</th><th>차량</th><th>작업내용</th><th>공임</th><th>부품</th><th>합계</th><th>결제</th><th>상태</th><th>관리</th></tr></thead>
                         <tbody id="b-work-tbody"></tbody>
                     </table>
                 </div>
@@ -1608,6 +1615,34 @@
                             <span class="text-xs text-gray-300">부가세 별도 (+10%)</span>
                         </label>
                         <span id="work-vat-amount" class="text-xs text-yellow-400 hidden">VAT: ₩0</span>
+                    </div>
+                    
+                    <!-- 결제방식 선택 -->
+                    <div class="mt-3 p-3 rounded-lg bg-emerald-400/10 border border-emerald-400/30">
+                        <div class="text-xs text-emerald-400 mb-2">💳 결제방식*</div>
+                        <div class="grid grid-cols-4 gap-2">
+                            <label class="flex items-center justify-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-emerald-400/50">
+                                <input type="radio" name="payment_method" value="현금" class="accent-emerald-400" checked>
+                                <span class="text-sm">💵 현금</span>
+                            </label>
+                            <label class="flex items-center justify-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-emerald-400/50">
+                                <input type="radio" name="payment_method" value="카드" class="accent-emerald-400">
+                                <span class="text-sm">💳 카드</span>
+                            </label>
+                            <label class="flex items-center justify-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-emerald-400/50">
+                                <input type="radio" name="payment_method" value="계좌이체" class="accent-emerald-400">
+                                <span class="text-sm">🏦 이체</span>
+                            </label>
+                            <label class="flex items-center justify-center gap-2 p-2 rounded-lg bg-red-400/10 border border-red-400/30 cursor-pointer hover:border-red-400/50">
+                                <input type="radio" name="payment_method" value="외상" class="accent-red-400" onchange="toggleCreditOption(this.checked)">
+                                <span class="text-sm text-red-400">📝 외상</span>
+                            </label>
+                        </div>
+                        <!-- 외상 메모 (외상 선택시만 표시) -->
+                        <div id="credit-memo-box" class="mt-2 hidden">
+                            <label class="block text-xs text-red-400 mb-1">외상 메모</label>
+                            <input type="text" name="credit_memo" id="work-credit-memo" class="input-field border-red-400/30" placeholder="언제까지 결제 예정인지 등...">
+                        </div>
                     </div>
                     
                     <div class="mt-3"><label class="block text-xs text-gray-400 mb-1">메모</label><textarea name="memo" id="work-memo" class="input-field" rows="2"></textarea></div>
@@ -2106,6 +2141,17 @@
                     <button type="submit" class="btn-primary flex-1">💳 결제 실행</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- ======================= 브로모터스 모달: 외상 목록 ======================= -->
+    <div id="creditListModal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width:800px">
+            <div class="flex justify-between mb-4">
+                <h2 class="text-xl font-bold text-red-400">📝 외상 목록</h2>
+                <button onclick="closeModal('creditListModal')" class="text-gray-400 text-2xl">&times;</button>
+            </div>
+            <div id="credit-list-content"></div>
         </div>
     </div>
 
@@ -5851,11 +5897,39 @@ function loadBroWork() {
     // 날짜 내림차순 정렬
     works.sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
     
+    // 외상 합계 계산
+    const totalCredit = broWorkList.filter(w => w.credit_status === 'unpaid').reduce((sum, w) => sum + (w.credit_amount || 0), 0);
+    const creditCount = broWorkList.filter(w => w.credit_status === 'unpaid').length;
+    
+    // 외상 요약 표시 (있으면)
+    let creditSummary = '';
+    if (creditCount > 0) {
+        creditSummary = `<div class="mb-3 p-3 rounded-lg bg-red-400/10 border border-red-400/30 flex justify-between items-center">
+            <div><span class="text-red-400 font-bold">📝 외상 ${creditCount}건</span> <span class="text-gray-400 ml-2">총 ${fmt(totalCredit)}</span></div>
+            <button onclick="openCreditListModal()" class="btn-sm bg-red-400/20 text-red-400 border border-red-400/30 hover:bg-red-400/30">외상 목록 보기</button>
+        </div>`;
+    }
+    
     let h = '';
     works.forEach(w => {
         const [sc, sl] = workStatusBadge(w.status);
-        const total = w.labor + w.parts_cost;
+        const total = w.total_amount || (w.labor + w.parts_cost);
         const isPaid = w.status === 'complete';
+        const isCredit = w.credit_status === 'unpaid';
+        const payMethod = w.payment_method || '-';
+        
+        // 결제방식 배지
+        let payBadge = '';
+        if (isCredit) {
+            payBadge = `<span class="badge bg-red-400/20 text-red-400">외상</span>`;
+        } else if (payMethod === '카드') {
+            payBadge = `<span class="badge bg-blue-400/20 text-blue-400">카드</span>`;
+        } else if (payMethod === '현금') {
+            payBadge = `<span class="badge bg-emerald-400/20 text-emerald-400">현금</span>`;
+        } else if (payMethod === '계좌이체') {
+            payBadge = `<span class="badge bg-purple-400/20 text-purple-400">이체</span>`;
+        }
+        
         h += `<tr class="cursor-pointer hover:bg-white/5" onclick="viewWorkDetail(${w.id})">
             <td class="text-lime-400">#W${String(w.id).padStart(3,'0')}</td>
             <td class="text-gray-400">${w.date}</td>
@@ -5865,16 +5939,30 @@ function loadBroWork() {
             <td class="text-gray-400">${fmt(w.labor)}</td>
             <td class="text-gray-400">${fmt(w.parts_cost)}</td>
             <td class="font-bold">${fmt(total)}</td>
+            <td>${payBadge}</td>
             <td><span class="badge ${sc}">${sl}</span></td>
             <td>
-                ${isPaid 
-                    ? '<span class="text-emerald-400 text-xs">✅ 완료</span>' 
-                    : `<button onclick="event.stopPropagation(); openBroCardPayModal(${w.id})" class="text-blue-400 text-xs hover:underline">💳</button>`
+                ${isCredit 
+                    ? `<button onclick="event.stopPropagation(); collectCredit(${w.id})" class="text-red-400 text-xs hover:underline">💰 회수</button>`
+                    : (isPaid 
+                        ? '<span class="text-emerald-400 text-xs">✅ 완료</span>' 
+                        : `<button onclick="event.stopPropagation(); openBroCardPayModal(${w.id})" class="text-blue-400 text-xs hover:underline">💳</button>`)
                 }
             </td>
         </tr>`;
     });
-    document.getElementById('b-work-tbody').innerHTML = h || '<tr><td colspan="10" class="text-center text-gray-500 py-6">작업 없음</td></tr>';
+    
+    // 외상 요약 + 테이블
+    const tableContainer = document.getElementById('b-work-tbody');
+    if (tableContainer) {
+        tableContainer.innerHTML = h || '<tr><td colspan="11" class="text-center text-gray-500 py-6">작업 없음</td></tr>';
+    }
+    
+    // 외상 요약 표시
+    const creditSummaryEl = document.getElementById('credit-summary-box');
+    if (creditSummaryEl) {
+        creditSummaryEl.innerHTML = creditSummary;
+    }
 }
 
 async function submitBroWork(e) {
@@ -5890,6 +5978,15 @@ async function submitBroWork(e) {
     // 사용 부품 JSON 저장
     const usedPartsJson = workPartsSelected.length > 0 ? JSON.stringify(workPartsSelected) : null;
     
+    // 결제 금액 계산
+    const payAmount = parseInt(document.getElementById('work-pay-amount').value) || 0;
+    const isVat = document.getElementById('work-vat-check').checked;
+    const totalAmount = isVat ? Math.round(payAmount * 1.1) : payAmount;
+    
+    // 결제방식 및 외상 처리
+    const paymentMethod = d.payment_method || '현금';
+    const isCredit = paymentMethod === '외상';
+    
     // 작업 데이터
     const workData = {
         customer: d.customer,
@@ -5901,7 +5998,12 @@ async function submitBroWork(e) {
         parts_cost: parseInt(d.parts_cost) || 0,
         memo: d.memo || '',
         customer_id: customerId ? parseInt(customerId) : null,
-        used_parts: usedPartsJson
+        used_parts: usedPartsJson,
+        payment_method: paymentMethod,
+        total_amount: totalAmount,
+        credit_amount: isCredit ? totalAmount : 0,
+        credit_memo: isCredit ? (d.credit_memo || '') : '',
+        credit_status: isCredit ? 'unpaid' : 'paid'
     };
     
     if (editId) {
@@ -5982,6 +6084,114 @@ async function submitBroWork(e) {
     workPartsSelected = [];
     loadBroWork();
     loadBroDashboard();
+}
+
+// 외상 회수 처리
+async function collectCredit(workId) {
+    const w = broWorkList.find(x => x.id === workId);
+    if (!w) return;
+    
+    const method = await showCreditCollectModal(w);
+    if (!method) return;
+    
+    try {
+        // 외상 상태 업데이트
+        await updateInDB('bro_works', workId, {
+            credit_status: 'paid',
+            payment_method: method,
+            status: 'complete'
+        });
+        
+        w.credit_status = 'paid';
+        w.payment_method = method;
+        w.status = 'complete';
+        
+        // 금고에 입금 기록
+        const cashbookData = {
+            date: new Date(new Date().getTime() + 9*60*60*1000).toISOString().split('T')[0],
+            type: 'income',
+            category: '외상회수',
+            description: `${w.customer} 외상 회수 (${w.content})`,
+            amount: w.credit_amount || w.total_amount || (w.labor + w.parts_cost),
+            method: method
+        };
+        await insertToDB('bro_cashbook', cashbookData);
+        
+        showToast(`✅ ${w.customer}님 외상 ${fmt(cashbookData.amount)} 회수 완료!`);
+        loadBroWork();
+        loadBroCashbook();
+        loadBroDashboard();
+    } catch (error) {
+        console.error('외상 회수 실패:', error);
+        showToast('❌ 외상 회수 실패: ' + error.message, 'error');
+    }
+}
+
+// 외상 회수 방법 선택 모달
+function showCreditCollectModal(work) {
+    return new Promise((resolve) => {
+        const total = work.credit_amount || work.total_amount || (work.labor + work.parts_cost);
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.id = 'creditCollectModal';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width:400px">
+                <div class="flex justify-between mb-4">
+                    <h2 class="text-xl font-bold text-red-400">💰 외상 회수</h2>
+                    <button onclick="document.getElementById('creditCollectModal').remove()" class="text-gray-400 text-2xl">&times;</button>
+                </div>
+                <div class="p-4 rounded-lg bg-white/5 mb-4">
+                    <div class="text-gray-400 text-sm">고객: <span class="text-white font-bold">${work.customer}</span></div>
+                    <div class="text-gray-400 text-sm mt-1">작업: ${work.content}</div>
+                    <div class="text-gray-400 text-sm mt-1">외상메모: ${work.credit_memo || '-'}</div>
+                    <div class="text-2xl font-bold text-red-400 mt-3">${fmt(total)}</div>
+                </div>
+                <div class="text-sm text-gray-400 mb-2">결제 방법 선택:</div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="document.getElementById('creditCollectModal').remove(); window._creditResolve('현금')" class="btn-primary">💵 현금</button>
+                    <button onclick="document.getElementById('creditCollectModal').remove(); window._creditResolve('카드')" class="btn-secondary">💳 카드</button>
+                    <button onclick="document.getElementById('creditCollectModal').remove(); window._creditResolve('계좌이체')" class="btn-secondary">🏦 이체</button>
+                </div>
+                <button onclick="document.getElementById('creditCollectModal').remove(); window._creditResolve(null)" class="btn-secondary w-full mt-3">취소</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        window._creditResolve = resolve;
+    });
+}
+
+// 외상 목록 모달
+function openCreditListModal() {
+    const credits = broWorkList.filter(w => w.credit_status === 'unpaid');
+    const total = credits.reduce((sum, w) => sum + (w.credit_amount || w.total_amount || (w.labor + w.parts_cost)), 0);
+    
+    let rows = '';
+    credits.forEach(w => {
+        const amount = w.credit_amount || w.total_amount || (w.labor + w.parts_cost);
+        rows += `<tr>
+            <td class="text-gray-400">${w.date}</td>
+            <td class="font-bold">${w.customer}</td>
+            <td>${w.content}</td>
+            <td class="text-red-400 font-bold">${fmt(amount)}</td>
+            <td class="text-gray-500 text-xs">${w.credit_memo || '-'}</td>
+            <td><button onclick="closeModal('creditListModal'); collectCredit(${w.id})" class="btn-sm bg-red-400/20 text-red-400 border border-red-400/30">회수</button></td>
+        </tr>`;
+    });
+    
+    document.getElementById('credit-list-content').innerHTML = `
+        <div class="p-4 rounded-lg bg-red-400/10 border border-red-400/30 mb-4">
+            <div class="text-sm text-gray-400">총 외상 금액</div>
+            <div class="text-3xl font-bold text-red-400">${fmt(total)}</div>
+            <div class="text-sm text-gray-500">${credits.length}건</div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="data-table">
+                <thead><tr><th>날짜</th><th>고객</th><th>작업</th><th>금액</th><th>메모</th><th>관리</th></tr></thead>
+                <tbody>${rows || '<tr><td colspan="6" class="text-center text-gray-500 py-4">외상 없음</td></tr>'}</tbody>
+            </table>
+        </div>
+    `;
+    openModal('creditListModal');
 }
 
 function viewWorkDetail(id) {
@@ -6714,6 +6924,23 @@ function calcWorkFromTotal() {
     // 합계 표시
     document.getElementById('work-total').value = fmt(finalAmount);
 }
+
+// 외상 선택 토글
+function toggleCreditOption(isCredit) {
+    const creditMemoBox = document.getElementById('credit-memo-box');
+    if (isCredit) {
+        creditMemoBox.classList.remove('hidden');
+    } else {
+        creditMemoBox.classList.add('hidden');
+    }
+}
+
+// 외상 결제방식 라디오 변경 이벤트
+document.addEventListener('change', function(e) {
+    if (e.target.name === 'payment_method') {
+        toggleCreditOption(e.target.value === '외상');
+    }
+});
 
 // 합계금액 계산 (기존 호환)
 function calcWorkTotal() {
@@ -7722,6 +7949,11 @@ function loadBroDashboard() {
     const workParts = completedWorks.reduce((s, w) => s + (w.parts_cost || 0), 0);
     const workTotal = workLabor + workParts;
     
+    // 외상(미수금) 현황 - 전체 기간
+    const creditWorks = broWorkList.filter(w => w.credit_status === 'unpaid');
+    const creditTotal = creditWorks.reduce((s, w) => s + (w.credit_amount || w.total_amount || (w.labor + w.parts_cost)), 0);
+    const creditCount = creditWorks.length;
+    
     // 사고차 수익 (완료된 것만)
     const periodAccidents = accidentList.filter(a => a.status === '완료');
     const accidentProfit = periodAccidents.reduce((s, a) => {
@@ -7746,6 +7978,12 @@ function loadBroDashboard() {
     document.getElementById('b-work-amount').textContent = fmt(workTotal);
     document.getElementById('b-month-profit').textContent = fmt(profit);
     document.getElementById('b-profit-rate').textContent = profit >= 0 ? `+${profitRate}%` : `${profitRate}%`;
+    
+    // 외상(미수금) 표시
+    if (document.getElementById('b-credit-total')) {
+        document.getElementById('b-credit-total').textContent = fmt(creditTotal);
+        document.getElementById('b-credit-count').textContent = creditCount + '건';
+    }
     
     // 손익 상세 (입금 - 지출)
     if (document.getElementById('b-profit-detail')) {
