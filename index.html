@@ -10105,7 +10105,7 @@ async function restoreSession() {
     
     if (sessionParam) {
         try {
-            const decoded = JSON.parse(atob(decodeURIComponent(sessionParam)));
+            const decoded = JSON.parse(decodeURIComponent(atob(sessionParam)));
             console.log('📋 URL 세션 데이터:', decoded);
             
             // 세션 만료 체크 (5분 - URL 파라미터는 짧게)
