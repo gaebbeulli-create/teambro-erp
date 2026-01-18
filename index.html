@@ -3311,7 +3311,7 @@ function handleLogout() {
     sessionStorage.removeItem('teambro_session');
     localStorage.removeItem('teambro_unified_session');
     // 팀브로 HQ 로그인 페이지로 이동
-    window.location.href = 'https://gaebbeulli-create.github.io/teambro-hq/';
+    window.location.href = 'https://broerp.kr/';
 }
 
 // 세션에 현재 탭 저장
@@ -10231,7 +10231,7 @@ async function restoreSession() {
 
 // 통합 로그아웃 - 팀브로 HQ 시스템 선택으로 이동
 function backToSystemSelect() {
-    window.location.href = 'https://gaebbeulli-create.github.io/teambro-hq/';
+    window.location.href = 'https://broerp.kr/';
 }
 
 // 페이지 로드 시 세션 복원 시도
@@ -10244,7 +10244,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 세션 복원 안 됐으면 팀브로 HQ 로그인 페이지로 이동
     if (!restored) {
         // 통합 로그인 페이지로 이동
-        window.location.href = 'https://gaebbeulli-create.github.io/teambro-hq/';
+        window.location.href = 'https://broerp.kr/';
     }
 });
 </script>
