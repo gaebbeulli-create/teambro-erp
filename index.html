@@ -286,6 +286,8 @@
                             <div class="text-[10px] text-lime-400/70" id="s-userRole">관리자</div>
                             <div class="text-xs md:text-sm font-bold" id="s-userName">Admin</div>
                         </div>
+                        <!-- 시스템 선택 -->
+                        <button onclick="backToSystemSelect()" class="px-2 py-1 md:px-3 md:py-2 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-400 text-[10px] md:text-xs font-bold">🏢 시스템선택</button>
                         <!-- 로그아웃 -->
                         <button onclick="handleLogout()" class="px-2 py-1 md:px-3 md:py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-[10px] md:text-xs font-bold">로그아웃</button>
                     </div>
@@ -986,6 +988,8 @@
                             <div class="text-[10px] text-lime-400/70" id="b-userRole">관리자</div>
                             <div class="text-xs md:text-sm font-bold" id="b-userName">Admin</div>
                         </div>
+                        <!-- 시스템 선택 -->
+                        <button onclick="backToSystemSelect()" class="px-2 py-1 md:px-3 md:py-2 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-400 text-[10px] md:text-xs font-bold">🏢 시스템선택</button>
                         <!-- 로그아웃 -->
                         <button onclick="handleLogout()" class="px-2 py-1 md:px-3 md:py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-[10px] md:text-xs font-bold">로그아웃</button>
                     </div>
@@ -3305,7 +3309,9 @@ function initDates() {
 function handleLogout() {
     currentUser = null;
     sessionStorage.removeItem('teambro_session');
-    location.reload();
+    localStorage.removeItem('teambro_unified_session');
+    // 팀브로 HQ 로그인 페이지로 이동
+    window.location.href = 'https://gaebbeulli-create.github.io/teambro-hq/';
 }
 
 // 세션에 현재 탭 저장
@@ -10089,19 +10095,71 @@ function restoreFromHash() {
     }
 }
 
-// ======================= 세션 복원 =======================
+// ======================= 통합 로그인 세션 복원 =======================
 async function restoreSession() {
-    console.log('🔄 세션 복원 시도...');
+    console.log('🔄 통합 세션 복원 시도...');
+    
+    // 1. 통합 세션 확인 (팀브로 HQ에서 로그인한 경우)
+    const unifiedData = localStorage.getItem('teambro_unified_session');
+    
+    if (unifiedData) {
+        try {
+            const unified = JSON.parse(unifiedData);
+            console.log('📋 통합 세션 데이터:', unified);
+            
+            // 세션 만료 체크 (24시간)
+            if (Date.now() - unified.timestamp > 24 * 60 * 60 * 1000) {
+                console.log('❌ 통합 세션 만료');
+                localStorage.removeItem('teambro_unified_session');
+            } else {
+                // hq_users 테이블에서 사용자 확인
+                const users = await supabaseCall('hq_users', 'GET', null, `?id=eq.${unified.userId}`);
+                
+                if (users && users.length > 0 && users[0].is_active) {
+                    console.log('✅ 통합 로그인 사용자:', users[0].name);
+                    
+                    currentUser = {
+                        id: users[0].id,
+                        name: users[0].name,
+                        role: users[0].role,
+                        status: 'active'
+                    };
+                    
+                    // 기본 시스템은 settlement (브로컴퍼니)
+                    currentSystem = 'settlement';
+                    
+                    // 모든 데이터 로드
+                    await loadAllData();
+                    
+                    document.getElementById('loginPage').classList.add('hidden');
+                    document.getElementById('settlementSystem').classList.remove('hidden');
+                    document.getElementById('s-userName').textContent = currentUser.name;
+                    document.getElementById('s-userRole').textContent = roleBadge(currentUser.role)[1];
+                    renderStaffList();
+                    initDates();
+                    loadSettlementDashboard();
+                    showSettlementTab('overview', true);
+                    
+                    showToast(`${currentUser.name}님, 브로컴퍼니 ERP에 오신 것을 환영합니다!`);
+                    return true;
+                }
+            }
+        } catch (e) {
+            console.error('통합 세션 복원 실패:', e);
+        }
+    }
+    
+    // 2. 기존 세션 확인 (직접 로그인한 경우)
     const sessionData = sessionStorage.getItem('teambro_session');
     
     if (!sessionData) {
-        console.log('❌ 저장된 세션 없음');
+        console.log('❌ 저장된 세션 없음 - 팀브로 HQ로 이동');
         return false;
     }
     
     try {
         const session = JSON.parse(sessionData);
-        console.log('📋 세션 데이터:', session);
+        console.log('📋 기존 세션 데이터:', session);
         
         // 세션 만료 체크 (24시간)
         const sessionAge = Date.now() - session.timestamp;
@@ -10171,6 +10229,11 @@ async function restoreSession() {
     }
 }
 
+// 통합 로그아웃 - 팀브로 HQ 시스템 선택으로 이동
+function backToSystemSelect() {
+    window.location.href = 'https://gaebbeulli-create.github.io/teambro-hq/';
+}
+
 // 페이지 로드 시 세션 복원 시도
 document.addEventListener('DOMContentLoaded', async () => {
     const restored = await restoreSession();
@@ -10178,9 +10241,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 로딩 화면 숨기기
     document.getElementById('loadingScreen').classList.add('hidden');
     
-    // 세션 복원 안 됐으면 로그인 페이지 표시
+    // 세션 복원 안 됐으면 팀브로 HQ 로그인 페이지로 이동
     if (!restored) {
-        document.getElementById('loginPage').classList.remove('hidden');
+        // 통합 로그인 페이지로 이동
+        window.location.href = 'https://gaebbeulli-create.github.io/teambro-hq/';
     }
 });
 </script>
