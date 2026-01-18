@@ -10099,7 +10099,60 @@ function restoreFromHash() {
 async function restoreSession() {
     console.log('🔄 통합 세션 복원 시도...');
     
-    // 1. 통합 세션 확인 (팀브로 HQ에서 로그인한 경우)
+    // 0. URL 파라미터에서 세션 확인 (다른 도메인에서 넘어온 경우)
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionParam = urlParams.get('session');
+    
+    if (sessionParam) {
+        try {
+            const decoded = JSON.parse(atob(decodeURIComponent(sessionParam)));
+            console.log('📋 URL 세션 데이터:', decoded);
+            
+            // 세션 만료 체크 (5분 - URL 파라미터는 짧게)
+            if (Date.now() - decoded.timestamp > 5 * 60 * 1000) {
+                console.log('❌ URL 세션 만료');
+            } else {
+                // hq_users 테이블에서 사용자 확인
+                const users = await supabaseCall('hq_users', 'GET', null, `?id=eq.${decoded.userId}`);
+                
+                if (users && users.length > 0 && users[0].is_active) {
+                    console.log('✅ URL 파라미터 로그인 성공:', users[0].name);
+                    
+                    currentUser = {
+                        id: users[0].id,
+                        name: users[0].name,
+                        role: users[0].role,
+                        status: 'active'
+                    };
+                    
+                    // URL에서 파라미터 제거 (보안)
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    
+                    // 기본 시스템은 settlement (브로컴퍼니)
+                    currentSystem = 'settlement';
+                    
+                    // 모든 데이터 로드
+                    await loadAllData();
+                    
+                    document.getElementById('loginPage').classList.add('hidden');
+                    document.getElementById('settlementSystem').classList.remove('hidden');
+                    document.getElementById('s-userName').textContent = currentUser.name;
+                    document.getElementById('s-userRole').textContent = roleBadge(currentUser.role)[1];
+                    renderStaffList();
+                    initDates();
+                    loadSettlementDashboard();
+                    showSettlementTab('overview', true);
+                    
+                    showToast(`${currentUser.name}님, 브로컴퍼니 ERP에 오신 것을 환영합니다!`);
+                    return true;
+                }
+            }
+        } catch (e) {
+            console.error('URL 세션 파싱 실패:', e);
+        }
+    }
+    
+    // 1. 통합 세션 확인 (팀브로 HQ에서 로그인한 경우 - 같은 도메인)
     const unifiedData = localStorage.getItem('teambro_unified_session');
     
     if (unifiedData) {
