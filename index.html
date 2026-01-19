@@ -5973,6 +5973,13 @@ function loadBroWork() {
 
 async function submitBroWork(e) {
     e.preventDefault();
+    
+    // 중복 제출 방지
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn && submitBtn.disabled) return;
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '처리중...'; }
+    
+    try {
     const d = Object.fromEntries(new FormData(e.target));
     const editId = document.getElementById('work-edit-id').value;
     const customerId = document.getElementById('work-customer-id').value;
@@ -6090,6 +6097,8 @@ async function submitBroWork(e) {
     workPartsSelected = [];
     loadBroWork();
     loadBroDashboard();
+    } catch(err) { console.error('작업 등록 오류:', err); showToast('오류 발생'); }
+    finally { const btn = document.querySelector('#workForm button[type="submit"]'); if(btn) { btn.disabled = false; btn.textContent = '등록'; } }
 }
 
 // 외상 회수 처리
@@ -7626,6 +7635,13 @@ function editParts(id) {
 
 async function submitBroParts(e) {
     e.preventDefault();
+    
+    // 중복 제출 방지
+    const submitBtn = document.getElementById('partsSubmitBtn');
+    if (submitBtn && submitBtn.disabled) return;
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '처리중...'; }
+    
+    try {
     const editId = document.getElementById('parts-edit-id').value;
     const d = Object.fromEntries(new FormData(e.target));
     
@@ -7694,6 +7710,8 @@ async function submitBroParts(e) {
     loadBroParts();
     loadBroCashbook();
     loadBroDashboard();
+    } catch(err) { console.error('부품 등록 오류:', err); showToast('오류 발생'); }
+    finally { const btn = document.getElementById('partsSubmitBtn'); if(btn) { btn.disabled = false; btn.textContent = '등록'; } }
 }
 
 // ======================= 브로모터스: 고객관리 =======================
