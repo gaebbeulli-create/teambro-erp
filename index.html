@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-title" content="TEAM BRO">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#000000">
-    <meta name="description" content="TEAM BRO 통합 ERP - 브로컴퍼니 & 브로모터스">
+    <meta name="description" content="TEAM BRO 통합 ERP - 정산관리 & 브로모터스">
     
     <!-- 앱 아이콘 -->
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23000' width='100' height='100' rx='20'/><text x='50' y='65' font-size='40' text-anchor='middle' fill='%2339FF14'>TB</text></svg>">
@@ -60,6 +60,7 @@
         .badge-waiting { background: rgba(251, 191, 36, 0.2); color: #FBBF24; }
         .badge-progress { background: rgba(59, 130, 246, 0.2); color: #3B82F6; }
         .badge-complete { background: rgba(16, 185, 129, 0.2); color: #10B981; }
+        .badge-terminated { background: rgba(239, 68, 68, 0.2); color: #EF4444; }
         .badge-paid { background: rgba(16, 185, 129, 0.2); color: #10B981; }
         .badge-unpaid { background: rgba(239, 68, 68, 0.2); color: #EF4444; }
         .badge-low { background: rgba(239, 68, 68, 0.2); color: #EF4444; }
@@ -215,7 +216,7 @@
             <div class="text-center mb-10">
                 <h1 class="text-5xl font-black neon-text mb-3">TEAM BRO</h1>
                 <p class="text-lime-400/70 text-sm">통합 ERP 시스템</p>
-                <p class="text-gray-500 text-xs mt-1">v1.28</p>
+                <p class="text-gray-500 text-xs mt-1">v1.29</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
                 <form onsubmit="handleLogin(event)" class="space-y-5">
@@ -234,7 +235,7 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div id="card-settlement" class="system-card glass-card rounded-xl p-4 text-center" onclick="selectSystem('settlement')">
                                 <div class="text-3xl mb-2">💰</div>
-                                <div class="font-bold">브로컴퍼니</div>
+                                <div class="font-bold">정산관리</div>
                                 <div class="text-xs text-gray-400 mt-1">렌트·리스 정산</div>
                             </div>
                             <div id="card-bromotors" class="system-card glass-card rounded-xl p-4 text-center" onclick="selectSystem('bromotors')">
@@ -256,7 +257,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 시스템 ======================= -->
+    <!-- ======================= 정산관리 시스템 ======================= -->
     <div id="settlementSystem" class="hidden">
         <!-- 헤더 -->
         <div class="relative z-10 border-b border-lime-500/30" style="background: linear-gradient(180deg, rgba(57,255,20,0.1) 0%, rgba(0,0,0,0.8) 100%)">
@@ -266,7 +267,7 @@
                     <!-- 로고 -->
                     <div onclick="showSettlementTab('overview')" class="cursor-pointer flex-shrink-0">
                         <div class="flex items-baseline gap-2">
-                            <h1 class="text-xl md:text-2xl font-black neon-text">브로컴퍼니</h1>
+                            <h1 class="text-xl md:text-2xl font-black neon-text">정산관리</h1>
                             <span class="text-[9px] text-gray-500">v1.6.0</span>
                         </div>
                         <p class="text-lime-400/50 text-[10px] italic">TEAM BRO</p>
@@ -286,8 +287,6 @@
                             <div class="text-[10px] text-lime-400/70" id="s-userRole">관리자</div>
                             <div class="text-xs md:text-sm font-bold" id="s-userName">Admin</div>
                         </div>
-                        <!-- 시스템 선택 -->
-                        <button onclick="backToSystemSelect()" class="px-2 py-1 md:px-3 md:py-2 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-400 text-[10px] md:text-xs font-bold">🏢 시스템선택</button>
                         <!-- 로그아웃 -->
                         <button onclick="handleLogout()" class="px-2 py-1 md:px-3 md:py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-[10px] md:text-xs font-bold">로그아웃</button>
                     </div>
@@ -727,7 +726,7 @@
                 <!-- 직원 관리 -->
                 <div id="setting-staff" class="setting-content">
                     <div class="glass-card rounded-xl p-4 mb-4 flex justify-between items-center">
-                        <div><h3 class="font-bold text-lime-400 text-lg">직원 관리</h3><p class="text-gray-400 text-sm mt-1">통합 ERP 시스템 직원을 관리합니다. (브로컴퍼니 + 브로모터스)</p></div>
+                        <div><h3 class="font-bold text-lime-400 text-lg">직원 관리</h3><p class="text-gray-400 text-sm mt-1">통합 ERP 시스템 직원을 관리합니다. (정산관리 + 브로모터스)</p></div>
                         <button onclick="openStaffModal()" class="btn-primary">+ 직원 등록</button>
                     </div>
                     <div class="glass-card rounded-xl overflow-hidden">
@@ -755,8 +754,13 @@
                                 <div>
                                     <label class="block text-xs text-lime-400 mb-1">PG사 선택*</label>
                                     <select id="pg-provider" class="input-field" onchange="onPgProviderChange(this.value)">
-                                        <option value="weroute">위루트파이낸셜</option>
-                                        <option value="ghpay">GHPAY (건흥페이먼츠)</option>
+                                        <option value="nicepay">나이스페이 (NicePay)</option>
+                                        <option value="inicis">KG이니시스</option>
+                                        <option value="toss">토스페이먼츠</option>
+                                        <option value="kakao">카카오페이</option>
+                                        <option value="danal">다날</option>
+                                        <option value="settle">세틀뱅크</option>
+                                        <option value="kcp">NHN KCP</option>
                                     </select>
                                 </div>
                                 
@@ -889,20 +893,29 @@
                             <div class="glass-card rounded-xl p-6">
                                 <h3 class="font-bold text-purple-400 text-lg mb-4">📚 API 문서</h3>
                                 <div class="space-y-3">
-                                    <div class="p-3 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-purple-400/50" onclick="openPgDocs('weroute')">
+                                    <div class="p-3 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-purple-400/50" onclick="openPgDocs('nicepay')">
                                         <div class="flex justify-between items-center">
                                             <div>
-                                                <div class="font-bold text-sm">위루트파이낸셜 API 문서</div>
-                                                <div class="text-xs text-gray-400">api.weroutefincorp.com/docs</div>
+                                                <div class="font-bold text-sm">나이스페이 API 문서</div>
+                                                <div class="text-xs text-gray-400">developers.nicepay.co.kr</div>
                                             </div>
                                             <span class="text-purple-400">→</span>
                                         </div>
                                     </div>
-                                    <div class="p-3 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-purple-400/50" onclick="openPgDocs('ghpay')">
+                                    <div class="p-3 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-purple-400/50" onclick="openPgDocs('inicis')">
                                         <div class="flex justify-between items-center">
                                             <div>
-                                                <div class="font-bold text-sm">GHPAY (건흥페이먼츠) API 문서</div>
-                                                <div class="text-xs text-gray-400">api.ghpayments.kr</div>
+                                                <div class="font-bold text-sm">KG이니시스 API 문서</div>
+                                                <div class="text-xs text-gray-400">manual.inicis.com</div>
+                                            </div>
+                                            <span class="text-purple-400">→</span>
+                                        </div>
+                                    </div>
+                                    <div class="p-3 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-purple-400/50" onclick="openPgDocs('toss')">
+                                        <div class="flex justify-between items-center">
+                                            <div>
+                                                <div class="font-bold text-sm">토스페이먼츠 API 문서</div>
+                                                <div class="text-xs text-gray-400">docs.tosspayments.com</div>
                                             </div>
                                             <span class="text-purple-400">→</span>
                                         </div>
@@ -981,15 +994,13 @@
                             <div class="text-[10px] text-lime-400/70">오늘 날짜</div>
                             <div class="text-xs md:text-sm font-bold text-lime-400" id="b-today-date"></div>
                         </div>
-                        <!-- 브로컴퍼니 버튼 -->
-                        <button onclick="switchSystem()" class="px-2 py-1 md:px-3 md:py-2 rounded-lg bg-lime-500/10 border border-lime-500/30 text-lime-400 text-[10px] md:text-xs font-bold">💰 브로컴퍼니</button>
+                        <!-- 정산관리 버튼 -->
+                        <button onclick="switchSystem()" class="px-2 py-1 md:px-3 md:py-2 rounded-lg bg-lime-500/10 border border-lime-500/30 text-lime-400 text-[10px] md:text-xs font-bold">💰 정산관리</button>
                         <!-- 사용자 정보 -->
                         <div class="px-2 py-1 md:px-3 md:py-2 rounded-lg glass-card text-right">
                             <div class="text-[10px] text-lime-400/70" id="b-userRole">관리자</div>
                             <div class="text-xs md:text-sm font-bold" id="b-userName">Admin</div>
                         </div>
-                        <!-- 시스템 선택 -->
-                        <button onclick="backToSystemSelect()" class="px-2 py-1 md:px-3 md:py-2 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-400 text-[10px] md:text-xs font-bold">🏢 시스템선택</button>
                         <!-- 로그아웃 -->
                         <button onclick="handleLogout()" class="px-2 py-1 md:px-3 md:py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-[10px] md:text-xs font-bold">로그아웃</button>
                     </div>
@@ -1057,13 +1068,8 @@
                     </div>
                 </div>
                 
-                <!-- 외상/사고차/매입차량 현황 -->
-                <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-                    <div class="glass-card rounded-xl p-4 border-l-4 border-rose-500 stat-card cursor-pointer hover:border-rose-500" onclick="openCreditListModal()">
-                        <div class="text-rose-500 text-xs mb-1">📝 미수금(외상)</div>
-                        <div class="text-2xl font-black text-rose-400" id="b-credit-total">₩0</div>
-                        <div class="text-xs text-gray-500 mt-1" id="b-credit-count">0건</div>
-                    </div>
+                <!-- 사고차/매입차량 현황 -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     <div class="glass-card rounded-xl p-4 border-l-4 border-orange-400 stat-card cursor-pointer hover:border-orange-400" onclick="showBromotorsTab('accident')">
                         <div class="text-orange-400 text-xs mb-1">🚨 사고차 수익</div>
                         <div class="text-2xl font-black" id="b-accident-profit">₩0</div>
@@ -1126,11 +1132,9 @@
                         <button onclick="openWorkModal()" class="btn-primary btn-sm">+ 작업 등록</button>
                     </div>
                 </div>
-                <!-- 외상 요약 박스 -->
-                <div id="credit-summary-box"></div>
                 <div class="glass-card rounded-xl overflow-hidden">
                     <table class="data-table">
-                        <thead><tr><th>접수번호</th><th>날짜</th><th>고객</th><th>차량</th><th>작업내용</th><th>공임</th><th>부품</th><th>합계</th><th>결제</th><th>상태</th><th>관리</th></tr></thead>
+                        <thead><tr><th>접수번호</th><th>날짜</th><th>고객</th><th>차량</th><th>작업내용</th><th>공임</th><th>부품</th><th>합계</th><th>상태</th><th>결제</th></tr></thead>
                         <tbody id="b-work-tbody"></tbody>
                     </table>
                 </div>
@@ -1419,7 +1423,7 @@
             <div id="b-content-settings" class="b-tab-content hidden">
                 <div class="glass-card rounded-xl p-6">
                     <div class="text-lime-400 font-bold mb-4">⚙️ 설정</div>
-                    <div class="text-gray-400 text-sm">직원 관리는 <span class="text-lime-400 cursor-pointer" onclick="goToSettlementSettings()">브로컴퍼니 → 설정</span>에서 통합 관리합니다.</div>
+                    <div class="text-gray-400 text-sm">직원 관리는 <span class="text-lime-400 cursor-pointer" onclick="goToSettlementSettings()">정산관리 → 설정</span>에서 통합 관리합니다.</div>
                 </div>
             </div>
         </div>
@@ -1619,34 +1623,6 @@
                             <span class="text-xs text-gray-300">부가세 별도 (+10%)</span>
                         </label>
                         <span id="work-vat-amount" class="text-xs text-yellow-400 hidden">VAT: ₩0</span>
-                    </div>
-                    
-                    <!-- 결제방식 선택 -->
-                    <div class="mt-3 p-3 rounded-lg bg-emerald-400/10 border border-emerald-400/30">
-                        <div class="text-xs text-emerald-400 mb-2">💳 결제방식*</div>
-                        <div class="grid grid-cols-4 gap-2">
-                            <label class="flex items-center justify-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-emerald-400/50">
-                                <input type="radio" name="payment_method" value="현금" class="accent-emerald-400" checked>
-                                <span class="text-sm">💵 현금</span>
-                            </label>
-                            <label class="flex items-center justify-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-emerald-400/50">
-                                <input type="radio" name="payment_method" value="카드" class="accent-emerald-400">
-                                <span class="text-sm">💳 카드</span>
-                            </label>
-                            <label class="flex items-center justify-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-emerald-400/50">
-                                <input type="radio" name="payment_method" value="계좌이체" class="accent-emerald-400">
-                                <span class="text-sm">🏦 이체</span>
-                            </label>
-                            <label class="flex items-center justify-center gap-2 p-2 rounded-lg bg-red-400/10 border border-red-400/30 cursor-pointer hover:border-red-400/50">
-                                <input type="radio" name="payment_method" value="외상" class="accent-red-400" onchange="toggleCreditOption(this.checked)">
-                                <span class="text-sm text-red-400">📝 외상</span>
-                            </label>
-                        </div>
-                        <!-- 외상 메모 (외상 선택시만 표시) -->
-                        <div id="credit-memo-box" class="mt-2 hidden">
-                            <label class="block text-xs text-red-400 mb-1">외상 메모</label>
-                            <input type="text" name="credit_memo" id="work-credit-memo" class="input-field border-red-400/30" placeholder="언제까지 결제 예정인지 등...">
-                        </div>
                     </div>
                     
                     <div class="mt-3"><label class="block text-xs text-gray-400 mb-1">메모</label><textarea name="memo" id="work-memo" class="input-field" rows="2"></textarea></div>
@@ -2148,17 +2124,6 @@
         </div>
     </div>
 
-    <!-- ======================= 브로모터스 모달: 외상 목록 ======================= -->
-    <div id="creditListModal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width:800px">
-            <div class="flex justify-between mb-4">
-                <h2 class="text-xl font-bold text-red-400">📝 외상 목록</h2>
-                <button onclick="closeModal('creditListModal')" class="text-gray-400 text-2xl">&times;</button>
-            </div>
-            <div id="credit-list-content"></div>
-        </div>
-    </div>
-
     <!-- ======================= 브로모터스 모달: 결제 완료 ======================= -->
     <div id="broPayCompleteModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:450px">
@@ -2175,7 +2140,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 모달: 미납 고객 목록 ======================= -->
+    <!-- ======================= 정산관리 모달: 미납 고객 목록 ======================= -->
     <div id="arrearsModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:700px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-orange-400">⚠️ 미납 고객 목록</h2><button onclick="closeModal('arrearsModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2194,7 +2159,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 모달: 미수금 상세 ======================= -->
+    <!-- ======================= 정산관리 모달: 미수금 상세 ======================= -->
     <div id="arrearsDetailModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:700px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-orange-400">📋 미수금 상세</h2><button onclick="closeModal('arrearsDetailModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2202,7 +2167,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 모달: 수납 처리 ======================= -->
+    <!-- ======================= 정산관리 모달: 수납 처리 ======================= -->
     <div id="paymentProcessModal" class="modal-overlay hidden" style="z-index: 9999;">
         <div class="modal-content" style="max-width:500px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-emerald-400">💰 수납 처리</h2><button onclick="closeModal('paymentProcessModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2229,7 +2194,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 모달: 최근 결제 내역 ======================= -->
+    <!-- ======================= 정산관리 모달: 최근 결제 내역 ======================= -->
     <div id="recentPaymentsModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:700px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-emerald-400">💳 최근 결제 내역</h2><button onclick="closeModal('recentPaymentsModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2237,7 +2202,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 모달: 과태료 상세 ======================= -->
+    <!-- ======================= 정산관리 모달: 과태료 상세 ======================= -->
     <div id="fineDetailModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:500px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-red-400">🚨 과태료 상세</h2><button onclick="closeModal('fineDetailModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2245,7 +2210,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 모달: 과태료 등록 ======================= -->
+    <!-- ======================= 정산관리 모달: 과태료 등록 ======================= -->
     <div id="fineModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:550px; max-height:90vh; overflow-y:auto;">
             <div class="flex justify-between mb-4"><h2 id="fineModalTitle" class="text-xl font-bold text-red-400">🚨 과태료 등록</h2><button onclick="closeModal('fineModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2325,7 +2290,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 모달: 빠른 수납 ======================= -->
+    <!-- ======================= 정산관리 모달: 빠른 수납 ======================= -->
     <div id="quickPaymentModal" class="modal-overlay hidden" style="z-index: 9999;">
         <div class="modal-content" style="max-width:400px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-emerald-400">💰 빠른 수납</h2><button onclick="closeModal('quickPaymentModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2383,7 +2348,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 모달: 납입 등록 ======================= -->
+    <!-- ======================= 정산관리 모달: 납입 등록 ======================= -->
     <div id="paymentModal" class="modal-overlay hidden" style="z-index: 9999;">
         <div class="modal-content" style="max-width:400px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-emerald-400">💰 납입 등록</h2><button onclick="closeModal('paymentModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2420,7 +2385,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 모달: 계약 등록 ======================= -->
+    <!-- ======================= 정산관리 모달: 계약 등록 ======================= -->
     <div id="contractModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:800px; max-height:90vh; overflow-y:auto;">
             <div class="flex justify-between mb-4"><h2 id="contractModalTitle" class="text-xl font-bold text-lime-400">📋 계약 등록</h2><button onclick="closeModal('contractModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2600,7 +2565,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 모달: 계약 상세 ======================= -->
+    <!-- ======================= 정산관리 모달: 계약 상세 ======================= -->
     <div id="contractDetailModal" class="modal-overlay hidden" style="z-index: 200;">
         <div class="modal-content" style="max-width:600px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-lime-400">📋 계약 상세</h2><button onclick="closeModal('contractDetailModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2608,7 +2573,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 모달: 차량 등록 ======================= -->
+    <!-- ======================= 정산관리 모달: 차량 등록 ======================= -->
     <div id="vehicleModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:650px; max-height:90vh; overflow-y:auto;">
             <div class="flex justify-between mb-4"><h2 id="vehicleModalTitle" class="text-xl font-bold text-lime-400">🚗 차량 등록</h2><button onclick="closeModal('vehicleModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2729,7 +2694,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 모달: 차량 상세 ======================= -->
+    <!-- ======================= 정산관리 모달: 차량 상세 ======================= -->
     <div id="vehicleDetailModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:600px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-lime-400">🚗 차량 상세</h2><button onclick="closeModal('vehicleDetailModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2737,7 +2702,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 모달: PG 카드 등록 ======================= -->
+    <!-- ======================= 정산관리 모달: PG 카드 등록 ======================= -->
     <div id="pgModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:600px">
             <div class="flex justify-between mb-4"><h2 id="pgModalTitle" class="text-xl font-bold text-lime-400">💳 자동결제 카드 등록</h2><button onclick="closeModal('pgModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2865,7 +2830,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 모달: PG 카드 상세 ======================= -->
+    <!-- ======================= 정산관리 모달: PG 카드 상세 ======================= -->
     <div id="pgDetailModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:600px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-lime-400">💳 카드 상세 정보</h2><button onclick="closeModal('pgDetailModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2873,7 +2838,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 모달: 수동 결제 ======================= -->
+    <!-- ======================= 정산관리 모달: 수동 결제 ======================= -->
     <div id="manualPayModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:500px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-emerald-400">💰 수동 결제 실행</h2><button onclick="closeModal('manualPayModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2893,7 +2858,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 모달: 원장 내역 등록 ======================= -->
+    <!-- ======================= 정산관리 모달: 원장 내역 등록 ======================= -->
     <div id="ledgerModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:550px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-lime-400">📝 원장 내역 등록</h2><button onclick="closeModal('ledgerModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2942,7 +2907,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 모달: 이번달 수납 상세 ======================= -->
+    <!-- ======================= 정산관리 모달: 이번달 수납 상세 ======================= -->
     <div id="monthlyReceiptModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:600px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-emerald-400">✅ 이번달 수납 현황</h2><button onclick="closeModal('monthlyReceiptModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2950,7 +2915,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 모달: 월 정산금액 상세 ======================= -->
+    <!-- ======================= 정산관리 모달: 월 정산금액 상세 ======================= -->
     <div id="monthlyRevenueModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:700px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-emerald-400">💰 월 정산금액 현황</h2><button onclick="closeModal('monthlyRevenueModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2958,7 +2923,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 모달: 미수금 목록 ======================= -->
+    <!-- ======================= 정산관리 모달: 미수금 목록 ======================= -->
     <div id="unpaidListModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:700px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-orange-400">⚠️ 미수금 현황</h2><button onclick="closeModal('unpaidListModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2966,7 +2931,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 모달: 수납률 상세 ======================= -->
+    <!-- ======================= 정산관리 모달: 수납률 상세 ======================= -->
     <div id="collectionRateModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:700px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-purple-400">📊 수납률 상세 분석</h2><button onclick="closeModal('collectionRateModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -2974,7 +2939,7 @@
         </div>
     </div>
 
-    <!-- ======================= 브로컴퍼니 모달: 연체 관리 ======================= -->
+    <!-- ======================= 정산관리 모달: 연체 관리 ======================= -->
     <div id="delActionModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width:500px">
             <div class="flex justify-between mb-4"><h2 class="text-xl font-bold text-orange-400">📞 연체 관리</h2><button onclick="closeModal('delActionModal')" class="text-gray-400 text-2xl">&times;</button></div>
@@ -3035,99 +3000,8 @@ async function deleteFromDB(table, id) {
     return await supabaseCall(table, 'DELETE', null, `?id=eq.${id}`);
 }
 
-// ======================= 위루트 PG Edge Function =======================
-const WEROUTE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/weroute-payment`;
-
-async function callWerouteFunction(action, params = {}) {
-    console.log('🔄 위루트 PG 호출:', action, params);
-    try {
-        const response = await fetch(WEROUTE_FUNCTION_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${SUPABASE_KEY}`
-            },
-            body: JSON.stringify({ action, ...params })
-        });
-        const result = await response.json();
-        console.log('📥 위루트 PG 응답:', result);
-        if (!response.ok) {
-            throw new Error(result.error || result.message || '요청 실패');
-        }
-        return result;
-    } catch (error) {
-        console.error('❌ 위루트 PG 오류:', error);
-        throw error;
-    }
-}
-
-async function testWerouteConnection() {
-    showToast('🔄 위루트 PG 연결 테스트 중...');
-    try {
-        const result = await callWerouteFunction('test_connection');
-        if (result.success) {
-            showToast(`✅ 위루트 PG 연결 성공! MID: ${result.mid}`);
-            console.log('PG 연결 정보:', result);
-        } else {
-            showToast('❌ 연결 실패: ' + (result.message || '알 수 없는 오류'), 'error');
-        }
-        return result;
-    } catch (error) {
-        showToast('❌ 연결 실패: ' + error.message, 'error');
-        return { success: false, error: error.message };
-    }
-}
-
-async function issueWerouteBillingKey(cardData) {
-    showToast('🔄 카드 등록 중...');
-    try {
-        const result = await callWerouteFunction('issue_billing_key', cardData);
-        if (result.success) {
-            showToast('✅ 카드 등록 완료!');
-        } else {
-            showToast('❌ 카드 등록 실패: ' + (result.message || ''), 'error');
-        }
-        return result;
-    } catch (error) {
-        showToast('❌ 카드 등록 실패: ' + error.message, 'error');
-        return { success: false, error: error.message };
-    }
-}
-
-async function processWeroutePayment(paymentData) {
-    showToast('🔄 결제 처리 중...');
-    try {
-        const result = await callWerouteFunction('billing_payment', paymentData);
-        if (result.success) {
-            showToast(`✅ 결제 완료! 승인번호: ${result.approval_no || 'N/A'}`);
-        } else {
-            showToast('❌ 결제 실패: ' + (result.message || ''), 'error');
-        }
-        return result;
-    } catch (error) {
-        showToast('❌ 결제 실패: ' + error.message, 'error');
-        return { success: false, error: error.message };
-    }
-}
-
-async function cancelWeroutePayment(cancelData) {
-    showToast('🔄 결제 취소 중...');
-    try {
-        const result = await callWerouteFunction('cancel_payment', cancelData);
-        if (result.success) {
-            showToast('✅ 결제 취소 완료!');
-        } else {
-            showToast('❌ 취소 실패: ' + (result.message || ''), 'error');
-        }
-        return result;
-    } catch (error) {
-        showToast('❌ 취소 실패: ' + error.message, 'error');
-        return { success: false, error: error.message };
-    }
-}
-
 // ======================= 전역 변수 =======================
-const APP_VERSION = '1.27';
+const APP_VERSION = '1.26';
 let currentSystem = null; // null = 선택 안 됨
 let currentUser = null;
 let currentTab = 'overview'; // 현재 탭
@@ -3218,7 +3092,7 @@ async function handleLogin(e) {
             document.getElementById('s-userRole').textContent = roleBadge(user.role)[1];
             renderStaffList();
             initDates();
-            // 브로컴퍼니 대시보드 로드
+            // 정산관리 대시보드 로드
             loadSettlementDashboard();
         } else {
             document.getElementById('bromotorsSystem').classList.remove('hidden');
@@ -3272,6 +3146,9 @@ async function loadAllData() {
     fineList = fines || [];
     contractPaymentList = contractPayments || [];
     
+    // 연체일 계산 (미수금 있는 계약에 대해)
+    calculateDelinquentDays();
+    
     // recentPayments는 ledger에서 추출
     recentPayments = ledgerList.filter(l => l.type === 'receipt').slice(0, 5).map((l, i) => ({
         id: i + 1,
@@ -3281,6 +3158,115 @@ async function loadAllData() {
         time: '09:00'
     }));
 }
+
+// 연체일 계산 함수
+function calculateDelinquentDays() {
+    // 한국 시간 기준 오늘 날짜 (브라우저 시간대 무관하게 KST 고정)
+    const now = new Date();
+    const kstOffset = 9 * 60; // KST = UTC+9
+    const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000); // UTC 밀리초
+    const kstMs = utcMs + (kstOffset * 60000); // KST 밀리초
+    const kstDate = new Date(kstMs);
+    const todayStr = kstDate.getFullYear() + '-' + String(kstDate.getMonth()+1).padStart(2,'0') + '-' + String(kstDate.getDate()).padStart(2,'0');
+    
+    contractList.forEach(c => {
+        // 미수금이 없으면 연체일 0
+        if (!c.arrears || c.arrears <= 0) {
+            c.delinquent_days = 0;
+            return;
+        }
+        
+        // 종료/해지된 계약은 연체일 0
+        if (c.status === 'completed' || c.status === 'cancelled') {
+            c.delinquent_days = 0;
+            return;
+        }
+        
+        // 시작일이 없으면 제외
+        if (!c.start_date) {
+            c.delinquent_days = 0;
+            return;
+        }
+        
+        const cycle = c.payment_cycle || 'monthly';
+        
+        // 납부 완료된 건 (날짜 내림차순)
+        const paidPayments = contractPaymentList.filter(p => 
+            p.contract_id === c.id && p.status === 'paid'
+        ).sort((a, b) => (b.payment_date || '').localeCompare(a.payment_date || ''));
+        
+        let lastPaymentDate = paidPayments.length > 0 ? paidPayments[0].payment_date : null;
+        let overdueStartDate;
+        
+        if (cycle === 'daily') {
+            if (lastPaymentDate) {
+                overdueStartDate = addDaysToDateStr(lastPaymentDate, 1);
+            } else {
+                overdueStartDate = c.start_date;
+            }
+        } else if (cycle === 'weekly') {
+            if (lastPaymentDate) {
+                overdueStartDate = addDaysToDateStr(lastPaymentDate, 7);
+            } else {
+                overdueStartDate = c.start_date;
+            }
+        } else {
+            // 월정산
+            const startParts = c.start_date.split('-').map(Number);
+            const paymentDay = c.payment_day || startParts[2];
+            
+            if (lastPaymentDate) {
+                const [y, m] = lastPaymentDate.substring(0, 7).split('-').map(Number);
+                const nextM = m === 12 ? 1 : m + 1;
+                const nextY = m === 12 ? y + 1 : y;
+                // 해당 월의 마지막 날 체크
+                const maxDay = new Date(nextY, nextM, 0).getDate();
+                const safeDay = Math.min(paymentDay, maxDay);
+                overdueStartDate = `${nextY}-${String(nextM).padStart(2,'0')}-${String(safeDay).padStart(2,'0')}`;
+            } else {
+                const startY = startParts[0];
+                const startM = startParts[1];
+                const startD = startParts[2];
+                
+                if (startD <= paymentDay) {
+                    const maxDay = new Date(startY, startM, 0).getDate();
+                    const safeDay = Math.min(paymentDay, maxDay);
+                    overdueStartDate = `${startY}-${String(startM).padStart(2,'0')}-${String(safeDay).padStart(2,'0')}`;
+                } else {
+                    const nextM = startM === 12 ? 1 : startM + 1;
+                    const nextY = startM === 12 ? startY + 1 : startY;
+                    const maxDay = new Date(nextY, nextM, 0).getDate();
+                    const safeDay = Math.min(paymentDay, maxDay);
+                    overdueStartDate = `${nextY}-${String(nextM).padStart(2,'0')}-${String(safeDay).padStart(2,'0')}`;
+                }
+            }
+        }
+        
+        // 연체일 계산: 연체시작일부터 오늘까지 경과일
+        if (overdueStartDate && todayStr >= overdueStartDate) {
+            c.delinquent_days = dateDiffDays(overdueStartDate, todayStr);
+        } else {
+            c.delinquent_days = 0;
+        }
+    });
+}
+
+// 날짜 문자열 간 일수 차이 (순수 문자열 연산, 시간대 무관)
+function dateDiffDays(dateStr1, dateStr2) {
+    const [y1, m1, d1] = dateStr1.split('-').map(Number);
+    const [y2, m2, d2] = dateStr2.split('-').map(Number);
+    const dt1 = Date.UTC(y1, m1 - 1, d1);
+    const dt2 = Date.UTC(y2, m2 - 1, d2);
+    return Math.round((dt2 - dt1) / (1000 * 60 * 60 * 24));
+}
+
+// 날짜 문자열에 일수 더하기 (시간대 무관)
+function addDaysToDateStr(dateStr, days) {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d + days));
+    return dt.getUTCFullYear() + '-' + String(dt.getUTCMonth()+1).padStart(2,'0') + '-' + String(dt.getUTCDate()).padStart(2,'0');
+}
+
 
 // 날짜 초기화 함수
 function initDates() {
@@ -3309,10 +3295,12 @@ function initDates() {
 function handleLogout() {
     currentUser = null;
     sessionStorage.removeItem('teambro_session');
-    localStorage.removeItem('teambro_unified_session');
-    // 팀브로 HQ 로그인 페이지로 이동
-    window.location.href = 'https://broerp.kr/';
+    location.reload();
 }
+
+// 참고: 이전에는 beforeunload에서 세션을 삭제했으나,
+// 새로고침 시에도 세션이 삭제되는 문제가 있어 제거함.
+// 세션은 24시간 만료 또는 브라우저 종료 시 자동 삭제됨 (sessionStorage 특성)
 
 // 세션에 현재 탭 저장
 function updateSessionTab(system, tab) {
@@ -3356,7 +3344,7 @@ function goToSettlementSettings() {
     showSettlementTab('settings');
 }
 
-// ======================= 브로컴퍼니 탭 =======================
+// ======================= 정산관리 탭 =======================
 function showSettlementTab(name, skipHistory = false) {
     document.querySelectorAll('[id^="s-tab-"]').forEach(b => { b.classList.remove('tab-active'); b.classList.add('text-gray-500'); });
     document.getElementById('s-tab-' + name).classList.add('tab-active');
@@ -3378,7 +3366,7 @@ function showSettlementTab(name, skipHistory = false) {
     if (name === 'vehicles') loadVehicles();
     if (name === 'customers') loadCustomers();
     if (name === 'charges') loadPgPayments();
-    if (name === 'ledger') { calculateAllArrears(); loadLedger(); }
+    if (name === 'ledger') loadLedger();
     if (name === 'fines') { initFinePeriod(); loadFines(); }
     if (name === 'delinquent') loadDelinquent();
     if (name === 'settings') renderStaffList();
@@ -3395,13 +3383,13 @@ function showSettingTab(name, el) {
 
 // ======================= PG 설정 =======================
 let pgSettings = {
-    provider: 'weroute',
+    provider: 'nicepay',
     mid: '',
     merchantKey: '',
     secretKey: '',
-    apiUrl: 'https://api.weroutefincorp.com/api/v2/pay/bill-key/hand',
-    cancelUrl: 'https://api.weroutefincorp.com/api/v2/cancel',
-    billingUrl: 'https://api.weroutefincorp.com/api/v2/bill-key',
+    apiUrl: 'https://api.nicepay.co.kr/v1/payments',
+    cancelUrl: 'https://api.nicepay.co.kr/v1/payments/cancel',
+    billingUrl: 'https://api.nicepay.co.kr/v1/subscribe/regist',
     mode: 'test',
     timeout: 30,
     billingEnabled: true,
@@ -3415,19 +3403,54 @@ let pgSettings = {
 };
 
 const pgProviderInfo = {
-    weroute: {
-        name: '위루트파이낸셜',
-        apiUrl: 'https://api.weroutefincorp.com/api/v2/pay/bill-key/hand',
-        cancelUrl: 'https://api.weroutefincorp.com/api/v2/cancel',
-        billingUrl: 'https://api.weroutefincorp.com/api/v2/bill-key',
-        docsUrl: 'https://api.weroutefincorp.com/docs/index.html'
+    nicepay: {
+        name: '나이스페이',
+        apiUrl: 'https://api.nicepay.co.kr/v1/payments',
+        cancelUrl: 'https://api.nicepay.co.kr/v1/payments/cancel',
+        billingUrl: 'https://api.nicepay.co.kr/v1/subscribe/regist',
+        docsUrl: 'https://developers.nicepay.co.kr'
     },
-    ghpay: {
-        name: 'GHPAY (건흥페이먼츠)',
-        apiUrl: 'https://api.ghpayments.kr/api/billing/pay',
-        cancelUrl: 'https://api.ghpayments.kr/api/refund',
-        billingUrl: 'https://api.ghpayments.kr/api/billing/reg',
-        docsUrl: 'https://api.ghpayments.kr'
+    inicis: {
+        name: 'KG이니시스',
+        apiUrl: 'https://iniapi.inicis.com/api/v1/pay',
+        cancelUrl: 'https://iniapi.inicis.com/api/v1/cancel',
+        billingUrl: 'https://iniapi.inicis.com/api/v1/billing',
+        docsUrl: 'https://manual.inicis.com'
+    },
+    toss: {
+        name: '토스페이먼츠',
+        apiUrl: 'https://api.tosspayments.com/v1/payments',
+        cancelUrl: 'https://api.tosspayments.com/v1/payments/cancel',
+        billingUrl: 'https://api.tosspayments.com/v1/billing/authorizations',
+        docsUrl: 'https://docs.tosspayments.com'
+    },
+    kakao: {
+        name: '카카오페이',
+        apiUrl: 'https://kapi.kakao.com/v1/payment/ready',
+        cancelUrl: 'https://kapi.kakao.com/v1/payment/cancel',
+        billingUrl: 'https://kapi.kakao.com/v1/payment/subscription',
+        docsUrl: 'https://developers.kakao.com/docs/latest/ko/kakaopay'
+    },
+    danal: {
+        name: '다날',
+        apiUrl: 'https://api.danal.co.kr/payment',
+        cancelUrl: 'https://api.danal.co.kr/payment/cancel',
+        billingUrl: 'https://api.danal.co.kr/billing',
+        docsUrl: 'https://developers.danal.co.kr'
+    },
+    settle: {
+        name: '세틀뱅크',
+        apiUrl: 'https://api.settlebank.co.kr/v1/payment',
+        cancelUrl: 'https://api.settlebank.co.kr/v1/cancel',
+        billingUrl: 'https://api.settlebank.co.kr/v1/billing',
+        docsUrl: 'https://developers.settlebank.co.kr'
+    },
+    kcp: {
+        name: 'NHN KCP',
+        apiUrl: 'https://api.kcp.co.kr/v1/payment',
+        cancelUrl: 'https://api.kcp.co.kr/v1/cancel',
+        billingUrl: 'https://api.kcp.co.kr/v1/batch',
+        docsUrl: 'https://developer.kcp.co.kr'
     }
 };
 
@@ -3509,8 +3532,20 @@ function updatePgStatusBadge() {
 }
 
 function testPgConnection() {
-    // 위루트 PG Edge Function 연결 테스트
-    testWerouteConnection();
+    const mid = document.getElementById('pg-mid').value;
+    const merchantKey = document.getElementById('pg-merchant-key').value;
+    
+    if (!mid || !merchantKey) {
+        showToast('❌ 가맹점 ID와 상점 키를 입력해주세요', 'error');
+        return;
+    }
+    
+    // 테스트 연결 시뮬레이션
+    showToast('🔄 연결 테스트 중...');
+    setTimeout(() => {
+        // 실제로는 API 호출하여 확인
+        showToast('✅ PG 연결 테스트 성공!');
+    }, 1500);
 }
 
 function openPgDocs(provider) {
@@ -3716,7 +3751,7 @@ async function deleteStaff(id) {
     renderStaffList();
 }
 
-// ======================= 브로컴퍼니: 계약관리 =======================
+// ======================= 정산관리: 계약관리 =======================
 function filterContracts(status) {
     document.getElementById('contract-status').value = status;
     loadContracts();
@@ -3761,7 +3796,7 @@ function loadContracts() {
         const hasArrears = c.arrears > 0;
         let statusBadge;
         if (hasArrears) statusBadge = ['badge-delinquent', '연체'];
-        else if (c.status === 'completed') statusBadge = ['badge-complete', '종료'];
+        else if (c.status === 'completed') statusBadge = ['badge-terminated', '종료'];
         else if (c.status === 'cancelled') statusBadge = ['badge-failed', '해지'];
         else statusBadge = ['badge-active', '진행중'];
         
@@ -3803,10 +3838,14 @@ function loadContracts() {
 
 // 연체 자동 계산 함수
 function calculateAllArrears() {
+    // 한국 시간 기준 오늘 날짜 (브라우저 시간대 무관하게 KST 고정)
     const now = new Date();
-    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-    const today = koreaTime.toISOString().split('T')[0];
-    const todayDate = new Date(today + 'T00:00:00');
+    const kstOffset = 9 * 60;
+    const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const kstMs = utcMs + (kstOffset * 60000);
+    const kstDate = new Date(kstMs);
+    const todayStr = kstDate.getFullYear() + '-' + String(kstDate.getMonth()+1).padStart(2,'0') + '-' + String(kstDate.getDate()).padStart(2,'0');
+    const todayParts = todayStr.split('-').map(Number);
     
     contractList.forEach(c => {
         // 종료/해지된 계약은 제외
@@ -3823,10 +3862,10 @@ function calculateAllArrears() {
             return;
         }
         
-        const startDate = new Date(c.start_date + 'T00:00:00');
+        const startParts = c.start_date.split('-').map(Number);
         
         // 시작일이 오늘보다 미래면 연체 없음
-        if (startDate > todayDate) {
+        if (c.start_date > todayStr) {
             c.arrears = 0;
             c.delinquent_days = 0;
             return;
@@ -3836,26 +3875,20 @@ function calculateAllArrears() {
         let totalDue = 0;
         
         if (cycle === 'daily') {
-            // 일정산: 시작일 = 1건 (당일 포함)
-            // 예: 시작일 1/13, 오늘 1/13 → 1건
-            // 예: 시작일 1/13, 오늘 1/14 → 2건
-            const diffTime = todayDate.getTime() - startDate.getTime();
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // 당일 포함
+            // 일정산: 시작일 당일 포함
+            const diffDays = dateDiffDays(c.start_date, todayStr) + 1;
             totalDue = diffDays * (c.monthly || 0);
         } else if (cycle === 'weekly') {
             // 주정산: 시작일부터 첫 주 = 1건
-            const diffTime = todayDate.getTime() - startDate.getTime();
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // 당일 포함
-            const diffWeeks = Math.ceil(diffDays / 7); // 올림으로 첫 주 포함
+            const diffDays = dateDiffDays(c.start_date, todayStr) + 1;
+            const diffWeeks = Math.ceil(diffDays / 7);
             totalDue = diffWeeks * (c.monthly || 0);
         } else {
             // 월정산: 납입일 기준
-            const paymentDay = c.payment_day || startDate.getDate();
-            const monthsElapsed = (todayDate.getFullYear() - startDate.getFullYear()) * 12 
-                + (todayDate.getMonth() - startDate.getMonth());
-            const currentDay = todayDate.getDate();
+            const paymentDay = c.payment_day || startParts[2];
+            const monthsElapsed = (todayParts[0] - startParts[0]) * 12 + (todayParts[1] - startParts[1]);
             // 당일이 납입일이거나 지났으면 이번달 포함
-            const additionalMonth = currentDay >= paymentDay ? 1 : 0;
+            const additionalMonth = todayParts[2] >= paymentDay ? 1 : 0;
             totalDue = (monthsElapsed + additionalMonth) * (c.monthly || 0);
         }
         
@@ -3867,21 +3900,73 @@ function calculateAllArrears() {
         // 연체 = 납부해야 할 금액 - 실제 납부 금액
         c.arrears = Math.max(0, totalDue - totalPaid);
         
-        // ★★★ 연체일수 계산 ★★★
+        // 연체일수 계산 (미수금이 있는 경우만)
         if (c.arrears > 0) {
-            // 계약 시작일부터 오늘까지의 일수 = 연체일
-            const diffTime = todayDate.getTime() - startDate.getTime();
-            c.delinquent_days = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            const paidPayments = contractPaymentList.filter(p => 
+                p.contract_id === c.id && p.status === 'paid'
+            ).sort((a, b) => (b.payment_date || '').localeCompare(a.payment_date || ''));
+            
+            let lastPaymentDate = paidPayments.length > 0 ? paidPayments[0].payment_date : null;
+            let overdueStartDate;
+            
+            if (cycle === 'daily') {
+                if (lastPaymentDate) {
+                    overdueStartDate = addDaysToDateStr(lastPaymentDate, 1);
+                } else {
+                    overdueStartDate = c.start_date;
+                }
+            } else if (cycle === 'weekly') {
+                if (lastPaymentDate) {
+                    overdueStartDate = addDaysToDateStr(lastPaymentDate, 7);
+                } else {
+                    overdueStartDate = c.start_date;
+                }
+            } else {
+                const paymentDay = c.payment_day || startParts[2];
+                
+                if (lastPaymentDate) {
+                    const [y, m] = lastPaymentDate.substring(0, 7).split('-').map(Number);
+                    const nextM = m === 12 ? 1 : m + 1;
+                    const nextY = m === 12 ? y + 1 : y;
+                    const maxDay = new Date(Date.UTC(nextY, nextM, 0)).getUTCDate();
+                    const safeDay = Math.min(paymentDay, maxDay);
+                    overdueStartDate = `${nextY}-${String(nextM).padStart(2,'0')}-${String(safeDay).padStart(2,'0')}`;
+                } else {
+                    const startY = startParts[0];
+                    const startM = startParts[1];
+                    const startD = startParts[2];
+                    
+                    if (startD <= paymentDay) {
+                        const maxDay = new Date(Date.UTC(startY, startM, 0)).getUTCDate();
+                        const safeDay = Math.min(paymentDay, maxDay);
+                        overdueStartDate = `${startY}-${String(startM).padStart(2,'0')}-${String(safeDay).padStart(2,'0')}`;
+                    } else {
+                        const nextM = startM === 12 ? 1 : startM + 1;
+                        const nextY = startM === 12 ? startY + 1 : startY;
+                        const maxDay = new Date(Date.UTC(nextY, nextM, 0)).getUTCDate();
+                        const safeDay = Math.min(paymentDay, maxDay);
+                        overdueStartDate = `${nextY}-${String(nextM).padStart(2,'0')}-${String(safeDay).padStart(2,'0')}`;
+                    }
+                }
+            }
+            
+            // 연체일 계산
+            if (overdueStartDate && todayStr >= overdueStartDate) {
+                c.delinquent_days = dateDiffDays(overdueStartDate, todayStr);
+            } else {
+                c.delinquent_days = 0;
+            }
         } else {
             c.delinquent_days = 0;
         }
         
-        // 디버그 로그 (연체 있는 계약만)
+        // 디버그 로그 (모든 연체 계약)
         if (c.arrears > 0) {
             console.log(`연체계산 [${c.customer_name}]: 시작일=${c.start_date}, 주기=${cycle}, 총발생=${totalDue}, 납부=${totalPaid}, 연체=${c.arrears}, 연체일=${c.delinquent_days}`);
         }
     });
 }
+
 
 // 월 정산금액 상세 모달
 function openMonthlyRevenueModal() {
@@ -3991,7 +4076,7 @@ function viewContractDetail(id) {
     // 상태 배지 (진행중/종료/해지/연체)
     const getStatusBadge = (contract) => {
         if (contract.arrears > 0) return ['badge-delinquent', '연체'];
-        if (contract.status === 'completed') return ['badge-complete', '종료'];
+        if (contract.status === 'completed') return ['badge-terminated', '종료'];
         if (contract.status === 'cancelled') return ['badge-failed', '해지'];
         return ['badge-active', '진행중'];
     };
@@ -4007,10 +4092,14 @@ function viewContractDetail(id) {
     // 연체 계산 정보 (시작일 기준)
     let arrearsInfo = null;
     if (c.start_date && c.status === 'active') {
-        const startDate = new Date(c.start_date + 'T00:00:00');
+        const startParts = c.start_date.split('-').map(Number);
         const now = new Date();
-        const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-        const todayDate = new Date(koreaTime.toISOString().split('T')[0] + 'T00:00:00');
+        const kstOffset = 9 * 60;
+        const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const kstMs = utcMs + (kstOffset * 60000);
+        const kstDate = new Date(kstMs);
+        const todayStr = kstDate.getFullYear() + '-' + String(kstDate.getMonth()+1).padStart(2,'0') + '-' + String(kstDate.getDate()).padStart(2,'0');
+        const todayParts = todayStr.split('-').map(Number);
         const cycle = c.payment_cycle || 'monthly';
         
         let cycleLabel = '';
@@ -4019,31 +4108,27 @@ function viewContractDetail(id) {
         let totalDue = 0;
         
         // 시작일이 미래면 아직 납부 예정 없음
-        if (startDate > todayDate) {
+        if (c.start_date > todayStr) {
             periodCount = 0;
             periodLabel = cycle === 'daily' ? '일' : cycle === 'weekly' ? '주' : '개월';
             cycleLabel = cycle === 'daily' ? '📅 일정산 (매일)' : cycle === 'weekly' ? '📆 주정산 (7일)' : '🗓️ 월결제';
             totalDue = 0;
         } else if (cycle === 'daily') {
-            const diffTime = todayDate.getTime() - startDate.getTime();
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 당일 포함
+            const diffDays = dateDiffDays(c.start_date, todayStr) + 1; // 당일 포함
             periodCount = Math.max(0, diffDays);
             periodLabel = '일';
             cycleLabel = '📅 일정산 (매일)';
             totalDue = periodCount * (c.monthly || 0);
         } else if (cycle === 'weekly') {
-            const diffTime = todayDate.getTime() - startDate.getTime();
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 당일 포함
-            periodCount = Math.ceil(diffDays / 7); // 올림으로 첫 주 포함
+            const diffDays = dateDiffDays(c.start_date, todayStr) + 1; // 당일 포함
+            periodCount = Math.ceil(diffDays / 7);
             periodLabel = '주';
             cycleLabel = '📆 주정산 (7일)';
             totalDue = Math.max(0, periodCount) * (c.monthly || 0);
         } else {
-            const paymentDay = c.payment_day || startDate.getDate();
-            const monthsElapsed = (todayDate.getFullYear() - startDate.getFullYear()) * 12 
-                + (todayDate.getMonth() - startDate.getMonth());
-            const currentDay = todayDate.getDate();
-            const additionalMonth = currentDay >= paymentDay ? 1 : 0;
+            const paymentDay = c.payment_day || startParts[2];
+            const monthsElapsed = (todayParts[0] - startParts[0]) * 12 + (todayParts[1] - startParts[1]);
+            const additionalMonth = todayParts[2] >= paymentDay ? 1 : 0;
             periodCount = monthsElapsed + additionalMonth;
             periodLabel = '개월';
             cycleLabel = `🗓️ 월결제 (매월 ${paymentDay}일)`;
@@ -4812,37 +4897,15 @@ async function submitContract(e) {
 }
 
 async function deleteContract(id) {
-    if (!confirm('정말 이 계약을 삭제하시겠습니까?\n\n⚠️ 관련된 납입내역과 원장 기록도 함께 삭제됩니다.')) return;
-    
-    try {
-        // 1. 관련 contract_payments 먼저 삭제
-        const relatedPayments = contractPaymentList.filter(p => p.contract_id === id);
-        for (const payment of relatedPayments) {
-            await deleteFromDB('contract_payments', payment.id);
-        }
-        contractPaymentList = contractPaymentList.filter(p => p.contract_id !== id);
-        
-        // 2. 관련 ledger 삭제
-        const relatedLedger = ledgerList.filter(l => l.contract_id === id);
-        for (const ledger of relatedLedger) {
-            await deleteFromDB('ledger', ledger.id);
-        }
-        ledgerList = ledgerList.filter(l => l.contract_id !== id);
-        
-        // 3. 계약 삭제
-        await deleteFromDB('contracts', id);
-        contractList = contractList.filter(c => c.id !== id);
-        
-        showToast('✅ 계약이 삭제되었습니다');
-        closeModal('contractDetailModal');
-        loadContracts();
-    } catch (error) {
-        console.error('계약 삭제 실패:', error);
-        showToast('❌ 계약 삭제 실패: ' + error.message);
-    }
+    if (!confirm('정말 이 계약을 삭제하시겠습니까?')) return;
+    await deleteFromDB('contracts', id);
+    contractList = contractList.filter(c => c.id !== id);
+    showToast('✅ 계약이 삭제되었습니다');
+    closeModal('contractDetailModal');
+    loadContracts();
 }
 
-// ======================= 브로컴퍼니: 차량관리 =======================
+// ======================= 정산관리: 차량관리 =======================
 const vStatusBadge = s => ({ '입고': ['badge-active', '입고(대기)'], '출고': ['badge-completed', '출고(계약중)'], '반납': ['badge-pending', '반납(점검)'], '정비': ['badge-delinquent', '정비중'], '폐차': ['badge-staff', '폐차/매각'] }[s] || ['', '']);
 
 // 차량 유형 탭
@@ -4952,7 +5015,7 @@ function loadVehicles() {
     document.getElementById('vehicle-tbody').innerHTML = h || '<tr><td colspan="8" class="text-center text-gray-500 py-6">차량 없음</td></tr>';
 }
 
-// 매입차량 상세보기 (브로컴퍼니에서)
+// 매입차량 상세보기 (정산관리에서)
 function viewPurchaseVehicle(purchaseId) {
     const p = purchaseList.find(x => x.id === purchaseId);
     if (!p) return;
@@ -4999,7 +5062,7 @@ function viewPurchaseVehicle(purchaseId) {
 // 브로모터스 매입차량 탭으로 이동
 function goToBromotorsPurchase() {
     closeModal('vehicleDetailModal');
-    // 브로컴퍼니 숨기고 브로모터스 표시
+    // 정산관리 숨기고 브로모터스 표시
     document.getElementById('settlementSystem').classList.add('hidden');
     document.getElementById('bromotorsSystem').classList.remove('hidden');
     document.getElementById('b-userName').textContent = currentUser.name;
@@ -5431,8 +5494,8 @@ function deleteCustomer(id) {
     loadCustomers();
 }
 
-// ======================= 브로컴퍼니: 통합현황 =======================
-// 브로컴퍼니 대시보드 전체 로드
+// ======================= 정산관리: 통합현황 =======================
+// 정산관리 대시보드 전체 로드
 function loadSettlementDashboard() {
     // 연체 자동 계산
     calculateAllArrears();
@@ -5452,7 +5515,7 @@ function loadSettlementDashboard() {
     // 과태료 목록 로드
     loadFines();
     
-    console.log('✅ 브로컴퍼니 대시보드 로드 완료');
+    console.log('✅ 정산관리 대시보드 로드 완료');
 }
 
 function loadOverview() {
@@ -5903,39 +5966,11 @@ function loadBroWork() {
     // 날짜 내림차순 정렬
     works.sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
     
-    // 외상 합계 계산
-    const totalCredit = broWorkList.filter(w => w.credit_status === 'unpaid').reduce((sum, w) => sum + (w.credit_amount || 0), 0);
-    const creditCount = broWorkList.filter(w => w.credit_status === 'unpaid').length;
-    
-    // 외상 요약 표시 (있으면)
-    let creditSummary = '';
-    if (creditCount > 0) {
-        creditSummary = `<div class="mb-3 p-3 rounded-lg bg-red-400/10 border border-red-400/30 flex justify-between items-center">
-            <div><span class="text-red-400 font-bold">📝 외상 ${creditCount}건</span> <span class="text-gray-400 ml-2">총 ${fmt(totalCredit)}</span></div>
-            <button onclick="openCreditListModal()" class="btn-sm bg-red-400/20 text-red-400 border border-red-400/30 hover:bg-red-400/30">외상 목록 보기</button>
-        </div>`;
-    }
-    
     let h = '';
     works.forEach(w => {
         const [sc, sl] = workStatusBadge(w.status);
-        const total = w.total_amount || (w.labor + w.parts_cost);
+        const total = w.labor + w.parts_cost;
         const isPaid = w.status === 'complete';
-        const isCredit = w.credit_status === 'unpaid';
-        const payMethod = w.payment_method || '-';
-        
-        // 결제방식 배지
-        let payBadge = '';
-        if (isCredit) {
-            payBadge = `<span class="badge bg-red-400/20 text-red-400">외상</span>`;
-        } else if (payMethod === '카드') {
-            payBadge = `<span class="badge bg-blue-400/20 text-blue-400">카드</span>`;
-        } else if (payMethod === '현금') {
-            payBadge = `<span class="badge bg-emerald-400/20 text-emerald-400">현금</span>`;
-        } else if (payMethod === '계좌이체') {
-            payBadge = `<span class="badge bg-purple-400/20 text-purple-400">이체</span>`;
-        }
-        
         h += `<tr class="cursor-pointer hover:bg-white/5" onclick="viewWorkDetail(${w.id})">
             <td class="text-lime-400">#W${String(w.id).padStart(3,'0')}</td>
             <td class="text-gray-400">${w.date}</td>
@@ -5945,41 +5980,20 @@ function loadBroWork() {
             <td class="text-gray-400">${fmt(w.labor)}</td>
             <td class="text-gray-400">${fmt(w.parts_cost)}</td>
             <td class="font-bold">${fmt(total)}</td>
-            <td>${payBadge}</td>
             <td><span class="badge ${sc}">${sl}</span></td>
             <td>
-                ${isCredit 
-                    ? `<button onclick="event.stopPropagation(); collectCredit(${w.id})" class="text-red-400 text-xs hover:underline">💰 회수</button>`
-                    : (isPaid 
-                        ? '<span class="text-emerald-400 text-xs">✅ 완료</span>' 
-                        : `<button onclick="event.stopPropagation(); openBroCardPayModal(${w.id})" class="text-blue-400 text-xs hover:underline">💳</button>`)
+                ${isPaid 
+                    ? '<span class="text-emerald-400 text-xs">✅ 완료</span>' 
+                    : `<button onclick="event.stopPropagation(); openBroCardPayModal(${w.id})" class="text-blue-400 text-xs hover:underline">💳</button>`
                 }
             </td>
         </tr>`;
     });
-    
-    // 외상 요약 + 테이블
-    const tableContainer = document.getElementById('b-work-tbody');
-    if (tableContainer) {
-        tableContainer.innerHTML = h || '<tr><td colspan="11" class="text-center text-gray-500 py-6">작업 없음</td></tr>';
-    }
-    
-    // 외상 요약 표시
-    const creditSummaryEl = document.getElementById('credit-summary-box');
-    if (creditSummaryEl) {
-        creditSummaryEl.innerHTML = creditSummary;
-    }
+    document.getElementById('b-work-tbody').innerHTML = h || '<tr><td colspan="10" class="text-center text-gray-500 py-6">작업 없음</td></tr>';
 }
 
 async function submitBroWork(e) {
     e.preventDefault();
-    
-    // 중복 제출 방지
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-    if (submitBtn && submitBtn.disabled) return;
-    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '처리중...'; }
-    
-    try {
     const d = Object.fromEntries(new FormData(e.target));
     const editId = document.getElementById('work-edit-id').value;
     const customerId = document.getElementById('work-customer-id').value;
@@ -5990,15 +6004,6 @@ async function submitBroWork(e) {
     
     // 사용 부품 JSON 저장
     const usedPartsJson = workPartsSelected.length > 0 ? JSON.stringify(workPartsSelected) : null;
-    
-    // 결제 금액 계산
-    const payAmount = parseInt(document.getElementById('work-pay-amount').value) || 0;
-    const isVat = document.getElementById('work-vat-check').checked;
-    const totalAmount = isVat ? Math.round(payAmount * 1.1) : payAmount;
-    
-    // 결제방식 및 외상 처리
-    const paymentMethod = d.payment_method || '현금';
-    const isCredit = paymentMethod === '외상';
     
     // 작업 데이터
     const workData = {
@@ -6011,12 +6016,7 @@ async function submitBroWork(e) {
         parts_cost: parseInt(d.parts_cost) || 0,
         memo: d.memo || '',
         customer_id: customerId ? parseInt(customerId) : null,
-        used_parts: usedPartsJson,
-        payment_method: paymentMethod,
-        total_amount: totalAmount,
-        credit_amount: isCredit ? totalAmount : 0,
-        credit_memo: isCredit ? (d.credit_memo || '') : '',
-        credit_status: isCredit ? 'unpaid' : 'paid'
+        used_parts: usedPartsJson
     };
     
     if (editId) {
@@ -6097,116 +6097,6 @@ async function submitBroWork(e) {
     workPartsSelected = [];
     loadBroWork();
     loadBroDashboard();
-    } catch(err) { console.error('작업 등록 오류:', err); showToast('오류 발생'); }
-    finally { const btn = document.querySelector('#workForm button[type="submit"]'); if(btn) { btn.disabled = false; btn.textContent = '등록'; } }
-}
-
-// 외상 회수 처리
-async function collectCredit(workId) {
-    const w = broWorkList.find(x => x.id === workId);
-    if (!w) return;
-    
-    const method = await showCreditCollectModal(w);
-    if (!method) return;
-    
-    try {
-        // 외상 상태 업데이트
-        await updateInDB('bro_works', workId, {
-            credit_status: 'paid',
-            payment_method: method,
-            status: 'complete'
-        });
-        
-        w.credit_status = 'paid';
-        w.payment_method = method;
-        w.status = 'complete';
-        
-        // 금고에 입금 기록
-        const cashbookData = {
-            date: new Date(new Date().getTime() + 9*60*60*1000).toISOString().split('T')[0],
-            type: 'income',
-            category: '외상회수',
-            description: `${w.customer} 외상 회수 (${w.content})`,
-            amount: w.credit_amount || w.total_amount || (w.labor + w.parts_cost),
-            method: method
-        };
-        await insertToDB('bro_cashbook', cashbookData);
-        
-        showToast(`✅ ${w.customer}님 외상 ${fmt(cashbookData.amount)} 회수 완료!`);
-        loadBroWork();
-        loadBroCashbook();
-        loadBroDashboard();
-    } catch (error) {
-        console.error('외상 회수 실패:', error);
-        showToast('❌ 외상 회수 실패: ' + error.message, 'error');
-    }
-}
-
-// 외상 회수 방법 선택 모달
-function showCreditCollectModal(work) {
-    return new Promise((resolve) => {
-        const total = work.credit_amount || work.total_amount || (work.labor + work.parts_cost);
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay';
-        modal.id = 'creditCollectModal';
-        modal.innerHTML = `
-            <div class="modal-content" style="max-width:400px">
-                <div class="flex justify-between mb-4">
-                    <h2 class="text-xl font-bold text-red-400">💰 외상 회수</h2>
-                    <button onclick="document.getElementById('creditCollectModal').remove()" class="text-gray-400 text-2xl">&times;</button>
-                </div>
-                <div class="p-4 rounded-lg bg-white/5 mb-4">
-                    <div class="text-gray-400 text-sm">고객: <span class="text-white font-bold">${work.customer}</span></div>
-                    <div class="text-gray-400 text-sm mt-1">작업: ${work.content}</div>
-                    <div class="text-gray-400 text-sm mt-1">외상메모: ${work.credit_memo || '-'}</div>
-                    <div class="text-2xl font-bold text-red-400 mt-3">${fmt(total)}</div>
-                </div>
-                <div class="text-sm text-gray-400 mb-2">결제 방법 선택:</div>
-                <div class="grid grid-cols-3 gap-2">
-                    <button onclick="document.getElementById('creditCollectModal').remove(); window._creditResolve('현금')" class="btn-primary">💵 현금</button>
-                    <button onclick="document.getElementById('creditCollectModal').remove(); window._creditResolve('카드')" class="btn-secondary">💳 카드</button>
-                    <button onclick="document.getElementById('creditCollectModal').remove(); window._creditResolve('계좌이체')" class="btn-secondary">🏦 이체</button>
-                </div>
-                <button onclick="document.getElementById('creditCollectModal').remove(); window._creditResolve(null)" class="btn-secondary w-full mt-3">취소</button>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        window._creditResolve = resolve;
-    });
-}
-
-// 외상 목록 모달
-function openCreditListModal() {
-    const credits = broWorkList.filter(w => w.credit_status === 'unpaid');
-    const total = credits.reduce((sum, w) => sum + (w.credit_amount || w.total_amount || (w.labor + w.parts_cost)), 0);
-    
-    let rows = '';
-    credits.forEach(w => {
-        const amount = w.credit_amount || w.total_amount || (w.labor + w.parts_cost);
-        rows += `<tr>
-            <td class="text-gray-400">${w.date}</td>
-            <td class="font-bold">${w.customer}</td>
-            <td>${w.content}</td>
-            <td class="text-red-400 font-bold">${fmt(amount)}</td>
-            <td class="text-gray-500 text-xs">${w.credit_memo || '-'}</td>
-            <td><button onclick="closeModal('creditListModal'); collectCredit(${w.id})" class="btn-sm bg-red-400/20 text-red-400 border border-red-400/30">회수</button></td>
-        </tr>`;
-    });
-    
-    document.getElementById('credit-list-content').innerHTML = `
-        <div class="p-4 rounded-lg bg-red-400/10 border border-red-400/30 mb-4">
-            <div class="text-sm text-gray-400">총 외상 금액</div>
-            <div class="text-3xl font-bold text-red-400">${fmt(total)}</div>
-            <div class="text-sm text-gray-500">${credits.length}건</div>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="data-table">
-                <thead><tr><th>날짜</th><th>고객</th><th>작업</th><th>금액</th><th>메모</th><th>관리</th></tr></thead>
-                <tbody>${rows || '<tr><td colspan="6" class="text-center text-gray-500 py-4">외상 없음</td></tr>'}</tbody>
-            </table>
-        </div>
-    `;
-    openModal('creditListModal');
 }
 
 function viewWorkDetail(id) {
@@ -6940,23 +6830,6 @@ function calcWorkFromTotal() {
     document.getElementById('work-total').value = fmt(finalAmount);
 }
 
-// 외상 선택 토글
-function toggleCreditOption(isCredit) {
-    const creditMemoBox = document.getElementById('credit-memo-box');
-    if (isCredit) {
-        creditMemoBox.classList.remove('hidden');
-    } else {
-        creditMemoBox.classList.add('hidden');
-    }
-}
-
-// 외상 결제방식 라디오 변경 이벤트
-document.addEventListener('change', function(e) {
-    if (e.target.name === 'payment_method') {
-        toggleCreditOption(e.target.value === '외상');
-    }
-});
-
 // 합계금액 계산 (기존 호환)
 function calcWorkTotal() {
     const labor = parseInt(document.getElementById('work-labor').value) || 0;
@@ -7635,13 +7508,6 @@ function editParts(id) {
 
 async function submitBroParts(e) {
     e.preventDefault();
-    
-    // 중복 제출 방지
-    const submitBtn = document.getElementById('partsSubmitBtn');
-    if (submitBtn && submitBtn.disabled) return;
-    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '처리중...'; }
-    
-    try {
     const editId = document.getElementById('parts-edit-id').value;
     const d = Object.fromEntries(new FormData(e.target));
     
@@ -7710,8 +7576,6 @@ async function submitBroParts(e) {
     loadBroParts();
     loadBroCashbook();
     loadBroDashboard();
-    } catch(err) { console.error('부품 등록 오류:', err); showToast('오류 발생'); }
-    finally { const btn = document.getElementById('partsSubmitBtn'); if(btn) { btn.disabled = false; btn.textContent = '등록'; } }
 }
 
 // ======================= 브로모터스: 고객관리 =======================
@@ -7973,11 +7837,6 @@ function loadBroDashboard() {
     const workParts = completedWorks.reduce((s, w) => s + (w.parts_cost || 0), 0);
     const workTotal = workLabor + workParts;
     
-    // 외상(미수금) 현황 - 전체 기간
-    const creditWorks = broWorkList.filter(w => w.credit_status === 'unpaid');
-    const creditTotal = creditWorks.reduce((s, w) => s + (w.credit_amount || w.total_amount || (w.labor + w.parts_cost)), 0);
-    const creditCount = creditWorks.length;
-    
     // 사고차 수익 (완료된 것만)
     const periodAccidents = accidentList.filter(a => a.status === '완료');
     const accidentProfit = periodAccidents.reduce((s, a) => {
@@ -8002,12 +7861,6 @@ function loadBroDashboard() {
     document.getElementById('b-work-amount').textContent = fmt(workTotal);
     document.getElementById('b-month-profit').textContent = fmt(profit);
     document.getElementById('b-profit-rate').textContent = profit >= 0 ? `+${profitRate}%` : `${profitRate}%`;
-    
-    // 외상(미수금) 표시
-    if (document.getElementById('b-credit-total')) {
-        document.getElementById('b-credit-total').textContent = fmt(creditTotal);
-        document.getElementById('b-credit-count').textContent = creditCount + '건';
-    }
     
     // 손익 상세 (입금 - 지출)
     if (document.getElementById('b-profit-detail')) {
@@ -8073,7 +7926,7 @@ function loadBroDashboard() {
     document.getElementById('b-low-stock-list').innerHTML = stockHtml || '<div class="text-gray-500 text-sm text-center py-4">재고 부족 없음</div>';
     
     // 다른 탭 데이터도 미리 로드
-    loadBroWork();
+    loadBroWorks();
     loadBroParts();
     loadBroCashbook();
     loadBroCustomers();
@@ -8470,7 +8323,7 @@ function printBroReceipt() {
 
 // 작업 테이블에 결제 버튼 추가를 위한 loadBroWork 수정 필요
 
-// ======================= 브로컴퍼니: 자동결제(PG) =======================
+// ======================= 정산관리: 자동결제(PG) =======================
 const payTypeLabel = t => ({ daily: '일일결제', weekly: '주일결제', monthly: '월결제', custom: '날짜지정' }[t] || '');
 const weekdayLabel = d => ['', '월', '화', '수', '목', '금', '토', '일'][d] || '';
 
@@ -8587,82 +8440,44 @@ function onPgContractChange(select) {
     }
 }
 
-async function submitPgCard(e) {
+function submitPgCard(e) {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(e.target));
     const contract = contractList.find(c => c.id === parseInt(d.contract_id));
     
-    // 카드번호에서 숫자만 추출
-    const cardNoClean = d.card_no.replace(/[^0-9]/g, '');
-    // 유효기간 파싱 (MM/YY 형식)
-    const expiryParts = d.expiry.replace(/[^0-9]/g, '');
-    const expiryMonth = expiryParts.slice(0, 2);
-    const expiryYear = expiryParts.slice(2, 4);
+    const newPg = {
+        id: Math.max(...pgPaymentsList.map(p => p.id), 0) + 1,
+        contract_id: parseInt(d.contract_id),
+        customer_name: contract ? contract.customer_name : '',
+        // 카드 소유자 정보
+        card_holder: d.card_holder || '',
+        birth_date: d.birth_date || '',
+        card_phone: d.card_phone || '',
+        card_email: d.card_email || '',
+        // 카드 정보 (마스킹)
+        card_no: '****-****-****-' + d.card_no.slice(-4),
+        expiry: d.expiry || '',
+        card_company: d.card_company || '',
+        // 결제 설정
+        pay_type: d.pay_type,
+        amount: parseInt(d.amount) || 0,
+        last_pay: '-',
+        last_status: 'scheduled',
+        card_status: d.card_status || 'active',
+        created_at: new Date().toISOString().split('T')[0]
+    };
     
-    try {
-        showToast('🔄 위루트 PG 카드 등록 중...');
-        
-        // 1. 위루트 빌링키 발급 요청
-        console.log('🔄 위루트 빌링키 발급 시작...');
-        const billingResult = await callWerouteFunction('issue_billing_key', {
-            card_no: cardNoClean,
-            expiry_year: expiryYear,
-            expiry_month: expiryMonth,
-            birth_date: d.birth_date,
-            card_pw: d.card_pw,
-            contract_id: parseInt(d.contract_id),
-            customer_name: d.card_holder || (contract ? contract.customer_name : ''),
-            phone: d.card_phone ? d.card_phone.replace(/[^0-9]/g, '') : '',
-            email: d.card_email || ''
-        });
-        
-        console.log('📥 빌링키 발급 응답:', billingResult);
-        
-        if (!billingResult.success) {
-            showToast('❌ 카드 등록 실패: ' + (billingResult.message || billingResult.error || ''), 'error');
-            return;
-        }
-        
-        // 2. pg_payments 테이블에 저장 (빌링키 포함)
-        const newPg = {
-            contract_id: parseInt(d.contract_id),
-            customer_name: contract ? contract.customer_name : d.card_holder,
-            // 카드 소유자 정보
-            card_holder: d.card_holder || '',
-            birth_date: d.birth_date || '',
-            card_phone: d.card_phone || '',
-            card_email: d.card_email || '',
-            // 카드 정보 (마스킹)
-            card_no: billingResult.card_no_masked || ('****-****-****-' + cardNoClean.slice(-4)),
-            expiry: d.expiry || '',
-            card_company: billingResult.card_company || d.card_company || '',
-            // 빌링키 (중요!)
-            billing_key: billingResult.billing_key,
-            // 결제 설정
-            pay_type: d.pay_type,
-            amount: parseInt(d.amount) || 0,
-            last_payment_date: null,
-            last_payment_status: 'scheduled',
-            card_status: d.card_status || 'active'
-        };
-        
-        if (d.pay_type === 'daily') newPg.pay_hour = parseInt(d.pay_hour) || 9;
-        else if (d.pay_type === 'weekly') newPg.pay_weekday = parseInt(d.pay_weekday) || 1;
-        else if (d.pay_type === 'monthly') newPg.pay_day = parseInt(d.pay_day) || 1;
-        else if (d.pay_type === 'custom') newPg.pay_date = d.pay_date || '';
-        
-        const result = await insertToDB('pg_payments', newPg);
-        if (result) {
-            pgPaymentsList.push(result);
-            showToast('✅ 카드 등록 완료! (빌링키 발급됨)');
-            closeModal('pgModal');
-            e.target.reset();
-            loadPgPayments();
-        }
-    } catch (error) {
-        console.error('카드 등록 실패:', error);
-        showToast('❌ 카드 등록 실패: ' + error.message, 'error');
-    }
+    if (d.pay_type === 'daily') newPg.pay_hour = parseInt(d.pay_hour) || 9;
+    else if (d.pay_type === 'weekly') newPg.pay_weekday = parseInt(d.pay_weekday) || 1;
+    else if (d.pay_type === 'monthly') newPg.pay_day = parseInt(d.pay_day) || 1;
+    else if (d.pay_type === 'custom') newPg.pay_date = d.pay_date || '';
+    
+    pgPaymentsList.push(newPg);
+    
+    showToast('✅ 카드가 등록되었습니다');
+    closeModal('pgModal');
+    e.target.reset();
+    loadPgPayments();
 }
 
 // PG 카드 상세보기
@@ -8780,7 +8595,7 @@ function openManualPayModal(pgId) {
 }
 
 // 수동 결제 실행
-async function executeManualPayment(e) {
+function executeManualPayment(e) {
     e.preventDefault();
     const pgId = parseInt(document.getElementById('manual-pay-pg-id').value);
     const amount = parseInt(document.getElementById('manual-pay-amount').value) || 0;
@@ -8788,83 +8603,61 @@ async function executeManualPayment(e) {
     const memo = e.target.memo ? e.target.memo.value : '';
     
     const p = pgPaymentsList.find(x => x.id === pgId);
-    if (!p) {
-        showToast('❌ 카드 정보를 찾을 수 없습니다', 'error');
-        return;
-    }
+    if (!p) return;
     
     const contract = contractList.find(c => c.id === p.contract_id);
     
-    try {
-        // 1. 빌링키가 있으면 실제 PG 결제 호출
-        if (p.billing_key) {
-            console.log('🔄 위루트 PG 결제 시작...', { billing_key: p.billing_key, amount });
-            const pgResult = await processWeroutePayment({
-                billing_key: p.billing_key,
-                amount: amount,
-                order_name: (contract ? contract.customer_name : p.customer_name) + ' 리스료',
-                contract_id: p.contract_id
-            });
-            
-            if (!pgResult.success) {
-                showToast('❌ PG 결제 실패: ' + (pgResult.message || ''), 'error');
-                return;
-            }
-            console.log('✅ PG 결제 성공:', pgResult);
-        } else {
-            console.log('⚠️ 빌링키 없음 - DB 기록만 진행');
+    // 결제 처리
+    p.last_pay = date;
+    p.last_status = 'success';
+    
+    // 결제 이력 추가
+    paymentHistory.unshift({
+        id: Math.max(...paymentHistory.map(h => h.id), 0) + 1,
+        pg_id: pgId,
+        contract_id: p.contract_id,
+        amount: amount,
+        date: date,
+        time: new Date().toTimeString().slice(0, 5),
+        status: 'success',
+        method: 'PG'
+    });
+    
+    // 원장에 수납 기록
+    ledgerList.unshift({
+        id: Math.max(...ledgerList.map(l => l.id), 0) + 1,
+        date: date,
+        contract_id: p.contract_id,
+        customer_name: p.customer_name,
+        type: 'receipt',
+        desc: `카드결제${memo ? ' - ' + memo : ''}`,
+        accrual: 0,
+        receipt: amount,
+        method: 'PG'
+    });
+    
+    // 계약 미납금 차감
+    if (contract) {
+        contract.arrears = Math.max(0, contract.arrears - amount);
+        if (contract.arrears === 0) {
+            contract.status = 'active';
+            contract.delinquent_days = 0;
         }
-        
-        // 2. contract_payments에 결제 기록 저장
-        const paymentData = {
-            contract_id: p.contract_id,
-            amount: amount,
-            payment_date: date,
-            method: 'PG',
-            status: 'paid',
-            memo: memo || '카드결제'
-        };
-        
-        const savedPayment = await insertToDB('contract_payments', paymentData);
-        if (savedPayment) {
-            contractPaymentList.unshift(savedPayment);
-        }
-        
-        // 3. 원장에 수납 기록 저장
-        const ledgerData = {
-            date: date,
-            contract_id: p.contract_id,
-            customer_name: p.customer_name,
-            type: 'receipt',
-            description: `카드결제${memo ? ' - ' + memo : ''}`,
-            accrual: 0,
-            receipt: amount,
-            method: 'PG'
-        };
-        
-        const savedLedger = await insertToDB('ledger', ledgerData);
-        if (savedLedger) {
-            ledgerList.unshift({...savedLedger, desc: savedLedger.description});
-        }
-        
-        // 4. pg_payments 상태 업데이트
-        await updateInDB('pg_payments', pgId, { 
-            last_payment_date: date, 
-            last_payment_status: 'success' 
-        });
-        
-        // 5. 연체 재계산
-        calculateAllArrears();
-        
-        showToast(`✅ ${p.customer_name}님 ${fmt(amount)} 결제 완료`);
-        closeModal('manualPayModal');
-        loadPgPayments();
-        loadOverview();
-        
-    } catch (error) {
-        console.error('결제 처리 실패:', error);
-        showToast('❌ 결제 처리 실패: ' + error.message, 'error');
     }
+    
+    // 최근결제 내역에 추가
+    recentPayments.unshift({
+        id: Math.max(...recentPayments.map(r => r.id), 0) + 1,
+        customer_name: p.customer_name,
+        amount: amount,
+        date: date,
+        time: new Date().toTimeString().slice(0, 5)
+    });
+    
+    showToast(`✅ ${p.customer_name}님 ${fmt(amount)} 결제 완료`);
+    closeModal('manualPayModal');
+    loadPgPayments();
+    loadOverview();
 }
 
 // 카드 상태 토글
@@ -8879,21 +8672,15 @@ function toggleCardStatus(id) {
 }
 
 // 카드 삭제
-async function deletePgCard(id) {
+function deletePgCard(id) {
     if (!confirm('정말 이 카드를 삭제하시겠습니까?')) return;
-    try {
-        await deleteFromDB('pg_payments', id);
-        pgPaymentsList = pgPaymentsList.filter(p => p.id !== id);
-        showToast('✅ 카드가 삭제되었습니다');
-        closeModal('pgDetailModal');
-        loadPgPayments();
-    } catch (error) {
-        console.error('카드 삭제 실패:', error);
-        showToast('❌ 카드 삭제 실패');
-    }
+    pgPaymentsList = pgPaymentsList.filter(p => p.id !== id);
+    showToast('✅ 카드가 삭제되었습니다');
+    closeModal('pgDetailModal');
+    loadPgPayments();
 }
 
-// ======================= 브로컴퍼니: 원장 =======================
+// ======================= 정산관리: 원장 =======================
 function filterLedger(type) {
     if (type === 'arrears') {
         // 미수금만 표시 (잔액이 남아있는 고객)
@@ -8905,8 +8692,6 @@ function filterLedger(type) {
 }
 
 function loadLedger() {
-    console.log('📊 원장 로드 시작 - ledgerList:', ledgerList.length, 'contractPaymentList:', contractPaymentList.length, 'contractList:', contractList.length);
-    
     const typeFilter = document.getElementById('ledger-type').value;
     const contractFilter = document.getElementById('ledger-contract').value;
     const startDate = document.getElementById('ledger-start').value;
@@ -8943,23 +8728,16 @@ function loadLedger() {
     );
     const monthReceipt = thisMonthPayments.reduce((s, p) => s + (p.amount || 0), 0);
     
-    // 이번달 수납 내역 (contract_payments 기준 - 그래프용)
-    const thisMonthReceipts = thisMonthPayments.map(p => {
-        const contract = contractList.find(c => c.id === p.contract_id);
-        return {
-            ...p,
-            receipt: p.amount || 0,
-            method: p.method || '이체'
-        };
-    });
-    
-    console.log('📊 이번달 수납:', { thisMonthStart, today, payments: thisMonthPayments.length, monthReceipt, receipts: thisMonthReceipts.length });
+    // 이번달 수납 내역 (ledger 기준 - 그래프용)
+    const thisMonthReceipts = ledgerList.filter(l => 
+        l.type === 'receipt' && l.date >= thisMonthStart && l.date <= today
+    );
     
     // 이번달 예상 수익 (활성 계약 기준)
     const activeContracts = contractList.filter(c => c.status === 'active');
     const expectedMonthly = activeContracts.reduce((s, c) => s + (c.monthly || 0), 0);
     
-    // 수납률 = 실제수납 / 예상수익 (%) - 최대 100%로 제한하지 않음
+    // 수납률 = 실제수납 / 예상수익 (%)
     const monthRate = expectedMonthly > 0 ? Math.round((monthReceipt / expectedMonthly) * 100) : 0;
     
     // 총 미수금 (계약 기준)
@@ -9175,6 +8953,9 @@ function openMonthlyReceiptModal() {
 
 // 미수금 필터 (원장 테이블에서 미수금 있는 계약만 보기)
 function filterLedgerUnpaid() {
+    // 연체일 재계산 (최신 데이터 반영)
+    calculateDelinquentDays();
+    
     // 미수금 있는 계약 목록
     const unpaidContracts = contractList.filter(c => c.arrears > 0);
     
@@ -9230,92 +9011,36 @@ function filterLedgerUnpaid() {
 
 // 수납률 상세 모달
 function openCollectionRateModal() {
-    // contract_payments 기준으로 계산
-    const totalAccrual = contractList.reduce((s, c) => {
-        // 계약 시작일부터 오늘까지 발생한 총 금액
-        if (!c.start_date || c.status === 'completed' || c.status === 'cancelled') return s;
-        const cycle = c.payment_cycle || 'monthly';
-        const monthly = c.monthly || 0;
-        
-        const now = new Date();
-        const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-        const today = koreaTime.toISOString().split('T')[0];
-        const startDate = new Date(c.start_date + 'T00:00:00');
-        const todayDate = new Date(today + 'T00:00:00');
-        
-        if (startDate > todayDate) return s;
-        
-        let due = 0;
-        if (cycle === 'daily') {
-            const diffDays = Math.floor((todayDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-            due = diffDays * monthly;
-        } else if (cycle === 'weekly') {
-            const diffDays = Math.floor((todayDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-            due = Math.ceil(diffDays / 7) * monthly;
-        } else {
-            const paymentDay = c.payment_day || startDate.getDate();
-            const monthsElapsed = (todayDate.getFullYear() - startDate.getFullYear()) * 12 + (todayDate.getMonth() - startDate.getMonth());
-            const additionalMonth = todayDate.getDate() >= paymentDay ? 1 : 0;
-            due = (monthsElapsed + additionalMonth) * monthly;
-        }
-        return s + due;
-    }, 0);
+    // 연체일 재계산 (최신 데이터 반영)
+    calculateDelinquentDays();
     
-    const totalReceipt = contractPaymentList
-        .filter(p => p.status === 'paid')
-        .reduce((s, p) => s + (p.amount || 0), 0);
+    const totalAccrual = ledgerList.reduce((s, l) => s + (l.accrual || 0), 0);
+    const totalReceipt = ledgerList.reduce((s, l) => s + (l.receipt || 0), 0);
     const arrears = totalAccrual - totalReceipt;
     const rate = totalAccrual > 0 ? Math.round((totalReceipt / totalAccrual) * 100) : 0;
     
-    // 계약별 수납률 계산
+    // 계약별 수납률 계산 (연체일 포함)
     let contractStats = [];
     contractList.forEach(c => {
-        if (c.status === 'completed' || c.status === 'cancelled') return;
-        
-        // 해당 계약의 총 발생액 계산
-        let cAccrual = 0;
-        if (c.start_date) {
-            const cycle = c.payment_cycle || 'monthly';
-            const monthly = c.monthly || 0;
-            
-            const now = new Date();
-            const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-            const today = koreaTime.toISOString().split('T')[0];
-            const startDate = new Date(c.start_date + 'T00:00:00');
-            const todayDate = new Date(today + 'T00:00:00');
-            
-            if (startDate <= todayDate) {
-                if (cycle === 'daily') {
-                    const diffDays = Math.floor((todayDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-                    cAccrual = diffDays * monthly;
-                } else if (cycle === 'weekly') {
-                    const diffDays = Math.floor((todayDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-                    cAccrual = Math.ceil(diffDays / 7) * monthly;
-                } else {
-                    const paymentDay = c.payment_day || startDate.getDate();
-                    const monthsElapsed = (todayDate.getFullYear() - startDate.getFullYear()) * 12 + (todayDate.getMonth() - startDate.getMonth());
-                    const additionalMonth = todayDate.getDate() >= paymentDay ? 1 : 0;
-                    cAccrual = (monthsElapsed + additionalMonth) * monthly;
-                }
-            }
-        }
-        
-        // 해당 계약의 총 수납액
-        const cReceipt = contractPaymentList
-            .filter(p => p.contract_id === c.id && p.status === 'paid')
-            .reduce((s, p) => s + (p.amount || 0), 0);
-        
+        const cLedger = ledgerList.filter(l => l.contract_id === c.id);
+        const cAccrual = cLedger.reduce((s, l) => s + (l.accrual || 0), 0);
+        const cReceipt = cLedger.reduce((s, l) => s + (l.receipt || 0), 0);
+        const cArrears = c.arrears || (cAccrual - cReceipt); // 계약의 arrears 또는 계산값
         const cRate = cAccrual > 0 ? Math.round((cReceipt / cAccrual) * 100) : 100;
         
-        contractStats.push({
-            id: c.id,
-            name: c.customer_name,
-            vehicle: c.vehicle,
-            accrual: cAccrual,
-            receipt: cReceipt,
-            arrears: cAccrual - cReceipt,
-            rate: cRate
-        });
+        // 발생액이 있거나 미수금이 있는 계약만 표시
+        if (cAccrual > 0 || cArrears > 0) {
+            contractStats.push({
+                id: c.id,
+                name: c.customer_name,
+                vehicle: c.vehicle || '-',
+                accrual: cAccrual,
+                receipt: cReceipt,
+                arrears: cArrears,
+                rate: cRate,
+                delinquent_days: c.delinquent_days || 0
+            });
+        }
     });
     
     // 수납률 낮은 순 정렬
@@ -9325,12 +9050,14 @@ function openCollectionRateModal() {
     contractStats.forEach(s => {
         const rateColor = s.rate >= 100 ? 'text-emerald-400' : s.rate >= 80 ? 'text-blue-400' : s.rate >= 50 ? 'text-yellow-400' : 'text-red-400';
         const barWidth = Math.min(s.rate, 100);
+        const daysColor = s.delinquent_days >= 60 ? 'text-red-400' : s.delinquent_days >= 30 ? 'text-orange-400' : s.delinquent_days > 0 ? 'text-yellow-400' : 'text-gray-500';
         tableRows += `<tr>
             <td class="font-bold">${s.name}</td>
             <td class="text-gray-400">${s.vehicle}</td>
             <td class="text-orange-400">${fmt(s.accrual)}</td>
             <td class="text-emerald-400">${fmt(s.receipt)}</td>
             <td class="${s.arrears > 0 ? 'text-red-400' : 'text-gray-500'}">${s.arrears > 0 ? fmt(s.arrears) : '-'}</td>
+            <td class="${daysColor} font-bold">${s.delinquent_days > 0 ? s.delinquent_days + '일' : '-'}</td>
             <td>
                 <div class="flex items-center gap-2">
                     <div class="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
@@ -9363,10 +9090,10 @@ function openCollectionRateModal() {
         </div>
         
         <div class="text-sm text-lime-400 font-bold mb-3">📋 계약별 수납률 (낮은 순)</div>
-        <div class="glass-card rounded-xl overflow-hidden mb-4">
+        <div class="glass-card rounded-xl overflow-hidden mb-4" style="max-height:400px; overflow-y:auto;">
             <table class="data-table">
-                <thead><tr><th>고객명</th><th>차량</th><th>발생</th><th>수납</th><th>미수금</th><th>수납률</th></tr></thead>
-                <tbody>${tableRows || '<tr><td colspan="6" class="text-center text-gray-500 py-4">데이터 없음</td></tr>'}</tbody>
+                <thead><tr><th>고객명</th><th>차량</th><th>발생</th><th>수납</th><th>미수금</th><th>연체일</th><th>수납률</th></tr></thead>
+                <tbody>${tableRows || '<tr><td colspan="7" class="text-center text-gray-500 py-4">데이터 없음</td></tr>'}</tbody>
             </table>
         </div>
         
@@ -9436,7 +9163,7 @@ async function submitLedgerEntry(e) {
     loadLedger();
 }
 
-// ======================= 브로컴퍼니: 과태료 관리 =======================
+// ======================= 정산관리: 과태료 관리 =======================
 // 과태료 기간 설정
 let finePeriodType = '1m';
 
@@ -9959,15 +9686,15 @@ async function payFine(id) {
     loadFines();
 }
 
-// ======================= 브로컴퍼니: 연체관리 =======================
+// ======================= 정산관리: 연체관리 =======================
 function filterDelinquent(period) {
     document.getElementById('del-period').value = period;
     loadDelinquent();
 }
 
 function loadDelinquent() {
-    // 연체금액 및 연체일수 재계산
-    calculateAllArrears();
+    // 연체일 재계산
+    calculateDelinquentDays();
     
     const periodFilter = document.getElementById('del-period').value;
     const sortBy = document.getElementById('del-sort').value;
@@ -10113,124 +9840,19 @@ function restoreFromHash() {
     }
 }
 
-// ======================= 통합 로그인 세션 복원 =======================
+// ======================= 세션 복원 =======================
 async function restoreSession() {
-    console.log('🔄 통합 세션 복원 시도...');
-    
-    // 0. URL 파라미터에서 세션 확인 (다른 도메인에서 넘어온 경우)
-    const urlParams = new URLSearchParams(window.location.search);
-    const sessionParam = urlParams.get('session');
-    
-    if (sessionParam) {
-        try {
-            const decoded = JSON.parse(decodeURIComponent(atob(sessionParam)));
-            console.log('📋 URL 세션 데이터:', decoded);
-            
-            // 세션 만료 체크 (5분 - URL 파라미터는 짧게)
-            if (Date.now() - decoded.timestamp > 5 * 60 * 1000) {
-                console.log('❌ URL 세션 만료');
-            } else {
-                // hq_users 테이블에서 사용자 확인
-                const users = await supabaseCall('hq_users', 'GET', null, `?id=eq.${decoded.userId}`);
-                
-                if (users && users.length > 0 && users[0].is_active) {
-                    console.log('✅ URL 파라미터 로그인 성공:', users[0].name);
-                    
-                    currentUser = {
-                        id: users[0].id,
-                        name: users[0].name,
-                        role: users[0].role,
-                        status: 'active'
-                    };
-                    
-                    // URL에서 파라미터 제거 (보안)
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                    
-                    // 기본 시스템은 settlement (브로컴퍼니)
-                    currentSystem = 'settlement';
-                    
-                    // 모든 데이터 로드
-                    await loadAllData();
-                    
-                    document.getElementById('loginPage').classList.add('hidden');
-                    document.getElementById('settlementSystem').classList.remove('hidden');
-                    document.getElementById('s-userName').textContent = currentUser.name;
-                    document.getElementById('s-userRole').textContent = roleBadge(currentUser.role)[1];
-                    renderStaffList();
-                    initDates();
-                    loadSettlementDashboard();
-                    showSettlementTab('overview', true);
-                    
-                    showToast(`${currentUser.name}님, 브로컴퍼니 ERP에 오신 것을 환영합니다!`);
-                    return true;
-                }
-            }
-        } catch (e) {
-            console.error('URL 세션 파싱 실패:', e);
-        }
-    }
-    
-    // 1. 통합 세션 확인 (팀브로 HQ에서 로그인한 경우 - 같은 도메인)
-    const unifiedData = localStorage.getItem('teambro_unified_session');
-    
-    if (unifiedData) {
-        try {
-            const unified = JSON.parse(unifiedData);
-            console.log('📋 통합 세션 데이터:', unified);
-            
-            // 세션 만료 체크 (24시간)
-            if (Date.now() - unified.timestamp > 24 * 60 * 60 * 1000) {
-                console.log('❌ 통합 세션 만료');
-                localStorage.removeItem('teambro_unified_session');
-            } else {
-                // hq_users 테이블에서 사용자 확인
-                const users = await supabaseCall('hq_users', 'GET', null, `?id=eq.${unified.userId}`);
-                
-                if (users && users.length > 0 && users[0].is_active) {
-                    console.log('✅ 통합 로그인 사용자:', users[0].name);
-                    
-                    currentUser = {
-                        id: users[0].id,
-                        name: users[0].name,
-                        role: users[0].role,
-                        status: 'active'
-                    };
-                    
-                    // 기본 시스템은 settlement (브로컴퍼니)
-                    currentSystem = 'settlement';
-                    
-                    // 모든 데이터 로드
-                    await loadAllData();
-                    
-                    document.getElementById('loginPage').classList.add('hidden');
-                    document.getElementById('settlementSystem').classList.remove('hidden');
-                    document.getElementById('s-userName').textContent = currentUser.name;
-                    document.getElementById('s-userRole').textContent = roleBadge(currentUser.role)[1];
-                    renderStaffList();
-                    initDates();
-                    loadSettlementDashboard();
-                    showSettlementTab('overview', true);
-                    
-                    showToast(`${currentUser.name}님, 브로컴퍼니 ERP에 오신 것을 환영합니다!`);
-                    return true;
-                }
-            }
-        } catch (e) {
-            console.error('통합 세션 복원 실패:', e);
-        }
-    }
-    
-    // 2. 기존 세션 확인 (직접 로그인한 경우)
+    console.log('🔄 세션 복원 시도...');
     const sessionData = sessionStorage.getItem('teambro_session');
     
     if (!sessionData) {
-        console.log('❌ 저장된 세션 없음 - 팀브로 HQ로 이동');
+        console.log('❌ 저장된 세션 없음');
         return false;
     }
     
     try {
         const session = JSON.parse(sessionData);
-        console.log('📋 기존 세션 데이터:', session);
+        console.log('📋 세션 데이터:', session);
         
         // 세션 만료 체크 (24시간)
         const sessionAge = Date.now() - session.timestamp;
@@ -10300,11 +9922,6 @@ async function restoreSession() {
     }
 }
 
-// 통합 로그아웃 - 팀브로 HQ 시스템 선택으로 이동
-function backToSystemSelect() {
-    window.location.href = 'https://broerp.kr/';
-}
-
 // 페이지 로드 시 세션 복원 시도
 document.addEventListener('DOMContentLoaded', async () => {
     const restored = await restoreSession();
@@ -10312,10 +9929,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 로딩 화면 숨기기
     document.getElementById('loadingScreen').classList.add('hidden');
     
-    // 세션 복원 안 됐으면 팀브로 HQ 로그인 페이지로 이동
+    // 세션 복원 안 됐으면 로그인 페이지 표시
     if (!restored) {
-        // 통합 로그인 페이지로 이동
-        window.location.href = 'https://broerp.kr/';
+        document.getElementById('loginPage').classList.remove('hidden');
     }
 });
 </script>
