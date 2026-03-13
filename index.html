@@ -558,10 +558,12 @@
                             <option value="completed">종료</option>
                             <option value="cancelled">해지</option>
                         </select>
-                        <select id="contract-model" class="input-field" style="width:130px" onchange="loadContracts()">
-                            <option value="">🏍️ 전체 모델</option>
-                        </select>
+                        <div style="position:relative;display:inline-block;">
+                            <input type="text" id="contract-model" class="input-field" style="width:140px" placeholder="🏍️ 모델 검색..." oninput="onModelSearch(this.value)" onblur="setTimeout(()=>hideModelSuggestions(),200)" autocomplete="off">
+                            <div id="model-suggestions" style="display:none;position:absolute;top:100%;left:0;width:200px;background:#0a0a0a;border:1px solid rgba(57,255,20,0.3);border-radius:8px;z-index:999;max-height:200px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.8);"></div>
+                        </div>
                         <button onclick="loadContracts()" class="btn-secondary btn-sm">검색</button>
+                        <button onclick="clearModelFilter()" class="btn-sm" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);color:#9ca3af;border-radius:6px;padding:6px 10px;font-size:12px;" title="모델 필터 초기화">✕ 모델</button>
                     </div>
                     <div class="flex gap-2">
                         <button onclick="downloadExcel(&#39;contracts&#39;)" class="btn-secondary btn-sm">📥 엑셀</button>
@@ -7264,25 +7266,46 @@ async function deleteStaff(id) {
 
 // ======================= 정산관리: 계약관리 =======================
 
-// 계약관리 모델 필터 드롭다운 동적 업데이트
+// 계약관리 모델 자동완성 데이터
+let contractModelList = [];
+
 function updateContractModelFilter() {
-    const select = document.getElementById('contract-model');
-    if (!select) return;
-    const currentVal = select.value;
     // 계약 목록에서 모델명 추출 (중복 제거, 정렬)
-    const models = [...new Set(
+    contractModelList = [...new Set(
         contractList
             .map(c => c.vehicle ? c.vehicle.trim() : '')
             .filter(v => v.length > 0)
     )].sort();
-    select.innerHTML = '<option value="">🏍️ 전체 모델</option>';
-    models.forEach(m => {
-        const opt = document.createElement('option');
-        opt.value = m;
-        opt.textContent = m;
-        if (m === currentVal) opt.selected = true;
-        select.appendChild(opt);
-    });
+}
+
+function onModelSearch(val) {
+    loadContracts(); // 실시간 필터링
+    const q = val.trim().toLowerCase();
+    const box = document.getElementById('model-suggestions');
+    if (!q) { box.style.display = 'none'; return; }
+    const matches = contractModelList.filter(m => m.toLowerCase().includes(q));
+    if (!matches.length) { box.style.display = 'none'; return; }
+    box.innerHTML = matches.map(m => 
+        `<div onclick="selectModel('${m.replace(/'/g, "\'")}')" style="padding:8px 12px;cursor:pointer;font-size:12px;color:#ccc;border-bottom:1px solid rgba(255,255,255,0.05);" onmouseover="this.style.background='rgba(57,255,20,0.1)';this.style.color='#a3e635'" onmouseout="this.style.background='';this.style.color='#ccc'">${m}</div>`
+    ).join('');
+    box.style.display = 'block';
+}
+
+function selectModel(model) {
+    document.getElementById('contract-model').value = model;
+    document.getElementById('model-suggestions').style.display = 'none';
+    loadContracts();
+}
+
+function hideModelSuggestions() {
+    const box = document.getElementById('model-suggestions');
+    if (box) box.style.display = 'none';
+}
+
+function clearModelFilter() {
+    document.getElementById('contract-model').value = '';
+    document.getElementById('model-suggestions').style.display = 'none';
+    loadContracts();
 }
 
 function filterContracts(status) {
