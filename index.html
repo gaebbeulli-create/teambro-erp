@@ -558,6 +558,9 @@
                             <option value="completed">종료</option>
                             <option value="cancelled">해지</option>
                         </select>
+                        <select id="contract-model" class="input-field" style="width:130px" onchange="loadContracts()">
+                            <option value="">🏍️ 전체 모델</option>
+                        </select>
                         <button onclick="loadContracts()" class="btn-secondary btn-sm">검색</button>
                     </div>
                     <div class="flex gap-2">
@@ -6641,6 +6644,7 @@ async function loadAllData() {
     staffList = staff || [];
     customerList = customers || [];
     contractList = contracts || [];
+    updateContractModelFilter(); // 계약 로드 후 모델 필터 갱신
     vehicleList = vehicles || [];
     ledgerList = (ledger || []).map(l => ({...l, desc: l.description}));
     pgPaymentsList = pgPayments || [];
@@ -7259,14 +7263,38 @@ async function deleteStaff(id) {
 }
 
 // ======================= 정산관리: 계약관리 =======================
+
+// 계약관리 모델 필터 드롭다운 동적 업데이트
+function updateContractModelFilter() {
+    const select = document.getElementById('contract-model');
+    if (!select) return;
+    const currentVal = select.value;
+    // 계약 목록에서 모델명 추출 (중복 제거, 정렬)
+    const models = [...new Set(
+        contractList
+            .map(c => c.vehicle ? c.vehicle.trim() : '')
+            .filter(v => v.length > 0)
+    )].sort();
+    select.innerHTML = '<option value="">🏍️ 전체 모델</option>';
+    models.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = m;
+        if (m === currentVal) opt.selected = true;
+        select.appendChild(opt);
+    });
+}
+
 function filterContracts(status) {
     document.getElementById('contract-status').value = status;
+    updateContractModelFilter();
     loadContracts();
 }
 
 function loadContracts() {
     const search = document.getElementById('contract-search').value.toLowerCase();
     const status = document.getElementById('contract-status').value;
+    const modelFilter = document.getElementById('contract-model') ? document.getElementById('contract-model').value : '';
     
     // 연체 자동 계산 (계약 시작일 기준)
     calculateAllArrears();
@@ -7283,6 +7311,10 @@ function loadContracts() {
     else if (status === 'active') list = list.filter(c => c.status === 'active' && c.arrears === 0);
     else if (status === 'completed') list = list.filter(c => c.status === 'completed');
     else if (status === 'cancelled') list = list.filter(c => c.status === 'cancelled');
+    
+    // 모델 필터
+    if (modelFilter) list = list.filter(c => c.vehicle && c.vehicle.toLowerCase().includes(modelFilter.toLowerCase()));
+    
     if (search) list = list.filter(c => c.customer_name.toLowerCase().includes(search) || c.plate.toLowerCase().includes(search));
     
     // 요약 (현재 타입 기준)
@@ -13431,26 +13463,6 @@ async function restoreSession() {
 
 // 페이지 로드 시 세션 복원 시도
 document.addEventListener('DOMContentLoaded', async () => {
-    // ✅ 본사 ERP(broerp.kr)에서 넘어온 URL 세션 파라미터 처리
-    const urlParams = new URLSearchParams(window.location.search);
-    const sessionParam = urlParams.get('session');
-    if (sessionParam) {
-        try {
-            // 본사에서 btoa(encodeURIComponent(JSON)) 형식으로 인코딩해서 전달
-            const decoded = JSON.parse(decodeURIComponent(atob(sessionParam)));
-            decoded.timestamp = Date.now(); // 시간 갱신
-            // system 기본값 보장 (없으면 settlement)
-            if (!decoded.system) decoded.system = 'settlement';
-            if (!decoded.tab) decoded.tab = 'overview';
-            sessionStorage.setItem('teambro_session', JSON.stringify(decoded));
-            console.log('🔗 본사 SSO 세션 수신 완료:', decoded.name, '→', decoded.system);
-            // 보안상 URL에서 session 파라미터 제거
-            window.history.replaceState({}, document.title, window.location.pathname);
-        } catch (e) {
-            console.error('URL 세션 파싱 실패:', e);
-        }
-    }
-
     const restored = await restoreSession();
     
     // 로딩 화면 숨기기
